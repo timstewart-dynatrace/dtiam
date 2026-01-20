@@ -1,0 +1,20 @@
+# Team-Scoped Boundary Example
+# Restricts access to specific team management zones
+
+kind: Boundary
+name: lob5-boundary
+description: Restrict access to LOB5 team management zones
+
+# Boundary query format for multiple zones
+query: |
+  environment:management-zone IN ("LOB5-Production", "LOB5-Staging", "LOB5-Development");
+  storage:dt.security_context IN ("LOB5-Production", "LOB5-Staging", "LOB5-Development");
+  settings:dt.security_context IN ("LOB5-Production", "LOB5-Staging", "LOB5-Development")
+
+# Create with zones flag (preferred):
+# dtiam create boundary --name "lob5-boundary" --zones "LOB5-Production,LOB5-Staging,LOB5-Development" --description "Restrict access to LOB5 team management zones"
+
+# Usage: Attach to a binding to restrict scope
+# dtiam create binding --group "LOB5 Team" --policy "devops-policy" --boundary "lob5-boundary"
+
+# This allows the LOB5 team to have DevOps permissions but only within their designated zones

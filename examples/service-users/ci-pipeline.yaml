@@ -1,0 +1,26 @@
+# CI/CD Pipeline Service User Example
+# OAuth client for automation and CI/CD pipelines
+
+kind: ServiceUser
+name: CI Pipeline
+description: Service user for CI/CD automation
+
+# Required OAuth2 scopes (configure in Dynatrace):
+# - account-idm-read
+# - account-idm-write (if creating resources)
+# - iam-policies-management (if managing policies)
+
+# Create with:
+# dtiam service-user create --name "CI Pipeline" --description "Service user for CI/CD automation"
+
+# IMPORTANT: Save the client credentials immediately after creation!
+# The client secret cannot be retrieved later.
+
+# After creation, add to a group for permissions:
+# dtiam service-user add-to-group "CI Pipeline" --group "Automation"
+
+# Usage in CI/CD:
+# export DTIAM_CLIENT_ID="<returned client_id>"
+# export DTIAM_CLIENT_SECRET="<returned client_secret>"
+# export DTIAM_ACCOUNT_UUID="your-account-uuid"
+# dtiam get groups

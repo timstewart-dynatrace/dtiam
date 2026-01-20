@@ -1,0 +1,15 @@
+# Zone Boundary Template
+# Variables: ${BOUNDARY_NAME}, ${ZONE_NAMES}, ${BOUNDARY_DESCRIPTION}
+#
+# Note: Template commands are not yet implemented in the Go version
+# This file is provided as a reference for when they are added
+#
+# Usage: dtiam template apply --file boundary-zone.yaml \
+#   --var BOUNDARY_NAME=team-boundary \
+#   --var ZONE_NAMES="Zone1,Zone2" \
+#   --var BOUNDARY_DESCRIPTION="Team zone restriction"
+
+kind: Boundary
+name: ${BOUNDARY_NAME}
+description: ${BOUNDARY_DESCRIPTION}
+zones: ${ZONE_NAMES}

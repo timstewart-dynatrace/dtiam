@@ -1,0 +1,15 @@
+# Read-Only Access Group Example
+# Use this as a template for groups with read-only access
+
+kind: Group
+name: Viewers
+description: Read-only access to Dynatrace platform
+
+# Create with:
+# dtiam create group --name "Viewers" --description "Read-only access to Dynatrace platform"
+
+# Assign viewer policy:
+# dtiam create binding --group "Viewers" --policy "viewer-policy"
+
+# Optionally restrict to specific management zones:
+# dtiam create binding --group "Viewers" --policy "viewer-policy" --boundary "production-boundary"

@@ -1,0 +1,21 @@
+# Production-Only Boundary Example
+# Restricts access to production management zone only
+
+kind: Boundary
+name: production-boundary
+description: Restrict access to Production management zone only
+
+# Boundary query format for management zones
+query: |
+  environment:management-zone IN ("Production");
+  storage:dt.security_context IN ("Production");
+  settings:dt.security_context IN ("Production")
+
+# Create with zones flag (preferred):
+# dtiam create boundary --name "production-boundary" --zones "Production" --description "Restrict access to Production management zone only"
+
+# Or create with custom query:
+# dtiam create boundary --name "production-boundary" --query 'environment:management-zone IN ("Production"); storage:dt.security_context IN ("Production"); settings:dt.security_context IN ("Production")' --description "Restrict access to Production management zone only"
+
+# Usage: Attach to a binding to restrict scope
+# dtiam create binding --group "Prod Team" --policy "devops-policy" --boundary "production-boundary"

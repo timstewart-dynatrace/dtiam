@@ -1,0 +1,16 @@
+# Viewer Policy Example
+# Read-only access to Dynatrace settings and schemas
+
+kind: Policy
+name: viewer-policy
+description: Read-only access to settings and schemas
+
+statement: |
+  ALLOW settings:objects:read;
+  ALLOW settings:schemas:read;
+
+# Create with:
+# dtiam create policy \
+#   --name "viewer-policy" \
+#   --statement "ALLOW settings:objects:read; ALLOW settings:schemas:read;" \
+#   --description "Read-only access to settings and schemas"

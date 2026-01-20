@@ -1,0 +1,15 @@
+# Standard Team Group Example
+# Use this as a template for creating team-based groups
+
+kind: Group
+name: Platform Team
+description: Platform engineering team responsible for infrastructure
+
+# Create with:
+# dtiam create group --name "Platform Team" --description "Platform engineering team responsible for infrastructure"
+
+# After creation, add members:
+# dtiam group add-member "Platform Team" --email user@example.com
+
+# Assign policies:
+# dtiam create binding --group "Platform Team" --policy "developer-policy"

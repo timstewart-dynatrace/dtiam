@@ -1,0 +1,11 @@
+# Sample CSV for bulk user operations
+# Usage: dtiam bulk add-users-to-group --file sample_users.csv --group "DevOps Team"
+#
+# Note: bulk commands are not yet implemented in the Go version
+# This file is provided as a reference for when they are added
+
+email,first_name,last_name
+john.doe@example.com,John,Doe
+jane.smith@example.com,Jane,Smith
+bob.wilson@example.com,Bob,Wilson
+alice.johnson@example.com,Alice,Johnson

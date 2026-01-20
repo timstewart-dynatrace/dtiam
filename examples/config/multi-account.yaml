@@ -1,0 +1,44 @@
+# Multi-Account Configuration Template
+# Copy this to ~/.config/dtiam/config and customize
+
+api-version: v1
+kind: Config
+current-context: production
+
+# Define your contexts (one per account/environment)
+contexts:
+  - name: production
+    context:
+      account-uuid: prod-account-uuid-here
+      credentials-ref: prod-creds
+
+  - name: staging
+    context:
+      account-uuid: staging-account-uuid-here
+      credentials-ref: staging-creds
+
+  - name: development
+    context:
+      account-uuid: dev-account-uuid-here
+      credentials-ref: dev-creds
+
+# Define your credentials (OAuth2 clients)
+credentials:
+  - name: prod-creds
+    credential:
+      client-id: dt0s01.PROD_CLIENT_ID
+      client-secret: dt0s01.PROD_CLIENT_ID.PROD_SECRET
+
+  - name: staging-creds
+    credential:
+      client-id: dt0s01.STAGING_CLIENT_ID
+      client-secret: dt0s01.STAGING_CLIENT_ID.STAGING_SECRET
+
+  - name: dev-creds
+    credential:
+      client-id: dt0s01.DEV_CLIENT_ID
+      client-secret: dt0s01.DEV_CLIENT_ID.DEV_SECRET
+
+# Optional preferences
+preferences:
+  output: table

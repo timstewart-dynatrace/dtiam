@@ -1,0 +1,25 @@
+# Monitoring Bot Service User Example
+# Read-only OAuth client for monitoring and reporting
+
+kind: ServiceUser
+name: Monitoring Bot
+description: Read-only service user for monitoring and reporting
+
+# Required OAuth2 scopes (configure in Dynatrace):
+# - account-idm-read
+# - account-env-read
+
+# Create with:
+# dtiam service-user create --name "Monitoring Bot" --description "Read-only service user for monitoring and reporting"
+
+# IMPORTANT: Save the client credentials immediately after creation!
+# The client secret cannot be retrieved later.
+
+# After creation, add to a read-only group:
+# dtiam service-user add-to-group "Monitoring Bot" --group "Viewers"
+
+# Usage for monitoring scripts:
+# export DTIAM_CLIENT_ID="<returned client_id>"
+# export DTIAM_CLIENT_SECRET="<returned client_secret>"
+# export DTIAM_ACCOUNT_UUID="your-account-uuid"
+# dtiam get users -o json | jq 'length'  # Count users

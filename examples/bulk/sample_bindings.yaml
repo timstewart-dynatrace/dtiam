@@ -1,0 +1,20 @@
+# Sample YAML for bulk binding creation
+# Usage: dtiam bulk create-bindings --file sample_bindings.yaml
+#
+# Note: bulk commands are not yet implemented in the Go version
+# This file is provided as a reference for when they are added
+
+bindings:
+  - group: Platform Team
+    policy: devops-policy
+    # Optional boundary
+    # boundary: production-boundary
+
+  - group: DevOps Team
+    policy: devops-policy
+
+  - group: Security Team
+    policy: security-admin-policy
+
+  - group: Viewers
+    policy: viewer-policy

@@ -1,0 +1,11 @@
+# Team Group Template
+# Variables: ${TEAM_NAME}, ${TEAM_DESCRIPTION}
+#
+# Note: Template commands are not yet implemented in the Go version
+# This file is provided as a reference for when they are added
+#
+# Usage: dtiam template apply --file group-team.yaml --var TEAM_NAME=Platform --var TEAM_DESCRIPTION="Platform team"
+
+kind: Group
+name: ${TEAM_NAME} Team
+description: ${TEAM_DESCRIPTION}

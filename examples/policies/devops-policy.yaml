@@ -1,0 +1,17 @@
+# DevOps Policy Example
+# Read and write access to Dynatrace settings
+
+kind: Policy
+name: devops-policy
+description: DevOps team permissions for settings management
+
+statement: |
+  ALLOW settings:objects:read;
+  ALLOW settings:objects:write;
+  ALLOW settings:schemas:read;
+
+# Create with:
+# dtiam create policy \
+#   --name "devops-policy" \
+#   --statement "ALLOW settings:objects:read; ALLOW settings:objects:write; ALLOW settings:schemas:read;" \
+#   --description "DevOps team permissions for settings management"

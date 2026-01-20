@@ -1,0 +1,18 @@
+# Sample YAML for bulk group creation
+# Usage: dtiam bulk create-groups --file sample_groups.yaml
+#
+# Note: bulk commands are not yet implemented in the Go version
+# This file is provided as a reference for when they are added
+
+groups:
+  - name: Platform Team
+    description: Platform engineering team
+
+  - name: DevOps Team
+    description: DevOps and infrastructure team
+
+  - name: Security Team
+    description: Security and compliance team
+
+  - name: Viewers
+    description: Read-only access group

@@ -1,0 +1,21 @@
+# Alerting-Only Policy Example
+# Restricted to alerting schemas only
+
+kind: Policy
+name: alerting-manager
+description: Manage alerting profiles and maintenance windows only
+
+statement: |
+  ALLOW settings:objects:read WHERE settings:schemaId = "builtin:alerting.profile";
+  ALLOW settings:objects:write WHERE settings:schemaId = "builtin:alerting.profile";
+  ALLOW settings:objects:read WHERE settings:schemaId = "builtin:alerting.maintenance-window";
+  ALLOW settings:objects:write WHERE settings:schemaId = "builtin:alerting.maintenance-window";
+  ALLOW settings:schemas:read;
+
+# Create with:
+# dtiam create policy \
+#   --name "alerting-manager" \
+#   --statement 'ALLOW settings:objects:read WHERE settings:schemaId = "builtin:alerting.profile"; ALLOW settings:objects:write WHERE settings:schemaId = "builtin:alerting.profile"; ALLOW settings:objects:read WHERE settings:schemaId = "builtin:alerting.maintenance-window"; ALLOW settings:objects:write WHERE settings:schemaId = "builtin:alerting.maintenance-window"; ALLOW settings:schemas:read;' \
+#   --description "Manage alerting profiles and maintenance windows only"
+
+# Note: This uses WHERE clauses to restrict to specific schemas

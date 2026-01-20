@@ -1,0 +1,14 @@
+# Administrator Group Example
+# Use this as a template for administrator groups
+
+kind: Group
+name: Dynatrace Admins
+description: Full administrative access to Dynatrace platform
+
+# Create with:
+# dtiam create group --name "Dynatrace Admins" --description "Full administrative access to Dynatrace platform"
+
+# Assign admin policy:
+# dtiam create binding --group "Dynatrace Admins" --policy "Dynatrace default admin"
+
+# Note: Be careful with admin access - follow principle of least privilege

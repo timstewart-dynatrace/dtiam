@@ -1,0 +1,14 @@
+# Read-Only Policy Template
+# Variables: ${POLICY_NAME}, ${POLICY_DESCRIPTION}
+#
+# Note: Template commands are not yet implemented in the Go version
+# This file is provided as a reference for when they are added
+#
+# Usage: dtiam template apply --file policy-readonly.yaml --var POLICY_NAME=team-viewer --var POLICY_DESCRIPTION="Team viewer policy"
+
+kind: Policy
+name: ${POLICY_NAME}
+description: ${POLICY_DESCRIPTION}
+statement: |
+  ALLOW settings:objects:read;
+  ALLOW settings:schemas:read;
