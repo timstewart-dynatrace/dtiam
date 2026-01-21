@@ -4,6 +4,46 @@ This file provides guidance for AI agents working with the dtiam codebase.
 
 > **DISCLAIMER:** This tool is provided "as-is" without warranty. Use at your own risk. This is an independent, community-developed tool and is **NOT produced, endorsed, or supported by Dynatrace**.
 
+## ⚠️ MANDATORY PRE-PUSH CHECKLIST
+
+**BEFORE EVERY `git push` to main, Claude MUST complete ALL of the following:**
+
+```
+□ 1. VERSION UPDATE
+   - If adding features: Increment MINOR version (1.0.0 → 1.1.0)
+   - If fixing bugs: Increment PATCH version (1.0.0 → 1.0.1)
+   - Update pkg/version/version.go
+   - Documentation-only changes: No version bump required
+
+□ 2. CHANGELOG UPDATE
+   - Add changes to CHANGELOG.md under [Unreleased] section
+   - Use appropriate category: Added/Changed/Fixed/Removed
+   - Be specific about what changed
+
+□ 3. DOCUMENTATION UPDATE
+   - Update docs/COMMANDS.md for any new/changed commands
+   - Update README.md if features section changes
+   - Update CLAUDE.md if project structure changes
+
+□ 4. VALIDATION
+   - Run: make build
+   - Run: make test (or go test ./...)
+   - Run: ./scripts/validate.sh (if available)
+
+□ 5. COMMIT MESSAGE FORMAT
+   - feat: for new features
+   - fix: for bug fixes
+   - docs: for documentation only
+   - chore: for maintenance tasks
+   - Include Co-Authored-By line
+```
+
+**Current Version: 1.1.0** (as of 2025-01-21)
+
+**FAILURE TO FOLLOW THIS CHECKLIST WILL RESULT IN INCOMPLETE RELEASES.**
+
+---
+
 ## Development Workflow - MANDATORY
 
 **ALL development work MUST follow this workflow:**
@@ -179,7 +219,13 @@ dtiam --version
 # Output: dtiam version 1.0.0
 ```
 
-**REMEMBER: Version increments are MANDATORY for all feature and fix merges to main.**
+**⚠️ CRITICAL: Version increments are MANDATORY for all feature and fix pushes to main.**
+
+**Claude MUST:**
+1. Check current version in `pkg/version/version.go` before making changes
+2. Increment version appropriately before pushing ANY feature or fix
+3. Update CHANGELOG.md with the new version's changes
+4. Never push features/fixes without incrementing the version
 
 ### CHANGELOG Management - MANDATORY
 

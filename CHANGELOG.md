@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-01-21
+
 ### Added
 
 - Comprehensive validation script (`scripts/validate.sh`) and `make validate` target
@@ -38,12 +40,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `PermissionsCalculator` - Calculate effective permissions
   - `PermissionsMatrix` - Generate permissions matrices
   - `EffectivePermissionsAPI` - Call Dynatrace resolution API
+- Account commands:
+  - `account check-capacity` - Check capacity for additional resources
+  - `account limits --summary` - Summary with usage percentages
 
 ### Changed
 
 - Updated boundary query format to use modern Dynatrace syntax:
   - Changed from `managementZone.name = "Zone"` to `environment:management-zone IN ("Zone")`
   - Added `storage:dt.security_context` and `settings:dt.security_context` queries
+- Enhanced CLAUDE.md with mandatory pre-push checklist for version management
+
+### Documentation
+
+- Added full documentation for bulk, export, and analyze commands in COMMANDS.md
+- Updated README.md with new command groups
+- Updated CLAUDE.md project structure with new packages
 
 ## [1.0.0] - 2025-01-20
 
@@ -84,5 +96,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs/ARCHITECTURE.md - Technical design documentation
 - docs/API_REFERENCE.md - Programmatic usage guide
 
-[Unreleased]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/jtimothystewart/GO-IAM-CLI/releases/tag/v1.0.0
