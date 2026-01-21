@@ -2,8 +2,6 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/jtimothystewart/dtiam/internal/client"
@@ -182,22 +180,3 @@ func (h *ServiceUserHandler) RemoveFromGroup(ctx context.Context, userID, groupU
 	return err
 }
 
-// extractList overrides the base to handle service user-specific response formats.
-func (h *ServiceUserHandler) extractList(body []byte) ([]map[string]any, error) {
-	var response map[string]any
-	if err := json.Unmarshal(body, &response); err != nil {
-		var items []map[string]any
-		if err := json.Unmarshal(body, &items); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		return items, nil
-	}
-
-	for _, key := range []string{"items", "serviceUsers"} {
-		if items, ok := response[key]; ok {
-			return toMapSlice(items)
-		}
-	}
-
-	return []map[string]any{}, nil
-}

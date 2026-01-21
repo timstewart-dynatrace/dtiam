@@ -22,7 +22,9 @@ func NewPolicyHandler(c *client.Client) *PolicyHandler {
 
 // NewPolicyHandlerWithLevel creates a new policy handler for a specific level.
 func NewPolicyHandlerWithLevel(c *client.Client, levelType, levelID string) *PolicyHandler {
-	path := fmt.Sprintf("/repo/%s/%s/policies", levelType, levelID)
+	// Policies use the /repo/ endpoint which is NOT under /accounts/{uuid}/
+	// Must use full URL: https://api.dynatrace.com/iam/v1/repo/{levelType}/{levelId}/policies
+	path := fmt.Sprintf("https://api.dynatrace.com/iam/v1/repo/%s/%s/policies", levelType, levelID)
 	return &PolicyHandler{
 		BaseHandler: BaseHandler{
 			Client:    c,

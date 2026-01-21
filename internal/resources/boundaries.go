@@ -15,7 +15,9 @@ type BoundaryHandler struct {
 
 // NewBoundaryHandler creates a new boundary handler.
 func NewBoundaryHandler(c *client.Client) *BoundaryHandler {
-	path := fmt.Sprintf("/repo/account/%s/boundaries", c.AccountUUID())
+	// Boundaries use the /repo/ endpoint which is NOT under /accounts/{uuid}/
+	// Must use full URL: https://api.dynatrace.com/iam/v1/repo/account/{accountUuid}/boundaries
+	path := fmt.Sprintf("https://api.dynatrace.com/iam/v1/repo/account/%s/boundaries", c.AccountUUID())
 	return &BoundaryHandler{
 		BaseHandler: BaseHandler{
 			Client:    c,

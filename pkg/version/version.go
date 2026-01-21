@@ -8,7 +8,7 @@ var (
 	// Version is the semantic version of the CLI.
 	// Update this value before merging features/fixes to main.
 	// See CLAUDE.md for version management guidelines.
-	Version = "1.1.0"
+	Version = "1.1.1"
 	// Commit is the git commit hash.
 	Commit = "unknown"
 	// Date is the build date.

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-01-21
+
+### Fixed
+
+- Fixed API URLs for policies, bindings, and boundaries handlers to use correct `/repo/` endpoint
+  - Changed from `/accounts/{uuid}/repo/...` to `https://api.dynatrace.com/iam/v1/repo/...`
+  - Affected files: `policies.go`, `bindings.go`, `boundaries.go`
+- Fixed `GetOrResolve` function in `handler.go` to properly fall back to list search when direct GET returns 404
+  - Now searches list by UUID fields (`uuid`, `uid`, `id`) and then by name
+  - Fixes `describe group` command that was failing even when groups existed
+
 ## [1.1.0] - 2025-01-21
 
 ### Added
@@ -96,6 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs/ARCHITECTURE.md - Technical design documentation
 - docs/API_REFERENCE.md - Programmatic usage guide
 
-[Unreleased]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/jtimothystewart/GO-IAM-CLI/releases/tag/v1.0.0

@@ -22,7 +22,9 @@ func NewBindingHandler(c *client.Client) *BindingHandler {
 
 // NewBindingHandlerWithLevel creates a new binding handler for a specific level.
 func NewBindingHandlerWithLevel(c *client.Client, levelType, levelID string) *BindingHandler {
-	path := fmt.Sprintf("/repo/%s/%s/bindings", levelType, levelID)
+	// Bindings use the /repo/ endpoint which is NOT under /accounts/{uuid}/
+	// Must use full URL: https://api.dynatrace.com/iam/v1/repo/{levelType}/{levelId}/bindings
+	path := fmt.Sprintf("https://api.dynatrace.com/iam/v1/repo/%s/%s/bindings", levelType, levelID)
 	return &BindingHandler{
 		BaseHandler: BaseHandler{
 			Client:  c,

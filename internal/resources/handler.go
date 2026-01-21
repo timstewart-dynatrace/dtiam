@@ -258,22 +258,55 @@ func (h *BaseHandler) handleError(operation string, err error) error {
 }
 
 // GetOrResolve gets a resource by ID or name.
+// It first tries the direct GET endpoint, then falls back to searching the list.
 func GetOrResolve(ctx context.Context, h interface {
 	Getter
 	NameGetter
+	Lister
 }, identifier string) (map[string]any, error) {
-	// Try as ID first
+	// Try as ID first via direct API call
 	result, err := h.Get(ctx, identifier)
 	if err == nil {
 		return result, nil
 	}
 
-	// If not found, try as name
+	// If not found (or other error), search the list
+	// Some APIs don't support direct GET by ID but do return the ID in list
+	isNotFound := false
 	if apiErr, ok := err.(*client.APIError); ok && apiErr.IsNotFound() {
-		return h.GetByName(ctx, identifier)
+		isNotFound = true
+	} else if strings.Contains(err.Error(), "not found") {
+		isNotFound = true
 	}
 
-	// Return original error
+	if isNotFound {
+		// Search the list for the resource
+		items, listErr := h.List(ctx, nil)
+		if listErr != nil {
+			return nil, listErr
+		}
+
+		// Search by UUID/ID first (common fields: uuid, uid, id)
+		for _, item := range items {
+			for _, idField := range []string{"uuid", "uid", "id"} {
+				if id, ok := item[idField].(string); ok && strings.EqualFold(id, identifier) {
+					return item, nil
+				}
+			}
+		}
+
+		// Then search by name
+		for _, item := range items {
+			if name, ok := item["name"].(string); ok && strings.EqualFold(name, identifier) {
+				return item, nil
+			}
+		}
+
+		// Not found in list either
+		return nil, nil
+	}
+
+	// Return original error for non-404 errors
 	return nil, err
 }
 

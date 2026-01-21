@@ -38,7 +38,7 @@ This file provides guidance for AI agents working with the dtiam codebase.
    - Include Co-Authored-By line
 ```
 
-**Current Version: 1.1.0** (as of 2025-01-21)
+**Current Version: 1.1.1** (as of 2025-01-21)
 
 **FAILURE TO FOLLOW THIS CHECKLIST WILL RESULT IN INCOMPLETE RELEASES.**
 

@@ -162,6 +162,15 @@ func TestEffectivePermission_Sources(t *testing.T) {
 		},
 	}
 
+	if perm.Effect != "ALLOW" {
+		t.Errorf("EffectivePermission.Effect = %v, want ALLOW", perm.Effect)
+	}
+	if perm.Action != "settings:objects:read" {
+		t.Errorf("EffectivePermission.Action = %v, want settings:objects:read", perm.Action)
+	}
+	if perm.Description != "Read settings objects" {
+		t.Errorf("EffectivePermission.Description = %v, want Read settings objects", perm.Description)
+	}
 	if len(perm.Sources) != 2 {
 		t.Errorf("EffectivePermission.Sources len = %d, want 2", len(perm.Sources))
 	}
@@ -202,5 +211,8 @@ func TestMatrixResult_Fields(t *testing.T) {
 	}
 	if result.PermissionCount != 2 {
 		t.Errorf("MatrixResult.PermissionCount = %d, want 2", result.PermissionCount)
+	}
+	if len(result.Matrix) != 1 {
+		t.Errorf("MatrixResult.Matrix len = %d, want 1", len(result.Matrix))
 	}
 }
