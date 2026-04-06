@@ -16,6 +16,7 @@ import (
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
 	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/internal/utils"
 )
 
 // Cmd is the bulk command.
@@ -186,8 +187,8 @@ CSV example:
 		if err != nil {
 			return fmt.Errorf("group not found: %s", groupID)
 		}
-		groupUUID := group["uuid"].(string)
-		groupName := group["name"].(string)
+		groupUUID := utils.StringFrom(group, "uuid")
+		groupName := utils.StringFrom(group, "name")
 
 		fmt.Printf("Adding users to group '%s' (%s)...\n", groupName, groupUUID)
 
@@ -288,8 +289,8 @@ The file can be JSON, YAML, or CSV format containing email addresses or user UID
 		if err != nil {
 			return fmt.Errorf("group not found: %s", groupID)
 		}
-		groupUUID := group["uuid"].(string)
-		groupName := group["name"].(string)
+		groupUUID := utils.StringFrom(group, "uuid")
+		groupName := utils.StringFrom(group, "name")
 
 		// Resolve users to UIDs
 		type userToRemove struct {
@@ -313,7 +314,7 @@ The file can be JSON, YAML, or CSV format containing email addresses or user UID
 					continue
 				}
 				usersToRemove = append(usersToRemove, userToRemove{
-					uid:     user["uid"].(string),
+					uid:     utils.StringFrom(user, "uid"),
 					display: userID,
 				})
 			} else {
@@ -443,7 +444,7 @@ JSON/YAML example:
 		// Process creations
 		var successCount, failCount int
 		for _, groupDef := range validGroups {
-			name := groupDef["name"].(string)
+			name := utils.StringFrom(groupDef, "name")
 			data := map[string]any{
 				"name": name,
 			}
@@ -554,8 +555,8 @@ JSON/YAML example:
 		// Process creations
 		var successCount, failCount int
 		for _, bindingDef := range validBindings {
-			groupID := bindingDef["group"].(string)
-			policyID := bindingDef["policy"].(string)
+			groupID := utils.StringFrom(bindingDef, "group")
+			policyID := utils.StringFrom(bindingDef, "policy")
 
 			// Resolve group
 			group, err := groupHandler.Resolve(ctx, groupID)
@@ -567,7 +568,7 @@ JSON/YAML example:
 				}
 				continue
 			}
-			groupUUID := group["uuid"].(string)
+			groupUUID := utils.StringFrom(group, "uuid")
 
 			// Resolve policy
 			policy, err := policyHandler.Resolve(ctx, policyID)
@@ -579,7 +580,7 @@ JSON/YAML example:
 				}
 				continue
 			}
-			policyUUID := policy["uuid"].(string)
+			policyUUID := utils.StringFrom(policy, "uuid")
 
 			// Optional boundary
 			var boundaries []string
@@ -643,8 +644,8 @@ var exportGroupMembersCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("group not found: %s", groupID)
 		}
-		groupUUID := group["uuid"].(string)
-		groupName := group["name"].(string)
+		groupUUID := utils.StringFrom(group, "uuid")
+		groupName := utils.StringFrom(group, "name")
 
 		// Get members
 		members, err := handler.GetMembers(ctx, groupUUID)

@@ -17,7 +17,7 @@ type EnvironmentHandler struct {
 // NewEnvironmentHandler creates a new environment handler.
 func NewEnvironmentHandler(c *client.Client) *EnvironmentHandler {
 	// Environment API uses a different base URL
-	baseURL := fmt.Sprintf("https://api.dynatrace.com/env/v2/accounts/%s/environments", c.AccountUUID())
+	baseURL := fmt.Sprintf("%s/%s/environments", client.EnvBaseURL, c.AccountUUID())
 	return &EnvironmentHandler{
 		BaseHandler: BaseHandler{
 			Client:    c,

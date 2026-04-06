@@ -15,6 +15,7 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
 	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/internal/utils"
 )
 
 // Cmd is the export command.
@@ -209,7 +210,7 @@ Examples:
 				if detailed && exportErr == nil {
 					// Enrich with member counts
 					for i, group := range data {
-						groupID := group["uuid"].(string)
+						groupID := utils.StringFrom(group, "uuid")
 						members, err := handler.GetMembers(ctx, groupID)
 						if err == nil {
 							data[i]["member_count"] = len(members)
@@ -231,7 +232,7 @@ Examples:
 				if detailed && exportErr == nil {
 					// Enrich with group memberships
 					for i, user := range data {
-						userID := user["uid"].(string)
+						userID := utils.StringFrom(user, "uid")
 						groups, err := handler.GetGroups(ctx, userID)
 						if err == nil {
 							data[i]["group_count"] = len(groups)
@@ -254,7 +255,7 @@ Examples:
 					// Get full policy details
 					var detailedData []map[string]any
 					for _, policy := range data {
-						policyID := policy["uuid"].(string)
+						policyID := utils.StringFrom(policy, "uuid")
 						detail, err := handler.Get(ctx, policyID)
 						if err == nil && detail != nil {
 							detailedData = append(detailedData, detail)
@@ -298,7 +299,7 @@ Examples:
 					// Get full boundary details
 					var detailedData []map[string]any
 					for _, boundary := range data {
-						boundaryID := boundary["uuid"].(string)
+						boundaryID := utils.StringFrom(boundary, "uuid")
 						detail, err := handler.Get(ctx, boundaryID)
 						if err == nil && detail != nil {
 							// Add attached policies
@@ -426,8 +427,8 @@ var groupCmd = &cobra.Command{
 			return fmt.Errorf("group not found: %s", identifier)
 		}
 
-		groupUUID := group["uuid"].(string)
-		groupName := group["name"].(string)
+		groupUUID := utils.StringFrom(group, "uuid")
+		groupName := utils.StringFrom(group, "name")
 
 		exportData := map[string]any{
 			"apiVersion": "v1",
@@ -463,7 +464,7 @@ var groupCmd = &cobra.Command{
 			if err == nil {
 				var policyBindings []map[string]any
 				for _, binding := range bindings {
-					policyUUID := binding["policyUuid"].(string)
+					policyUUID := utils.StringFrom(binding, "policyUuid")
 					policy, _ := policyHandler.Get(ctx, policyUUID)
 
 					pb := map[string]any{
@@ -547,7 +548,7 @@ With --as-template, exports in template format with variable placeholders.`,
 			return fmt.Errorf("policy not found: %s", identifier)
 		}
 
-		policyName := policy["name"].(string)
+		policyName := utils.StringFrom(policy, "name")
 
 		var exportData map[string]any
 
