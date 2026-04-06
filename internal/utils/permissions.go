@@ -148,7 +148,7 @@ func (pc *PermissionsCalculator) GetUserEffectivePermissions(ctx context.Context
 		return nil, fmt.Errorf("user not found: %s", userID)
 	}
 
-	result.User.UID = user["uid"].(string)
+	result.User.UID = StringFrom(user, "uid")
 	if email, ok := user["email"].(string); ok {
 		result.User.Email = email
 	}
@@ -167,7 +167,7 @@ func (pc *PermissionsCalculator) GetUserEffectivePermissions(ctx context.Context
 	uniquePermissions := make(map[string]*EffectivePermission)
 
 	for _, group := range groups {
-		groupID := group["uuid"].(string)
+		groupID := StringFrom(group, "uuid")
 		groupName := ""
 		if name, ok := group["name"].(string); ok {
 			groupName = name
@@ -182,7 +182,7 @@ func (pc *PermissionsCalculator) GetUserEffectivePermissions(ctx context.Context
 		}
 
 		for _, binding := range bindings {
-			policyUUID := binding["policyUuid"].(string)
+			policyUUID := StringFrom(binding, "policyUuid")
 			policy, err := policyHandler.Get(ctx, policyUUID)
 			if err != nil || policy == nil {
 				continue
@@ -272,7 +272,7 @@ func (pc *PermissionsCalculator) GetGroupEffectivePermissions(ctx context.Contex
 		return nil, fmt.Errorf("group not found: %s", groupID)
 	}
 
-	result.Group.UUID = group["uuid"].(string)
+	result.Group.UUID = StringFrom(group, "uuid")
 	if name, ok := group["name"].(string); ok {
 		result.Group.Name = name
 	}
@@ -289,7 +289,7 @@ func (pc *PermissionsCalculator) GetGroupEffectivePermissions(ctx context.Contex
 	uniquePermissions := make(map[string]*EffectivePermission)
 
 	for _, binding := range bindings {
-		policyUUID := binding["policyUuid"].(string)
+		policyUUID := StringFrom(binding, "policyUuid")
 		policy, err := policyHandler.Get(ctx, policyUUID)
 		if err != nil || policy == nil {
 			continue
@@ -378,8 +378,8 @@ func (pm *PermissionsMatrix) GeneratePolicyMatrix(ctx context.Context) (*MatrixR
 	})
 
 	for _, policy := range policies {
-		policyName := policy["name"].(string)
-		policyUUID := policy["uuid"].(string)
+		policyName := StringFrom(policy, "name")
+		policyUUID := StringFrom(policy, "uuid")
 
 		// Get full policy details
 		policyDetail, err := policyHandler.Get(ctx, policyUUID)
@@ -459,8 +459,8 @@ func (pm *PermissionsMatrix) GenerateGroupMatrix(ctx context.Context) (*MatrixRe
 	})
 
 	for _, group := range groups {
-		groupName := group["name"].(string)
-		groupUUID := group["uuid"].(string)
+		groupName := StringFrom(group, "name")
+		groupUUID := StringFrom(group, "uuid")
 
 		bindings, err := bindingHandler.GetForGroup(ctx, groupUUID)
 		if err != nil {
@@ -470,7 +470,7 @@ func (pm *PermissionsMatrix) GenerateGroupMatrix(ctx context.Context) (*MatrixRe
 		permSet := make(map[string]bool)
 
 		for _, binding := range bindings {
-			policyUUID := binding["policyUuid"].(string)
+			policyUUID := StringFrom(binding, "policyUuid")
 			policy, err := policyHandler.Get(ctx, policyUUID)
 			if err != nil || policy == nil {
 				continue
@@ -556,7 +556,7 @@ func (api *EffectivePermissionsAPI) GetEffectivePermissions(ctx context.Context,
 	}
 
 	// Build the resolution API path
-	path := fmt.Sprintf("https://api.dynatrace.com/iam/v1/resolution/%s/%s/effectivepermissions", levelType, levelID)
+	path := fmt.Sprintf("%s/%s/%s/effectivepermissions", client.ResolutionBasePath, levelType, levelID)
 
 	params := map[string]string{
 		"entityId":   entityID,
@@ -629,7 +629,7 @@ func (api *EffectivePermissionsAPI) GetUserEffectivePermissions(ctx context.Cont
 				Error: fmt.Sprintf("user not found: %s", userID),
 			}, nil
 		}
-		userID = user["uid"].(string)
+		userID = StringFrom(user, "uid")
 	}
 
 	return api.GetEffectivePermissions(ctx, userID, "user", levelType, levelID, services)
@@ -646,6 +646,6 @@ func (api *EffectivePermissionsAPI) GetGroupEffectivePermissions(ctx context.Con
 		}, nil
 	}
 
-	groupUUID := group["uuid"].(string)
+	groupUUID := StringFrom(group, "uuid")
 	return api.GetEffectivePermissions(ctx, groupUUID, "group", levelType, levelID, services)
 }

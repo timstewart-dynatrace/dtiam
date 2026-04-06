@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/client"
-	"github.com/jtimothystewart/dtiam/internal/config"
+	"github.com/jtimothystewart/dtiam/internal/commands/common"
 	"github.com/jtimothystewart/dtiam/internal/output"
 	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/internal/utils"
 )
 
 // Cmd is the describe command.
@@ -30,41 +30,12 @@ func init() {
 	Cmd.AddCommand(serviceUserCmd)
 }
 
-// createClient creates an API client from the current configuration.
-func createClient() (*client.Client, error) {
-	cfg, err := config.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
-	}
-
-	clientID, clientSecret, accountUUID, bearerToken, useOAuth := config.GetEffectiveCredentials(cfg)
-
-	if accountUUID == "" {
-		return nil, fmt.Errorf("no account UUID configured")
-	}
-
-	var tokenProvider client.TokenProvider
-	if useOAuth {
-		tokenProvider = newOAuthProvider(clientID, clientSecret, accountUUID)
-	} else if bearerToken != "" {
-		tokenProvider = newBearerProvider(bearerToken)
-	} else {
-		return nil, fmt.Errorf("no authentication configured")
-	}
-
-	return client.New(client.Config{
-		AccountUUID:   accountUUID,
-		TokenProvider: tokenProvider,
-		Verbose:       cli.GlobalState.IsVerbose(),
-	}), nil
-}
-
 var groupCmd = &cobra.Command{
 	Use:   "group IDENTIFIER",
 	Short: "Show detailed information about a group",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -84,7 +55,7 @@ var groupCmd = &cobra.Command{
 		}
 
 		// Get expanded information
-		expanded, err := handler.GetExpanded(ctx, group["uuid"].(string))
+		expanded, err := handler.GetExpanded(ctx, utils.StringFrom(group, "uuid"))
 		if err != nil {
 			expanded = group
 		}
@@ -98,7 +69,7 @@ var userCmd = &cobra.Command{
 	Short: "Show detailed information about a user",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -137,7 +108,7 @@ var policyCmd = &cobra.Command{
 	Short: "Show detailed information about a policy",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -165,7 +136,7 @@ var environmentCmd = &cobra.Command{
 	Short:   "Show detailed information about an environment",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -195,7 +166,7 @@ var boundaryCmd = &cobra.Command{
 	Short: "Show detailed information about a boundary",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -233,7 +204,7 @@ var serviceUserCmd = &cobra.Command{
 	Short:   "Show detailed information about a service user",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}

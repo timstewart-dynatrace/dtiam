@@ -18,7 +18,7 @@ type SubscriptionHandler struct {
 // NewSubscriptionHandler creates a new subscription handler.
 func NewSubscriptionHandler(c *client.Client) *SubscriptionHandler {
 	// Subscription API uses a different base URL
-	baseURL := fmt.Sprintf("https://api.dynatrace.com/sub/v2/accounts/%s", c.AccountUUID())
+	baseURL := fmt.Sprintf("%s/%s", client.SubBaseURL, c.AccountUUID())
 	return &SubscriptionHandler{
 		BaseHandler: BaseHandler{
 			Client:    c,

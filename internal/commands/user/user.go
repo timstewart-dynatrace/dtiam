@@ -12,6 +12,7 @@ import (
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
 	"github.com/jtimothystewart/dtiam/internal/output"
 	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/internal/utils"
 )
 
 // Cmd is the user command.
@@ -72,7 +73,7 @@ var addToGroupsCmd = &cobra.Command{
 			if group == nil {
 				return fmt.Errorf("group %q not found", g)
 			}
-			groupUUIDs = append(groupUUIDs, group["uuid"].(string))
+			groupUUIDs = append(groupUUIDs, utils.StringFrom(group, "uuid"))
 		}
 
 		if err := handler.AddToGroups(ctx, email, groupUUIDs); err != nil {
@@ -131,7 +132,7 @@ var removeFromGroupsCmd = &cobra.Command{
 			if group == nil {
 				return fmt.Errorf("group %q not found", g)
 			}
-			groupUUIDs = append(groupUUIDs, group["uuid"].(string))
+			groupUUIDs = append(groupUUIDs, utils.StringFrom(group, "uuid"))
 		}
 
 		if err := handler.RemoveFromGroups(ctx, email, groupUUIDs); err != nil {
@@ -189,7 +190,7 @@ var replaceGroupsCmd = &cobra.Command{
 			if group == nil {
 				return fmt.Errorf("group %q not found", g)
 			}
-			groupUUIDs = append(groupUUIDs, group["uuid"].(string))
+			groupUUIDs = append(groupUUIDs, utils.StringFrom(group, "uuid"))
 		}
 
 		if err := handler.ReplaceGroups(ctx, email, groupUUIDs); err != nil {

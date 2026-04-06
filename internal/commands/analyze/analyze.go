@@ -427,8 +427,8 @@ var policyCmd = &cobra.Command{
 			return fmt.Errorf("policy not found: %s", identifier)
 		}
 
-		policyUUID := policy["uuid"].(string)
-		policyName := policy["name"].(string)
+		policyUUID := utils.StringFrom(policy, "uuid")
+		policyName := utils.StringFrom(policy, "name")
 		statement := ""
 		if s, ok := policy["statementQuery"].(string); ok {
 			statement = s
@@ -446,7 +446,7 @@ var policyCmd = &cobra.Command{
 		var boundGroups []map[string]any
 		for _, binding := range allBindings {
 			if binding["policyUuid"] == policyUUID {
-				groupUUID := binding["groupUuid"].(string)
+				groupUUID := utils.StringFrom(binding, "groupUuid")
 				group, _ := groupHandler.Get(ctx, groupUUID)
 
 				groupInfo := map[string]any{
@@ -529,7 +529,7 @@ var policyCmd = &cobra.Command{
 				if n, ok := group["name"].(string); ok {
 					name = n
 				} else {
-					name = group["uuid"].(string)
+					name = utils.StringFrom(group, "uuid")
 				}
 				boundaryInfo := ""
 				if boundary, ok := group["boundary"].(string); ok && boundary != "" {
@@ -583,8 +583,8 @@ var leastPrivilegeCmd = &cobra.Command{
 		var findings []map[string]any
 
 		for _, policy := range policies {
-			policyUUID := policy["uuid"].(string)
-			policyName := policy["name"].(string)
+			policyUUID := utils.StringFrom(policy, "uuid")
+			policyName := utils.StringFrom(policy, "name")
 
 			policyDetail, err := policyHandler.Get(ctx, policyUUID)
 			if err != nil || policyDetail == nil {
@@ -682,7 +682,7 @@ var leastPrivilegeCmd = &cobra.Command{
 		for _, policyFinding := range findings {
 			fmt.Printf("%s\n", policyFinding["policy_name"])
 			for _, finding := range policyFinding["findings"].([]map[string]any) {
-				severity := finding["severity"].(string)
+				severity := utils.StringFrom(finding, "severity")
 				fmt.Printf("  [%s] %s\n", strings.ToUpper(severity), finding["description"])
 			}
 			fmt.Println()

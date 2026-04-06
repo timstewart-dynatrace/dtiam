@@ -8,8 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/client"
-	"github.com/jtimothystewart/dtiam/internal/config"
+	"github.com/jtimothystewart/dtiam/internal/commands/common"
 	"github.com/jtimothystewart/dtiam/internal/output"
 	"github.com/jtimothystewart/dtiam/internal/resources"
 )
@@ -30,45 +29,13 @@ func init() {
 	Cmd.AddCommand(boundariesCmd)
 }
 
-// createClient creates an API client from the current configuration.
-func createClient() (*client.Client, error) {
-	cfg, err := config.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
-	}
-
-	clientID, clientSecret, accountUUID, bearerToken, useOAuth := config.GetEffectiveCredentials(cfg)
-
-	if accountUUID == "" {
-		return nil, fmt.Errorf("no account UUID configured. Use 'dtiam config set-context' or set DTIAM_ACCOUNT_UUID")
-	}
-
-	var tokenProvider client.TokenProvider
-	if useOAuth {
-		if clientID == "" || clientSecret == "" {
-			return nil, fmt.Errorf("OAuth credentials not configured. Use 'dtiam config set-credentials' or set DTIAM_CLIENT_ID and DTIAM_CLIENT_SECRET")
-		}
-		tokenProvider = newOAuthProvider(clientID, clientSecret, accountUUID)
-	} else if bearerToken != "" {
-		tokenProvider = newBearerProvider(bearerToken)
-	} else {
-		return nil, fmt.Errorf("no authentication configured. Set up OAuth credentials or use DTIAM_BEARER_TOKEN")
-	}
-
-	return client.New(client.Config{
-		AccountUUID:   accountUUID,
-		TokenProvider: tokenProvider,
-		Verbose:       cli.GlobalState.IsVerbose(),
-	}), nil
-}
-
 var groupsCmd = &cobra.Command{
 	Use:     "groups [identifier]",
 	Aliases: []string{"group"},
 	Short:   "List groups or get a specific group",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -106,7 +73,7 @@ var usersCmd = &cobra.Command{
 	Short:   "List users or get a specific user",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -148,7 +115,7 @@ var policiesCmd = &cobra.Command{
 	Short:   "List policies or get a specific policy",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -211,7 +178,7 @@ var bindingsCmd = &cobra.Command{
 	Aliases: []string{"binding"},
 	Short:   "List policy bindings",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -257,7 +224,7 @@ var environmentsCmd = &cobra.Command{
 	Short:   "List environments or get a specific environment",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}
@@ -299,7 +266,7 @@ var boundariesCmd = &cobra.Command{
 	Short:   "List boundaries or get a specific boundary",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := createClient()
+		c, err := common.CreateClient()
 		if err != nil {
 			return err
 		}

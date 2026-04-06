@@ -29,7 +29,8 @@ type TokenProvider interface {
 
 const (
 	// BaseURL is the base URL for the Dynatrace IAM API.
-	BaseURL = "https://api.dynatrace.com/iam/v1/accounts"
+	// Deprecated: Use AccountsBasePath from urls.go instead.
+	BaseURL = AccountsBasePath
 
 	// DefaultTimeout is the default HTTP timeout.
 	DefaultTimeout = 30 * time.Second
