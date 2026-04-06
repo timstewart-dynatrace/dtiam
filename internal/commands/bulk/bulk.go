@@ -15,6 +15,7 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
+	"github.com/jtimothystewart/dtiam/internal/prompt"
 	"github.com/jtimothystewart/dtiam/internal/resources"
 	"github.com/jtimothystewart/dtiam/internal/utils"
 )
@@ -164,10 +165,11 @@ CSV example:
 
 		// Dry run check
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would add %d users to group '%s':\n", len(records), groupID)
+			printer := cli.GlobalState.NewPrinter()
+			printer.PrintWarning("Would add %d users to group '%s'", len(records), groupID)
 			for _, record := range records {
 				if email := record[emailField]; email != "" {
-					fmt.Printf("  - %s\n", email)
+					fmt.Fprintf(os.Stderr, "  - %s\n", email)
 				}
 			}
 			return nil
@@ -265,10 +267,11 @@ The file can be JSON, YAML, or CSV format containing email addresses or user UID
 
 		// Dry run check
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would remove %d users from group '%s':\n", len(records), groupID)
+			printer := cli.GlobalState.NewPrinter()
+			printer.PrintWarning("Would remove %d users from group '%s'", len(records), groupID)
 			for _, record := range records {
 				if user := record[userField]; user != "" {
-					fmt.Printf("  - %s\n", user)
+					fmt.Fprintf(os.Stderr, "  - %s\n", user)
 				}
 			}
 			return nil
@@ -332,14 +335,12 @@ The file can be JSON, YAML, or CSV format containing email addresses or user UID
 		fmt.Printf("Found %d users to remove from group '%s'\n", len(usersToRemove), groupName)
 
 		// Confirmation
-		if !force {
-			fmt.Printf("Remove %d users from group '%s'? [y/N]: ", len(usersToRemove), groupName)
-			var response string
-			fmt.Scanln(&response)
-			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
-				fmt.Println("Aborted.")
-				return nil
-			}
+		if !prompt.Confirm(
+			fmt.Sprintf("Remove %d users from group '%s'?", len(usersToRemove), groupName),
+			force || cli.GlobalState.IsPlain(),
+		) {
+			fmt.Fprintln(os.Stderr, "Aborted.")
+			return nil
 		}
 
 		// Process removals
@@ -374,7 +375,7 @@ func init() {
 	removeUsersFromGroupCmd.Flags().StringP("group", "g", "", "Group UUID or name")
 	removeUsersFromGroupCmd.Flags().StringP("user-field", "u", "email", "Field name containing email or UID")
 	removeUsersFromGroupCmd.Flags().Bool("continue-on-error", false, "Continue processing on errors")
-	removeUsersFromGroupCmd.Flags().BoolP("force", "F", false, "Skip confirmation")
+	removeUsersFromGroupCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
 var createGroupsCmd = &cobra.Command{

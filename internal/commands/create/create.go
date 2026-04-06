@@ -30,6 +30,17 @@ func init() {
 var groupCmd = &cobra.Command{
 	Use:   "group",
 	Short: "Create a new group",
+	Example: `  # Create a group
+  dtiam create group --name "Platform Team"
+
+  # Create a group with a description
+  dtiam create group --name "Platform Team" --description "Platform engineering team"
+
+  # Dry run to preview
+  dtiam create group --name "Platform Team" --dry-run
+
+  # Machine-friendly output
+  dtiam create group --name "Platform Team" -o json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
 		description, _ := cmd.Flags().GetString("description")
@@ -38,8 +49,9 @@ var groupCmd = &cobra.Command{
 			return fmt.Errorf("--name is required")
 		}
 
+		printer := cli.GlobalState.NewPrinter()
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would create group: %s\n", name)
+			printer.PrintWarning("Would create group: %s", name)
 			return nil
 		}
 
@@ -50,7 +62,6 @@ var groupCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewGroupHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		data := map[string]any{
@@ -78,6 +89,17 @@ func init() {
 var policyCmd = &cobra.Command{
 	Use:   "policy",
 	Short: "Create a new policy",
+	Example: `  # Create a policy with a statement
+  dtiam create policy --name "Read Only" --statement "ALLOW iam:policies:read;"
+
+  # Create a policy with a description
+  dtiam create policy --name "Read Only" --statement "ALLOW iam:policies:read;" --description "Read-only access"
+
+  # Dry run to preview
+  dtiam create policy --name "Read Only" --statement "ALLOW iam:policies:read;" --dry-run
+
+  # Machine-friendly output
+  dtiam create policy --name "Read Only" --statement "ALLOW iam:policies:read;" -o json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
 		statement, _ := cmd.Flags().GetString("statement")
@@ -90,8 +112,9 @@ var policyCmd = &cobra.Command{
 			return fmt.Errorf("--statement is required")
 		}
 
+		printer := cli.GlobalState.NewPrinter()
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would create policy: %s\n", name)
+			printer.PrintWarning("Would create policy: %s", name)
 			return nil
 		}
 
@@ -102,7 +125,6 @@ var policyCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewPolicyHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		data := map[string]any{
@@ -132,6 +154,17 @@ func init() {
 var bindingCmd = &cobra.Command{
 	Use:   "binding",
 	Short: "Create a new policy binding",
+	Example: `  # Create a binding between a group and a policy
+  dtiam create binding --group GROUP_UUID --policy POLICY_UUID
+
+  # Create a binding with boundary constraints
+  dtiam create binding --group GROUP_UUID --policy POLICY_UUID --boundary BOUNDARY_UUID
+
+  # Dry run to preview
+  dtiam create binding --group GROUP_UUID --policy POLICY_UUID --dry-run
+
+  # Machine-friendly output
+  dtiam create binding --group GROUP_UUID --policy POLICY_UUID -o json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		groupID, _ := cmd.Flags().GetString("group")
 		policyID, _ := cmd.Flags().GetString("policy")
@@ -144,8 +177,9 @@ var bindingCmd = &cobra.Command{
 			return fmt.Errorf("--policy is required")
 		}
 
+		printer := cli.GlobalState.NewPrinter()
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would create binding: group=%s policy=%s\n", groupID, policyID)
+			printer.PrintWarning("Would create binding: group=%s policy=%s", groupID, policyID)
 			return nil
 		}
 
@@ -156,7 +190,6 @@ var bindingCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewBindingHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		binding, err := handler.Create(ctx, groupID, policyID, boundaries)
@@ -178,6 +211,20 @@ func init() {
 var boundaryCmd = &cobra.Command{
 	Use:   "boundary",
 	Short: "Create a new boundary",
+	Example: `  # Create a boundary with management zones
+  dtiam create boundary --name "Production" --zone "Production" --zone "Staging"
+
+  # Create a boundary with a custom query
+  dtiam create boundary --name "Apps Only" --query 'shared:app-id IN ("dynatrace.dashboards")'
+
+  # Create a boundary with a description
+  dtiam create boundary --name "Production" --zone "Production" --description "Production boundary"
+
+  # Dry run to preview
+  dtiam create boundary --name "Production" --zone "Production" --dry-run
+
+  # Machine-friendly output
+  dtiam create boundary --name "Production" --zone "Production" -o json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
 		zones, _ := cmd.Flags().GetStringSlice("zone")
@@ -191,8 +238,9 @@ var boundaryCmd = &cobra.Command{
 			return fmt.Errorf("either --zone or --query is required")
 		}
 
+		printer := cli.GlobalState.NewPrinter()
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would create boundary: %s\n", name)
+			printer.PrintWarning("Would create boundary: %s", name)
 			return nil
 		}
 
@@ -203,7 +251,6 @@ var boundaryCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewBoundaryHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		var queryPtr, descPtr *string

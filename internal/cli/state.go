@@ -55,6 +55,12 @@ func (s *State) IsDryRun() bool {
 }
 
 // NewPrinter creates a new printer with the current state settings.
+// When --plain is set, table and wide formats are automatically converted
+// to JSON for machine/AI consumption.
 func (s *State) NewPrinter() *output.Printer {
-	return output.NewPrinter(s.Output, s.Plain)
+	format := s.Output
+	if s.Plain && (format == output.FormatTable || format == output.FormatWide) {
+		format = output.FormatJSON
+	}
+	return output.NewPrinter(format, s.Plain)
 }

@@ -4,6 +4,19 @@ This file provides guidance for AI agents working with the dtiam codebase.
 
 > **DISCLAIMER:** This tool is provided "as-is" without warranty. Use at your own risk. This is an independent, community-developed tool and is **NOT produced, endorsed, or supported by Dynatrace**.
 
+## ⚠️ MANDATORY: Command Standards
+
+**ALL commands MUST follow `.claude/rules/command-standards.md`.** This file defines the kubectl-style patterns modeled after go-dtctl-main. Key requirements:
+
+- All data output through `cli.GlobalState.NewPrinter()` (never raw `fmt.Printf` to stdout)
+- `--plain` forces JSON output for AI/machine consumption
+- Destructive operations use `prompt.ConfirmDelete()` with `--force` flag
+- All mutating commands support `--dry-run`
+- All commands have `Example` help text
+- Errors returned (not printed inline), progress to stderr
+
+**Refactor phases documented in `.claude/phases/`.** Check current phase status before starting work.
+
 ## ⚠️ MANDATORY PRE-PUSH CHECKLIST
 
 **BEFORE EVERY `git push` to main, Claude MUST complete ALL of the following:**

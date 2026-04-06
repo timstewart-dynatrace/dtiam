@@ -32,8 +32,25 @@ func init() {
 var groupsCmd = &cobra.Command{
 	Use:     "groups [identifier]",
 	Aliases: []string{"group"},
-	Short:   "List groups or get a specific group",
-	Args:    cobra.MaximumNArgs(1),
+	Short:   "List IAM groups or get a specific group by UUID or name",
+	Example: `  # List all groups
+  dtiam get groups
+
+  # Get a specific group by UUID
+  dtiam get groups 12345678-abcd-1234-abcd-1234567890ab
+
+  # Get a specific group by name
+  dtiam get groups "My Team"
+
+  # Output as JSON
+  dtiam get groups -o json
+
+  # Output as YAML
+  dtiam get groups -o yaml
+
+  # Machine-friendly output (no colors, no headers)
+  dtiam get groups --plain`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -70,8 +87,25 @@ var groupsCmd = &cobra.Command{
 var usersCmd = &cobra.Command{
 	Use:     "users [identifier]",
 	Aliases: []string{"user"},
-	Short:   "List users or get a specific user",
-	Args:    cobra.MaximumNArgs(1),
+	Short:   "List IAM users or get a specific user by UID or email",
+	Example: `  # List all users
+  dtiam get users
+
+  # Get a specific user by UID
+  dtiam get users 12345678-abcd-1234-abcd-1234567890ab
+
+  # Get a specific user by email
+  dtiam get users alice@example.com
+
+  # Output as JSON
+  dtiam get users -o json
+
+  # Output as YAML
+  dtiam get users -o yaml
+
+  # Machine-friendly output (no colors, no headers)
+  dtiam get users --plain`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -112,8 +146,31 @@ var usersCmd = &cobra.Command{
 var policiesCmd = &cobra.Command{
 	Use:     "policies [identifier]",
 	Aliases: []string{"policy"},
-	Short:   "List policies or get a specific policy",
-	Args:    cobra.MaximumNArgs(1),
+	Short:   "List IAM policies or get a specific policy by UUID or name",
+	Example: `  # List all account-level policies
+  dtiam get policies
+
+  # Get a specific policy by UUID
+  dtiam get policies 12345678-abcd-1234-abcd-1234567890ab
+
+  # Get a specific policy by name
+  dtiam get policies "AppEngine - Reader"
+
+  # List policies at a specific level
+  dtiam get policies --level environment --level-id abc12345
+
+  # List policies from all levels (account, environment, global)
+  dtiam get policies --all-levels
+
+  # Output as JSON
+  dtiam get policies -o json
+
+  # Output as YAML
+  dtiam get policies --all-levels -o yaml
+
+  # Machine-friendly output (no colors, no headers)
+  dtiam get policies --plain`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -176,7 +233,24 @@ func init() {
 var bindingsCmd = &cobra.Command{
 	Use:     "bindings",
 	Aliases: []string{"binding"},
-	Short:   "List policy bindings",
+	Short:   "List policy-to-group bindings, optionally filtered by group or policy",
+	Example: `  # List all bindings
+  dtiam get bindings
+
+  # Filter bindings by group UUID
+  dtiam get bindings --group 12345678-abcd-1234-abcd-1234567890ab
+
+  # Filter bindings by policy UUID
+  dtiam get bindings --policy 87654321-dcba-4321-dcba-ba0987654321
+
+  # Output as JSON
+  dtiam get bindings -o json
+
+  # Output as YAML
+  dtiam get bindings -o yaml
+
+  # Machine-friendly output (no colors, no headers)
+  dtiam get bindings --plain`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -221,8 +295,25 @@ func init() {
 var environmentsCmd = &cobra.Command{
 	Use:     "environments [identifier]",
 	Aliases: []string{"envs", "env"},
-	Short:   "List environments or get a specific environment",
-	Args:    cobra.MaximumNArgs(1),
+	Short:   "List Dynatrace environments or get a specific environment by ID or name",
+	Example: `  # List all environments
+  dtiam get environments
+
+  # Get a specific environment by ID
+  dtiam get environments abc12345
+
+  # Get a specific environment by name
+  dtiam get environments "Production"
+
+  # Output as JSON
+  dtiam get environments -o json
+
+  # Output as YAML
+  dtiam get environments -o yaml
+
+  # Machine-friendly output (no colors, no headers)
+  dtiam get environments --plain`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -263,8 +354,25 @@ var environmentsCmd = &cobra.Command{
 var boundariesCmd = &cobra.Command{
 	Use:     "boundaries [identifier]",
 	Aliases: []string{"boundary"},
-	Short:   "List boundaries or get a specific boundary",
-	Args:    cobra.MaximumNArgs(1),
+	Short:   "List permission boundaries or get a specific boundary by UUID or name",
+	Example: `  # List all boundaries
+  dtiam get boundaries
+
+  # Get a specific boundary by UUID
+  dtiam get boundaries 12345678-abcd-1234-abcd-1234567890ab
+
+  # Get a specific boundary by name
+  dtiam get boundaries "Production MZ Only"
+
+  # Output as JSON
+  dtiam get boundaries -o json
+
+  # Output as YAML
+  dtiam get boundaries -o yaml
+
+  # Machine-friendly output (no colors, no headers)
+  dtiam get boundaries --plain`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {

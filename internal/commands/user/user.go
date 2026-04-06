@@ -19,7 +19,19 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "user",
 	Short: "User management commands",
-	Long:  "Commands for managing user operations like group membership.",
+	Long: `Commands for managing user operations such as group membership,
+user creation, and group listing.
+
+Use subcommands to add users to groups, remove them, replace their
+group memberships, list their groups, or create new users.`,
+	Example: `  # Add a user to groups
+  dtiam user add-to-groups user@example.com --groups "My Group"
+
+  # List groups a user belongs to
+  dtiam user list-groups user@example.com
+
+  # Create a new user
+  dtiam user create newuser@example.com --first-name John --last-name Doe`,
 }
 
 func init() {
@@ -32,8 +44,23 @@ func init() {
 
 var addToGroupsCmd = &cobra.Command{
 	Use:   "add-to-groups EMAIL",
-	Short: "Add a user to groups",
-	Args:  cobra.ExactArgs(1),
+	Short: "Add a user to one or more groups",
+	Long: `Add a user to one or more groups by email address.
+
+Groups can be specified by UUID or name. Multiple groups can be provided
+as a comma-separated list. Group names are resolved to UUIDs automatically.`,
+	Example: `  # Add user to a single group by UUID
+  dtiam user add-to-groups user@example.com --groups 8f6e5d4c-3b2a-1098-7654-321fedcba098
+
+  # Add user to a group by name
+  dtiam user add-to-groups user@example.com --groups "Production Team"
+
+  # Add user to multiple groups
+  dtiam user add-to-groups user@example.com --groups "Group A,Group B,Group C"
+
+  # Dry run preview
+  dtiam user add-to-groups user@example.com --groups "My Group" --dry-run`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		email := args[0]
 		groupsStr, _ := cmd.Flags().GetString("groups")
@@ -47,8 +74,10 @@ var addToGroupsCmd = &cobra.Command{
 			groups[i] = strings.TrimSpace(groups[i])
 		}
 
+		printer := cli.GlobalState.NewPrinter()
+
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would add user %s to groups: %s\n", email, groupsStr)
+			printer.PrintWarning("Would add user %s to groups: %s", email, groupsStr)
 			return nil
 		}
 
@@ -59,7 +88,6 @@ var addToGroupsCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewUserHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		// Resolve group names to UUIDs
@@ -91,8 +119,23 @@ func init() {
 
 var removeFromGroupsCmd = &cobra.Command{
 	Use:   "remove-from-groups EMAIL",
-	Short: "Remove a user from groups",
-	Args:  cobra.ExactArgs(1),
+	Short: "Remove a user from one or more groups",
+	Long: `Remove a user from one or more groups by email address.
+
+Groups can be specified by UUID or name. Multiple groups can be provided
+as a comma-separated list. Group names are resolved to UUIDs automatically.`,
+	Example: `  # Remove user from a single group by UUID
+  dtiam user remove-from-groups user@example.com --groups 8f6e5d4c-3b2a-1098-7654-321fedcba098
+
+  # Remove user from a group by name
+  dtiam user remove-from-groups user@example.com --groups "Staging Team"
+
+  # Remove user from multiple groups
+  dtiam user remove-from-groups user@example.com --groups "Group A,Group B"
+
+  # Dry run preview
+  dtiam user remove-from-groups user@example.com --groups "My Group" --dry-run`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		email := args[0]
 		groupsStr, _ := cmd.Flags().GetString("groups")
@@ -106,8 +149,10 @@ var removeFromGroupsCmd = &cobra.Command{
 			groups[i] = strings.TrimSpace(groups[i])
 		}
 
+		printer := cli.GlobalState.NewPrinter()
+
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would remove user %s from groups: %s\n", email, groupsStr)
+			printer.PrintWarning("Would remove user %s from groups: %s", email, groupsStr)
 			return nil
 		}
 
@@ -118,7 +163,6 @@ var removeFromGroupsCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewUserHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		// Resolve group names to UUIDs
@@ -151,7 +195,23 @@ func init() {
 var replaceGroupsCmd = &cobra.Command{
 	Use:   "replace-groups EMAIL",
 	Short: "Replace all group memberships for a user",
-	Args:  cobra.ExactArgs(1),
+	Long: `Replace all group memberships for a user by email address.
+
+This removes the user from all current groups and adds them to the
+specified groups. Groups can be specified by UUID or name. Pass an
+empty --groups flag to remove the user from all groups.`,
+	Example: `  # Replace user's groups with a new set
+  dtiam user replace-groups user@example.com --groups "Production,Staging"
+
+  # Replace with a single group by UUID
+  dtiam user replace-groups user@example.com --groups 8f6e5d4c-3b2a-1098-7654-321fedcba098
+
+  # Remove user from all groups
+  dtiam user replace-groups user@example.com
+
+  # Dry run preview
+  dtiam user replace-groups user@example.com --groups "New Group" --dry-run`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		email := args[0]
 		groupsStr, _ := cmd.Flags().GetString("groups")
@@ -164,8 +224,10 @@ var replaceGroupsCmd = &cobra.Command{
 			}
 		}
 
+		printer := cli.GlobalState.NewPrinter()
+
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would replace groups for user %s with: %s\n", email, groupsStr)
+			printer.PrintWarning("Would replace groups for user %s with: %s", email, groupsStr)
 			return nil
 		}
 
@@ -176,7 +238,6 @@ var replaceGroupsCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewUserHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		// Resolve group names to UUIDs
@@ -209,7 +270,19 @@ func init() {
 var listGroupsCmd = &cobra.Command{
 	Use:   "list-groups IDENTIFIER",
 	Short: "List groups a user belongs to",
-	Args:  cobra.ExactArgs(1),
+	Long: `List all groups that a user belongs to.
+
+The user can be identified by UID or email address. If a UID lookup
+fails, the command automatically falls back to searching by email.`,
+	Example: `  # List groups by email
+  dtiam user list-groups user@example.com
+
+  # List groups by UID
+  dtiam user list-groups 8f6e5d4c-3b2a-1098-7654-321fedcba098
+
+  # Output as JSON
+  dtiam user list-groups user@example.com -o json`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -245,15 +318,32 @@ var listGroupsCmd = &cobra.Command{
 var createCmd = &cobra.Command{
 	Use:   "create EMAIL",
 	Short: "Create a new user",
-	Args:  cobra.ExactArgs(1),
+	Long: `Create a new user with the specified email address.
+
+Optionally provide a first name, last name, and initial group memberships.
+Groups are specified as comma-separated UUIDs.`,
+	Example: `  # Create a user with just an email
+  dtiam user create newuser@example.com
+
+  # Create a user with full details
+  dtiam user create newuser@example.com --first-name John --last-name Doe
+
+  # Create a user and add to groups
+  dtiam user create newuser@example.com --groups GROUP_UUID1,GROUP_UUID2
+
+  # Dry run preview
+  dtiam user create newuser@example.com --first-name Jane --dry-run`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		email := args[0]
 		firstName, _ := cmd.Flags().GetString("first-name")
 		lastName, _ := cmd.Flags().GetString("last-name")
 		groupsStr, _ := cmd.Flags().GetString("groups")
 
+		printer := cli.GlobalState.NewPrinter()
+
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would create user: %s\n", email)
+			printer.PrintWarning("Would create user: %s", email)
 			return nil
 		}
 
@@ -264,7 +354,6 @@ var createCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewUserHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		var firstNamePtr, lastNamePtr *string

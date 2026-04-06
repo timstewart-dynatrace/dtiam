@@ -15,8 +15,25 @@ import (
 // Cmd is the config command.
 var Cmd = &cobra.Command{
 	Use:   "config",
-	Short: "Manage dtiam configuration",
-	Long:  "Commands for managing dtiam contexts and credentials.",
+	Short: "Manage dtiam contexts, credentials, and configuration",
+	Long: `Commands for managing dtiam contexts and credentials.
+
+dtiam uses a kubeconfig-style configuration file to store multiple contexts
+and credential sets. Each context references an account UUID and a named
+credential. Switch between contexts to manage different Dynatrace accounts.`,
+	Example: `  # View the current configuration
+  dtiam config view
+
+  # Set up credentials and a context
+  dtiam config set-credentials prod --client-id dt0s01.XXX --client-secret dt0s01.XXX.YYY
+  dtiam config set-context prod --account-uuid abc-123 --credentials-ref prod
+  dtiam config use-context prod
+
+  # List all contexts
+  dtiam config get-contexts
+
+  # Show config file location
+  dtiam config path`,
 }
 
 func init() {
@@ -35,6 +52,17 @@ func init() {
 var viewCmd = &cobra.Command{
 	Use:   "view",
 	Short: "Display the current configuration",
+	Long: `Display the full configuration file in YAML format.
+
+Secrets are masked by default. Use --show-secrets to reveal client secrets.`,
+	Example: `  # View configuration with masked secrets
+  dtiam config view
+
+  # View configuration with secrets visible
+  dtiam config view --show-secrets
+
+  # Pipe to a file for backup
+  dtiam config view --show-secrets > config-backup.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
@@ -66,6 +94,9 @@ func init() {
 var pathCmd = &cobra.Command{
 	Use:   "path",
 	Short: "Display the configuration file path",
+	Long:  "Print the absolute path to the dtiam configuration file.",
+	Example: `  # Show the config file path
+  dtiam config path`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path, err := config.GetConfigPath()
 		if err != nil {
@@ -79,7 +110,15 @@ var pathCmd = &cobra.Command{
 var getContextsCmd = &cobra.Command{
 	Use:     "get-contexts",
 	Aliases: []string{"contexts"},
-	Short:   "List all contexts",
+	Short:   "List all configured contexts",
+	Long: `List all contexts defined in the configuration file.
+
+The current context is marked with an asterisk (*).`,
+	Example: `  # List all contexts
+  dtiam config get-contexts
+
+  # Output as JSON
+  dtiam config get-contexts -o json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
@@ -110,6 +149,9 @@ var getContextsCmd = &cobra.Command{
 var currentContextCmd = &cobra.Command{
 	Use:   "current-context",
 	Short: "Display the current context name",
+	Long:  "Print the name of the currently active context, or a message if none is set.",
+	Example: `  # Show current context
+  dtiam config current-context`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
@@ -128,7 +170,16 @@ var currentContextCmd = &cobra.Command{
 var useContextCmd = &cobra.Command{
 	Use:   "use-context NAME",
 	Short: "Set the current context",
-	Args:  cobra.ExactArgs(1),
+	Long: `Switch the active context to the one identified by NAME.
+
+The context must already exist in the configuration file. Use set-context to
+create a new context first.`,
+	Example: `  # Switch to the production context
+  dtiam config use-context production
+
+  # Switch to staging
+  dtiam config use-context staging`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
@@ -152,8 +203,18 @@ var useContextCmd = &cobra.Command{
 
 var setContextCmd = &cobra.Command{
 	Use:   "set-context NAME",
-	Short: "Set or create a context",
-	Args:  cobra.ExactArgs(1),
+	Short: "Create or update a context",
+	Long: `Create a new context or update an existing one.
+
+A context links an account UUID to a named credential set. Both --account-uuid
+and --credentials-ref are optional when updating an existing context; only the
+provided fields will be changed.`,
+	Example: `  # Create a new context
+  dtiam config set-context prod --account-uuid abc-123 --credentials-ref prod-creds
+
+  # Update only the account UUID of an existing context
+  dtiam config set-context prod --account-uuid new-uuid-456`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
@@ -194,7 +255,13 @@ func init() {
 var deleteContextCmd = &cobra.Command{
 	Use:   "delete-context NAME",
 	Short: "Delete a context",
-	Args:  cobra.ExactArgs(1),
+	Long: `Remove a context from the configuration file.
+
+If the deleted context is the current context, no context will be active until
+you run use-context again.`,
+	Example: `  # Delete the staging context
+  dtiam config delete-context staging`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
@@ -218,8 +285,17 @@ var deleteContextCmd = &cobra.Command{
 
 var setCredentialsCmd = &cobra.Command{
 	Use:   "set-credentials NAME",
-	Short: "Set or create credentials",
-	Args:  cobra.ExactArgs(1),
+	Short: "Create or update a credential set",
+	Long: `Create a new credential set or update an existing one.
+
+Both --client-id and --client-secret are required. The credential name is used
+by contexts via --credentials-ref.`,
+	Example: `  # Create credentials for production
+  dtiam config set-credentials prod --client-id dt0s01.XXX --client-secret dt0s01.XXX.YYY
+
+  # Update existing credentials
+  dtiam config set-credentials prod --client-id dt0s01.NEW --client-secret dt0s01.NEW.SECRET`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
@@ -253,8 +329,14 @@ func init() {
 
 var deleteCredentialsCmd = &cobra.Command{
 	Use:   "delete-credentials NAME",
-	Short: "Delete credentials",
-	Args:  cobra.ExactArgs(1),
+	Short: "Delete a credential set",
+	Long: `Remove a credential set from the configuration file.
+
+Any contexts referencing these credentials will become invalid until updated
+with a new credentials-ref.`,
+	Example: `  # Delete the staging credentials
+  dtiam config delete-credentials staging`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
@@ -279,7 +361,16 @@ var deleteCredentialsCmd = &cobra.Command{
 var getCredentialsCmd = &cobra.Command{
 	Use:     "get-credentials",
 	Aliases: []string{"credentials"},
-	Short:   "List all credentials",
+	Short:   "List all configured credential sets",
+	Long: `List all credential sets defined in the configuration file.
+
+Only the credential name and client ID are shown. Use config view --show-secrets
+to see full secrets.`,
+	Example: `  # List all credentials
+  dtiam config get-credentials
+
+  # Output as JSON
+  dtiam config get-credentials -o json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {

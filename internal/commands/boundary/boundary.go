@@ -15,8 +15,20 @@ import (
 // Cmd is the boundary command.
 var Cmd = &cobra.Command{
 	Use:   "boundary",
-	Short: "Boundary management commands",
-	Long:  "Commands for attaching and detaching boundaries from policy bindings.",
+	Short: "Attach, detach, and inspect boundaries on policy bindings",
+	Long: `Commands for attaching and detaching boundaries from policy bindings.
+
+Boundaries restrict the scope of a policy binding to a subset of resources
+such as management zones, app IDs, or schema IDs. Use these commands to
+manage which boundaries are associated with specific group/policy bindings.`,
+	Example: `  # Attach a boundary to a binding
+  dtiam boundary attach --group GROUP_UUID --policy POLICY_UUID --boundary BOUNDARY_UUID
+
+  # Detach a boundary from a binding
+  dtiam boundary detach --group GROUP_UUID --policy POLICY_UUID --boundary BOUNDARY_UUID
+
+  # List policies using a specific boundary
+  dtiam boundary list-attached BOUNDARY_UUID`,
 }
 
 func init() {
@@ -28,6 +40,18 @@ func init() {
 var attachCmd = &cobra.Command{
 	Use:   "attach",
 	Short: "Attach a boundary to a policy binding",
+	Long: `Attach a boundary to an existing policy binding identified by group and policy UUIDs.
+
+The boundary constrains the scope of the policy for the specified group. All three
+flags (--group, --policy, --boundary) are required.`,
+	Example: `  # Attach a boundary to a group/policy binding
+  dtiam boundary attach --group abc-123 --policy def-456 --boundary ghi-789
+
+  # Preview with dry run
+  dtiam boundary attach --group abc-123 --policy def-456 --boundary ghi-789 --dry-run
+
+  # Short flags
+  dtiam boundary attach -g abc-123 -p def-456 -b ghi-789`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		groupID, _ := cmd.Flags().GetString("group")
 		policyID, _ := cmd.Flags().GetString("policy")
@@ -37,8 +61,10 @@ var attachCmd = &cobra.Command{
 			return fmt.Errorf("--group, --policy, and --boundary are all required")
 		}
 
+		printer := cli.GlobalState.NewPrinter()
+
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would attach boundary %s to binding (group=%s, policy=%s)\n", boundaryID, groupID, policyID)
+			printer.PrintWarning("Would attach boundary %s to binding (group=%s, policy=%s)", boundaryID, groupID, policyID)
 			return nil
 		}
 
@@ -49,7 +75,6 @@ var attachCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewBindingHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		if err := handler.AddBoundary(ctx, groupID, policyID, boundaryID); err != nil {
@@ -70,6 +95,18 @@ func init() {
 var detachCmd = &cobra.Command{
 	Use:   "detach",
 	Short: "Detach a boundary from a policy binding",
+	Long: `Detach a boundary from an existing policy binding identified by group and policy UUIDs.
+
+Removing a boundary widens the scope of the policy for the specified group back to
+its unrestricted state. All three flags (--group, --policy, --boundary) are required.`,
+	Example: `  # Detach a boundary from a group/policy binding
+  dtiam boundary detach --group abc-123 --policy def-456 --boundary ghi-789
+
+  # Preview with dry run
+  dtiam boundary detach --group abc-123 --policy def-456 --boundary ghi-789 --dry-run
+
+  # Short flags
+  dtiam boundary detach -g abc-123 -p def-456 -b ghi-789`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		groupID, _ := cmd.Flags().GetString("group")
 		policyID, _ := cmd.Flags().GetString("policy")
@@ -79,8 +116,10 @@ var detachCmd = &cobra.Command{
 			return fmt.Errorf("--group, --policy, and --boundary are all required")
 		}
 
+		printer := cli.GlobalState.NewPrinter()
+
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would detach boundary %s from binding (group=%s, policy=%s)\n", boundaryID, groupID, policyID)
+			printer.PrintWarning("Would detach boundary %s from binding (group=%s, policy=%s)", boundaryID, groupID, policyID)
 			return nil
 		}
 
@@ -91,7 +130,6 @@ var detachCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewBindingHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		if err := handler.RemoveBoundary(ctx, groupID, policyID, boundaryID); err != nil {
@@ -112,7 +150,19 @@ func init() {
 var listAttachedCmd = &cobra.Command{
 	Use:   "list-attached IDENTIFIER",
 	Short: "List policies using a boundary",
-	Args:  cobra.ExactArgs(1),
+	Long: `List all policy bindings that reference a given boundary.
+
+IDENTIFIER can be a boundary UUID or name. If a name is provided it will be
+resolved to the corresponding UUID automatically.`,
+	Example: `  # List policies attached to a boundary by UUID
+  dtiam boundary list-attached abc-123-def-456
+
+  # List policies attached to a boundary by name
+  dtiam boundary list-attached "Production Zone Boundary"
+
+  # Output as JSON
+  dtiam boundary list-attached abc-123-def-456 -o json`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {

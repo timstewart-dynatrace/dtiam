@@ -18,7 +18,11 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "describe",
 	Short: "Show detailed information about a resource",
-	Long:  "Commands for displaying detailed information about IAM resources.",
+	Long: `Display detailed information about a specific IAM resource.
+
+Unlike 'get' which lists resources in a table, 'describe' shows all fields
+for a single resource including nested objects and metadata. The IDENTIFIER
+can be a UUID or a human-readable name (or email for users).`,
 }
 
 func init() {
@@ -32,8 +36,20 @@ func init() {
 
 var groupCmd = &cobra.Command{
 	Use:   "group IDENTIFIER",
-	Short: "Show detailed information about a group",
-	Args:  cobra.ExactArgs(1),
+	Short: "Show detailed group info including members and policies",
+	Long: `Display detailed information about a specific IAM group.
+
+Shows all group fields including UUID, name, description, owner, member list,
+and associated policies. The IDENTIFIER can be a group UUID or group name.`,
+	Example: `  # Describe a group by UUID
+  dtiam describe group 3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d
+
+  # Describe a group by name
+  dtiam describe group "Platform Engineers"
+
+  # Machine-friendly JSON output for scripting
+  dtiam describe group "Platform Engineers" -o json --plain`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -66,8 +82,20 @@ var groupCmd = &cobra.Command{
 
 var userCmd = &cobra.Command{
 	Use:   "user IDENTIFIER",
-	Short: "Show detailed information about a user",
-	Args:  cobra.ExactArgs(1),
+	Short: "Show detailed user info including group memberships",
+	Long: `Display detailed information about a specific IAM user.
+
+Shows all user fields including UID, email, name, status, group memberships,
+and associated permissions. The IDENTIFIER can be a user UID or email address.`,
+	Example: `  # Describe a user by UID
+  dtiam describe user 8f2e4a6b-1c3d-5e7f-9a0b-2c4d6e8f0a1b
+
+  # Describe a user by email
+  dtiam describe user alice@example.com
+
+  # Machine-friendly JSON output for scripting
+  dtiam describe user alice@example.com -o json --plain`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -105,8 +133,20 @@ var userCmd = &cobra.Command{
 
 var policyCmd = &cobra.Command{
 	Use:   "policy IDENTIFIER",
-	Short: "Show detailed information about a policy",
-	Args:  cobra.ExactArgs(1),
+	Short: "Show detailed policy info including statements and conditions",
+	Long: `Display detailed information about a specific IAM policy.
+
+Shows all policy fields including UUID, name, description, level, policy
+statements, and conditions. The IDENTIFIER can be a policy UUID or policy name.`,
+	Example: `  # Describe a policy by UUID
+  dtiam describe policy a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+  # Describe a policy by name
+  dtiam describe policy "Environment Read-Only"
+
+  # Machine-friendly JSON output for scripting
+  dtiam describe policy "Environment Read-Only" -o json --plain`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -133,8 +173,20 @@ var policyCmd = &cobra.Command{
 var environmentCmd = &cobra.Command{
 	Use:     "environment IDENTIFIER",
 	Aliases: []string{"env"},
-	Short:   "Show detailed information about an environment",
-	Args:    cobra.ExactArgs(1),
+	Short:   "Show detailed environment info including state and management zones",
+	Long: `Display detailed information about a specific Dynatrace environment.
+
+Shows all environment fields including ID, name, state, management zones,
+and configuration details. The IDENTIFIER can be an environment ID or name.`,
+	Example: `  # Describe an environment by ID
+  dtiam describe environment abc12345
+
+  # Describe an environment by name
+  dtiam describe environment "Production US-East"
+
+  # Machine-friendly JSON output for scripting
+  dtiam describe environment abc12345 -o json --plain`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -163,8 +215,20 @@ var environmentCmd = &cobra.Command{
 
 var boundaryCmd = &cobra.Command{
 	Use:   "boundary IDENTIFIER",
-	Short: "Show detailed information about a boundary",
-	Args:  cobra.ExactArgs(1),
+	Short: "Show detailed boundary info including query and attached policies",
+	Long: `Display detailed information about a specific IAM boundary.
+
+Shows all boundary fields including UUID, name, description, boundary query,
+and attached policies. The IDENTIFIER can be a boundary UUID or boundary name.`,
+	Example: `  # Describe a boundary by UUID
+  dtiam describe boundary f1e2d3c4-b5a6-9870-fedc-ba0987654321
+
+  # Describe a boundary by name
+  dtiam describe boundary "Production Management Zone"
+
+  # Machine-friendly JSON output for scripting
+  dtiam describe boundary "Production Management Zone" -o json --plain`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -201,8 +265,21 @@ var boundaryCmd = &cobra.Command{
 var serviceUserCmd = &cobra.Command{
 	Use:     "service-user IDENTIFIER",
 	Aliases: []string{"serviceuser"},
-	Short:   "Show detailed information about a service user",
-	Args:    cobra.ExactArgs(1),
+	Short:   "Show detailed service user info including OAuth clients",
+	Long: `Display detailed information about a specific IAM service user.
+
+Shows all service user fields including UID, name, description, status,
+group memberships, and OAuth client details. The IDENTIFIER can be a
+service user UID or name.`,
+	Example: `  # Describe a service user by UID
+  dtiam describe service-user 7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d
+
+  # Describe a service user by name
+  dtiam describe service-user "CI/CD Pipeline Bot"
+
+  # Machine-friendly JSON output for scripting
+  dtiam describe service-user "CI/CD Pipeline Bot" -o json --plain`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {

@@ -2,16 +2,14 @@
 package delete
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
+	"github.com/jtimothystewart/dtiam/internal/prompt"
 	"github.com/jtimothystewart/dtiam/internal/resources"
 )
 
@@ -19,7 +17,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a resource",
-	Long:  "Commands for deleting IAM resources.",
+	Long:  "Commands for deleting IAM resources. All delete operations require confirmation unless --force is set.",
 }
 
 func init() {
@@ -31,34 +29,33 @@ func init() {
 	Cmd.AddCommand(serviceUserCmd)
 }
 
-// confirm asks for user confirmation.
-func confirm(message string, force bool) bool {
-	if force {
-		return true
-	}
-
-	fmt.Printf("%s [y/N]: ", message)
-	reader := bufio.NewReader(os.Stdin)
-	response, _ := reader.ReadString('\n')
-	response = strings.ToLower(strings.TrimSpace(response))
-
-	return response == "y" || response == "yes"
-}
-
 var groupCmd = &cobra.Command{
 	Use:   "group IDENTIFIER",
-	Short: "Delete a group",
-	Args:  cobra.ExactArgs(1),
+	Short: "Delete a group by name or UUID",
+	Long:  `Delete a group from the Dynatrace account. Requires confirmation unless --force is set.`,
+	Example: `  # Delete a group by name
+  dtiam delete group "My Group"
+
+  # Delete by UUID without confirmation
+  dtiam delete group abc-123 --force
+
+  # Preview deletion
+  dtiam delete group "My Group" --dry-run
+
+  # Machine-friendly (skip prompts, JSON output)
+  dtiam delete group "My Group" --force --plain`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		printer := cli.GlobalState.NewPrinter()
 		force, _ := cmd.Flags().GetBool("force")
 
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would delete group: %s\n", args[0])
+			printer.PrintWarning("Would delete group: %s", args[0])
 			return nil
 		}
 
-		if !confirm(fmt.Sprintf("Delete group %q?", args[0]), force) {
-			fmt.Println("Aborted.")
+		if !prompt.ConfirmDelete("group", args[0], force || cli.GlobalState.IsPlain()) {
+			printer.PrintMessage("Aborted.")
 			return nil
 		}
 
@@ -69,10 +66,8 @@ var groupCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewGroupHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
-		// Resolve identifier
 		group, err := resources.GetOrResolve(ctx, handler, args[0])
 		if err != nil {
 			return err
@@ -97,18 +92,28 @@ func init() {
 
 var policyCmd = &cobra.Command{
 	Use:   "policy IDENTIFIER",
-	Short: "Delete a policy",
-	Args:  cobra.ExactArgs(1),
+	Short: "Delete a policy by name or UUID",
+	Long:  `Delete a policy from the Dynatrace account. Requires confirmation unless --force is set.`,
+	Example: `  # Delete a policy by name
+  dtiam delete policy "Read Only"
+
+  # Delete by UUID without confirmation
+  dtiam delete policy abc-123 --force
+
+  # Preview deletion
+  dtiam delete policy "Read Only" --dry-run`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		printer := cli.GlobalState.NewPrinter()
 		force, _ := cmd.Flags().GetBool("force")
 
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would delete policy: %s\n", args[0])
+			printer.PrintWarning("Would delete policy: %s", args[0])
 			return nil
 		}
 
-		if !confirm(fmt.Sprintf("Delete policy %q?", args[0]), force) {
-			fmt.Println("Aborted.")
+		if !prompt.ConfirmDelete("policy", args[0], force || cli.GlobalState.IsPlain()) {
+			printer.PrintMessage("Aborted.")
 			return nil
 		}
 
@@ -119,7 +124,6 @@ var policyCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewPolicyHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		policy, err := resources.GetOrResolve(ctx, handler, args[0])
@@ -147,7 +151,14 @@ func init() {
 var bindingCmd = &cobra.Command{
 	Use:   "binding",
 	Short: "Delete a policy binding",
+	Long:  `Delete a policy binding between a group and a policy. Requires both --group and --policy flags.`,
+	Example: `  # Delete a binding
+  dtiam delete binding --group GROUP_UUID --policy POLICY_UUID
+
+  # Delete without confirmation
+  dtiam delete binding --group GROUP_UUID --policy POLICY_UUID --force`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		printer := cli.GlobalState.NewPrinter()
 		groupID, _ := cmd.Flags().GetString("group")
 		policyID, _ := cmd.Flags().GetString("policy")
 		force, _ := cmd.Flags().GetBool("force")
@@ -157,12 +168,15 @@ var bindingCmd = &cobra.Command{
 		}
 
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would delete binding: group=%s policy=%s\n", groupID, policyID)
+			printer.PrintWarning("Would delete binding: group=%s policy=%s", groupID, policyID)
 			return nil
 		}
 
-		if !confirm(fmt.Sprintf("Delete binding for group %q and policy %q?", groupID, policyID), force) {
-			fmt.Println("Aborted.")
+		if !prompt.Confirm(
+			fmt.Sprintf("Delete binding for group %q and policy %q?", groupID, policyID),
+			force || cli.GlobalState.IsPlain(),
+		) {
+			printer.PrintMessage("Aborted.")
 			return nil
 		}
 
@@ -173,7 +187,6 @@ var bindingCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewBindingHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		if err := handler.Delete(ctx, groupID, policyID); err != nil {
@@ -193,18 +206,25 @@ func init() {
 
 var boundaryCmd = &cobra.Command{
 	Use:   "boundary IDENTIFIER",
-	Short: "Delete a boundary",
-	Args:  cobra.ExactArgs(1),
+	Short: "Delete a boundary by name or UUID",
+	Long:  `Delete a boundary from the Dynatrace account. Requires confirmation unless --force is set.`,
+	Example: `  # Delete a boundary by name
+  dtiam delete boundary "My Boundary"
+
+  # Delete by UUID without confirmation
+  dtiam delete boundary abc-123 --force`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		printer := cli.GlobalState.NewPrinter()
 		force, _ := cmd.Flags().GetBool("force")
 
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would delete boundary: %s\n", args[0])
+			printer.PrintWarning("Would delete boundary: %s", args[0])
 			return nil
 		}
 
-		if !confirm(fmt.Sprintf("Delete boundary %q?", args[0]), force) {
-			fmt.Println("Aborted.")
+		if !prompt.ConfirmDelete("boundary", args[0], force || cli.GlobalState.IsPlain()) {
+			printer.PrintMessage("Aborted.")
 			return nil
 		}
 
@@ -215,7 +235,6 @@ var boundaryCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewBoundaryHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		boundary, err := resources.GetOrResolve(ctx, handler, args[0])
@@ -242,18 +261,25 @@ func init() {
 
 var userCmd = &cobra.Command{
 	Use:   "user IDENTIFIER",
-	Short: "Delete a user",
-	Args:  cobra.ExactArgs(1),
+	Short: "Delete a user by UID or email",
+	Long:  `Delete a user from the Dynatrace account. Requires confirmation unless --force is set.`,
+	Example: `  # Delete a user by email
+  dtiam delete user user@example.com
+
+  # Delete without confirmation
+  dtiam delete user user@example.com --force`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		printer := cli.GlobalState.NewPrinter()
 		force, _ := cmd.Flags().GetBool("force")
 
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would delete user: %s\n", args[0])
+			printer.PrintWarning("Would delete user: %s", args[0])
 			return nil
 		}
 
-		if !confirm(fmt.Sprintf("Delete user %q?", args[0]), force) {
-			fmt.Println("Aborted.")
+		if !prompt.ConfirmDelete("user", args[0], force || cli.GlobalState.IsPlain()) {
+			printer.PrintMessage("Aborted.")
 			return nil
 		}
 
@@ -264,7 +290,6 @@ var userCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewUserHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		user, err := handler.Get(ctx, args[0])
@@ -295,18 +320,25 @@ func init() {
 var serviceUserCmd = &cobra.Command{
 	Use:     "service-user IDENTIFIER",
 	Aliases: []string{"serviceuser"},
-	Short:   "Delete a service user",
-	Args:    cobra.ExactArgs(1),
+	Short:   "Delete a service user by name or UID",
+	Long:    `Delete a service user (OAuth client) from the Dynatrace account. Requires confirmation unless --force is set.`,
+	Example: `  # Delete a service user by name
+  dtiam delete service-user "My Service Account"
+
+  # Delete without confirmation
+  dtiam delete service-user abc-123 --force`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		printer := cli.GlobalState.NewPrinter()
 		force, _ := cmd.Flags().GetBool("force")
 
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would delete service user: %s\n", args[0])
+			printer.PrintWarning("Would delete service user: %s", args[0])
 			return nil
 		}
 
-		if !confirm(fmt.Sprintf("Delete service user %q?", args[0]), force) {
-			fmt.Println("Aborted.")
+		if !prompt.ConfirmDelete("service user", args[0], force || cli.GlobalState.IsPlain()) {
+			printer.PrintMessage("Aborted.")
 			return nil
 		}
 
@@ -317,7 +349,6 @@ var serviceUserCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewServiceUserHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		user, err := handler.Get(ctx, args[0])

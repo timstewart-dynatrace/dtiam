@@ -17,7 +17,18 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "group",
 	Short: "Advanced group management commands",
-	Long:  "Commands for advanced group operations like cloning and member management.",
+	Long: `Commands for advanced group operations such as listing members,
+adding and removing members, and viewing policy bindings for a group.
+
+Groups can be identified by UUID or name in all subcommands.`,
+	Example: `  # List members of a group
+  dtiam group members "Production Team"
+
+  # Add a user to a group
+  dtiam group add-member "Production Team" --email user@example.com
+
+  # View policy bindings for a group
+  dtiam group bindings "Production Team"`,
 }
 
 func init() {
@@ -30,7 +41,19 @@ func init() {
 var membersCmd = &cobra.Command{
 	Use:   "members IDENTIFIER",
 	Short: "List members of a group",
-	Args:  cobra.ExactArgs(1),
+	Long: `List all members of a group.
+
+The group can be identified by UUID or name. Returns user details
+for all members in table format by default.`,
+	Example: `  # List members by group name
+  dtiam group members "Production Team"
+
+  # List members by group UUID
+  dtiam group members 8f6e5d4c-3b2a-1098-7654-321fedcba098
+
+  # Output as JSON
+  dtiam group members "Production Team" -o json`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
@@ -63,15 +86,29 @@ var membersCmd = &cobra.Command{
 var addMemberCmd = &cobra.Command{
 	Use:   "add-member IDENTIFIER",
 	Short: "Add a user to a group",
-	Args:  cobra.ExactArgs(1),
+	Long: `Add a user to a group by specifying the group and user email.
+
+The group can be identified by UUID or name. The user is specified
+via the --email flag.`,
+	Example: `  # Add a user to a group by name
+  dtiam group add-member "Production Team" --email user@example.com
+
+  # Add a user to a group by UUID
+  dtiam group add-member 8f6e5d4c-3b2a-1098-7654-321fedcba098 --email user@example.com
+
+  # Dry run preview
+  dtiam group add-member "Production Team" --email user@example.com --dry-run`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		email, _ := cmd.Flags().GetString("email")
 		if email == "" {
 			return fmt.Errorf("--email is required")
 		}
 
+		printer := cli.GlobalState.NewPrinter()
+
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would add user %s to group %s\n", email, args[0])
+			printer.PrintWarning("Would add user %s to group %s", email, args[0])
 			return nil
 		}
 
@@ -82,7 +119,6 @@ var addMemberCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewGroupHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		group, err := resources.GetOrResolve(ctx, handler, args[0])
@@ -110,15 +146,29 @@ func init() {
 var removeMemberCmd = &cobra.Command{
 	Use:   "remove-member IDENTIFIER",
 	Short: "Remove a user from a group",
-	Args:  cobra.ExactArgs(1),
+	Long: `Remove a user from a group by specifying the group and user UID.
+
+The group can be identified by UUID or name. The user is specified
+via the --user flag with their UID.`,
+	Example: `  # Remove a user from a group by name
+  dtiam group remove-member "Production Team" --user USER_UID
+
+  # Remove a user from a group by UUID
+  dtiam group remove-member 8f6e5d4c-3b2a-1098-7654-321fedcba098 --user USER_UID
+
+  # Dry run preview
+  dtiam group remove-member "Production Team" --user USER_UID --dry-run`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		userID, _ := cmd.Flags().GetString("user")
 		if userID == "" {
 			return fmt.Errorf("--user is required")
 		}
 
+		printer := cli.GlobalState.NewPrinter()
+
 		if cli.GlobalState.IsDryRun() {
-			fmt.Printf("Would remove user %s from group %s\n", userID, args[0])
+			printer.PrintWarning("Would remove user %s from group %s", userID, args[0])
 			return nil
 		}
 
@@ -129,7 +179,6 @@ var removeMemberCmd = &cobra.Command{
 		defer c.Close()
 
 		handler := resources.NewGroupHandler(c)
-		printer := cli.GlobalState.NewPrinter()
 		ctx := context.Background()
 
 		group, err := resources.GetOrResolve(ctx, handler, args[0])
@@ -157,7 +206,19 @@ func init() {
 var bindingsCmd = &cobra.Command{
 	Use:   "bindings IDENTIFIER",
 	Short: "List policy bindings for a group",
-	Args:  cobra.ExactArgs(1),
+	Long: `List all policy bindings associated with a group.
+
+The group can be identified by UUID or name. Returns binding details
+including the policy and level information.`,
+	Example: `  # List bindings by group name
+  dtiam group bindings "Production Team"
+
+  # List bindings by group UUID
+  dtiam group bindings 8f6e5d4c-3b2a-1098-7654-321fedcba098
+
+  # Output as JSON
+  dtiam group bindings "Production Team" -o json`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := common.CreateClient()
 		if err != nil {
