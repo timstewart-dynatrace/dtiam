@@ -18,8 +18,8 @@ This guide walks you through setting up dtiam and performing common IAM manageme
 
 ```bash
 # Clone the repository
-git clone https://github.com/jtimothystewart/GO-IAM-CLI.git
-cd GO-IAM-CLI
+git clone https://github.com/timstewart-dynatrace/GO-dtiam.git
+cd GO-dtiam
 
 # Build the binary
 make build
@@ -34,7 +34,7 @@ dtiam --version
 
 ### From Releases
 
-Download the latest release for your platform from the [releases page](https://github.com/jtimothystewart/GO-IAM-CLI/releases).
+Download the latest release for your platform from the [releases page](https://github.com/timstewart-dynatrace/GO-dtiam/releases).
 
 ```bash
 # Linux/macOS - make executable
