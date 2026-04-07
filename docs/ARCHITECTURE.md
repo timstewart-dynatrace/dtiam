@@ -14,7 +14,7 @@ dtiam is a kubectl-inspired CLI for managing Dynatrace Identity and Access Manag
 |-----------|---------|---------|
 | CLI Framework | github.com/spf13/cobra | Command-line interface with subcommands |
 | Table Output | github.com/olekukonko/tablewriter | ASCII table formatting |
-| OAuth2 | golang.org/x/oauth2 | OAuth2 client credentials flow |
+| OAuth2 | net/http + net/url (stdlib) | Custom OAuth2 client credentials flow |
 | YAML | gopkg.in/yaml.v3 | Configuration and output formatting |
 | HTTP Client | net/http | HTTP requests with retry logic |
 
@@ -53,14 +53,21 @@ dtiam/
 │   │   │   └── boundary.go          # Boundary attach/detach
 │   │   ├── account/
 │   │   │   └── account.go           # Account limits/subscriptions
-│   │   └── cache/
-│   │       └── cache.go             # Cache management
+│   │   ├── cache/
+│   │   │   └── cache.go             # Cache management
+│   │   ├── bulk/
+│   │   │   └── bulk.go              # Bulk operations from files
+│   │   ├── export/
+│   │   │   └── export.go            # Export resources for backup
+│   │   └── analyze/
+│   │       └── analyze.go           # Permission analysis commands
 │   ├── config/
 │   │   ├── config.go                # Config, Context, Credential structs
 │   │   └── loader.go                # Load/save YAML, XDG paths
 │   ├── client/
 │   │   ├── client.go                # HTTP client with retry logic
-│   │   └── errors.go                # APIError type
+│   │   ├── errors.go                # APIError type
+│   │   └── urls.go                  # Centralized API URL constants
 │   ├── auth/
 │   │   ├── auth.go                  # TokenProvider interface
 │   │   ├── oauth.go                 # OAuthTokenManager
@@ -76,6 +83,11 @@ dtiam/
 │   │   ├── serviceusers.go          # ServiceUserHandler
 │   │   ├── limits.go                # LimitsHandler
 │   │   └── subscriptions.go         # SubscriptionHandler
+│   ├── prompt/
+│   │   └── confirm.go               # Confirmation prompts (Confirm, ConfirmDelete)
+│   ├── utils/
+│   │   ├── permissions.go           # Permissions calculator, matrix, effective API
+│   │   └── safemap.go               # Safe type assertion helpers
 │   └── output/
 │       ├── format.go                # Format enum (table/json/yaml/csv)
 │       ├── columns.go               # Column definitions per resource
@@ -111,6 +123,9 @@ func main() {
     rootCmd.AddCommand(boundarycmd.Cmd)
     rootCmd.AddCommand(accountcmd.Cmd)
     rootCmd.AddCommand(cachecmd.Cmd)
+    rootCmd.AddCommand(bulkcmd.Cmd)
+    rootCmd.AddCommand(exportcmd.Cmd)
+    rootCmd.AddCommand(analyzecmd.Cmd)
 
     if err := rootCmd.Execute(); err != nil {
         os.Exit(1)

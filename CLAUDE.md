@@ -51,7 +51,7 @@ This file provides guidance for AI agents working with the dtiam codebase.
    - Include Co-Authored-By line
 ```
 
-**Current Version: 1.2.0** (as of 2026-04-06)
+**Current Version: 1.2.1** (as of 2026-04-07)
 
 **FAILURE TO FOLLOW THIS CHECKLIST WILL RESULT IN INCOMPLETE RELEASES.**
 
@@ -376,7 +376,8 @@ dtiam/
 │   │   └── loader.go                 # Config load/save, XDG paths
 │   ├── client/
 │   │   ├── client.go                 # HTTP client with retry
-│   │   └── errors.go                 # APIError type
+│   │   ├── errors.go                 # APIError type
+│   │   └── urls.go                   # Centralized API URL constants
 │   ├── auth/
 │   │   ├── auth.go                   # TokenProvider interface
 │   │   ├── oauth.go                  # OAuth2 token manager
@@ -397,11 +398,11 @@ dtiam/
 │   │   ├── printer.go                # Unified Printer
 │   │   ├── table.go                  # Table formatter
 │   │   └── columns.go                # Column definitions
+│   ├── prompt/
+│   │   └── confirm.go                # Confirmation prompts (Confirm, ConfirmDelete)
 │   └── utils/
-│       ├── resolver.go               # Name-to-UUID resolution
-│       ├── permissions.go            # Permissions calculator
-│       ├── matrix.go                 # Permissions matrix generator
-│       └── effective.go              # Effective permissions API client
+│       ├── permissions.go            # Permissions calculator, matrix, effective API
+│       └── safemap.go                # Safe type assertion helpers
 ├── pkg/version/version.go            # Version info
 ├── go.mod
 ├── Makefile
@@ -468,7 +469,7 @@ printer.Print(results, columns)
 | `get policies` | `--name` | Filter by policy name |
 | `get boundaries` | `--name` | Filter by boundary name |
 | `get environments` | `--name` | Filter by environment name |
-| `get service-users` | `--name` | Filter by service user name |
+| `service-user list` | `--name` | Filter by service user name |
 
 **Filter Behavior:**
 - **Case-insensitive**: `--name prod` matches "Production", "NonProd"
@@ -828,9 +829,10 @@ Check `~/.config/dtiam/config` for credential configuration.
 ```
 github.com/spf13/cobra      # CLI framework
 github.com/olekukonko/tablewriter  # Table output
-golang.org/x/oauth2         # OAuth2 support
 gopkg.in/yaml.v3            # YAML parsing
 ```
+
+Note: OAuth2 is implemented using the standard library (`net/http`, `net/url`) without external dependencies.
 
 ## Troubleshooting
 

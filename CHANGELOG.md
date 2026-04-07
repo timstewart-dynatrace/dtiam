@@ -144,8 +144,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs/ARCHITECTURE.md - Technical design documentation
 - docs/API_REFERENCE.md - Programmatic usage guide
 
-[Unreleased]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.2.0...HEAD
-[1.2.0]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.1.1...v1.2.0
-[1.1.1]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.1.0...v1.1.1
-[1.1.0]: https://github.com/jtimothystewart/GO-IAM-CLI/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/jtimothystewart/GO-IAM-CLI/releases/tag/v1.0.0
+[Unreleased]: https://github.com/timstewart-dynatrace/GO-dtiam/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/timstewart-dynatrace/GO-dtiam/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/timstewart-dynatrace/GO-dtiam/compare/v1.1.1...v1.2.0
+[1.1.1]: https://github.com/timstewart-dynatrace/GO-dtiam/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/timstewart-dynatrace/GO-dtiam/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/timstewart-dynatrace/GO-dtiam/releases/tag/v1.0.0

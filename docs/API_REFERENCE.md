@@ -307,10 +307,11 @@ policy, err := handler.Get(ctx, "policy-uuid")
 policy, err := handler.GetByName(ctx, "admin-policy")
 
 // Create a policy
-newPolicy, err := handler.Create(ctx, "viewer-policy", "Read-only access", "ALLOW settings:objects:read;")
-
-// Update a policy
-updated, err := handler.Update(ctx, "policy-uuid", "updated-policy", "New description", "ALLOW settings:objects:read; ALLOW settings:schemas:read;")
+newPolicy, err := handler.Create(ctx, map[string]any{
+    "name":           "viewer-policy",
+    "description":    "Read-only access",
+    "statementQuery": "ALLOW settings:objects:read;",
+})
 
 // Delete a policy
 err = handler.Delete(ctx, "policy-uuid")
@@ -361,10 +362,13 @@ boundary, err := handler.Get(ctx, "boundary-uuid")
 boundary, err := handler.GetByName(ctx, "prod-boundary")
 
 // Create from management zones
-boundary, err := handler.CreateFromZones(ctx, "Production Only", "Restricts to production zones", []string{"Production", "Staging"})
+desc := "Restricts to production zones"
+boundary, err := handler.Create(ctx, "Production Only", []string{"Production", "Staging"}, nil, &desc)
 
 // Create with custom query
-boundary, err := handler.CreateWithQuery(ctx, "Custom Boundary", "Custom boundary query", "environment.tag.equals('production')")
+query := "environment.tag.equals('production')"
+desc2 := "Custom boundary query"
+boundary, err := handler.Create(ctx, "Custom Boundary", nil, &query, &desc2)
 
 // Get attached policies
 attached, err := handler.GetAttachedPolicies(ctx, "boundary-uuid")
