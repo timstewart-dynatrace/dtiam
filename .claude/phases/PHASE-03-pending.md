@@ -48,7 +48,19 @@ Add resource types from Python-IAM-CLI that are missing in Go: platform tokens, 
   - `--search` / `--name` filter
   - `--ids` flag (output only schema IDs)
 
-### 3.4 Account Capabilities
+### 3.4 Zones (Legacy)
+- [ ] Create `internal/resources/zones.go`:
+  - `ZoneHandler` with List, Get
+  - API: `{environment_url}/api/v2/entities?entitySelector=type("MANAGEMENT_ZONE")`
+  - Requires `--environment` flag or config environment-url
+- [ ] Add commands:
+  - `get zones [NAME]` — list management zones (--name filter, --environment)
+  - `zones list` — alias (legacy compatibility with Python-IAM-CLI)
+  - `zones export` — export zones to YAML/JSON (--output-dir, --format)
+  - `zones compare-groups` — compare zone names with IAM group names
+- [ ] Mark as legacy/deprecated in help text
+
+### 3.5 Account Capabilities
 - [ ] Add `account capabilities [SUBSCRIPTION]` subcommand
   - Uses existing `SubscriptionHandler.GetCapabilities()` (internal/resources/subscriptions.go)
   - Optional subscription UUID/name argument

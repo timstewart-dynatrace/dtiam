@@ -46,7 +46,14 @@ Real in-memory caching, enhanced least-privilege analysis, permission diff.
   - Output as structured report with summary
   - Support `--export FILE` for JSON/CSV report
 
-### 6.4 Permission Diff
+### 6.4 Permission Gaps Analysis
+- [ ] Add `analyze permission-gaps` subcommand
+  - Find policies bound to 0 groups (unused)
+  - Find groups with 0 policy bindings (no permissions)
+  - Output as structured report
+  - Support `--export FILE`
+
+### 6.5 Permission Diff
 - [ ] Add `analyze diff-permissions ENTITY1 ENTITY2` subcommand
   - Compare effective permissions between two users or two groups
   - Show: permissions only in ENTITY1, only in ENTITY2, shared

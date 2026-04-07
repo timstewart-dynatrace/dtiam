@@ -74,6 +74,14 @@ Adopt go-dtctl-main patterns for HTTP client, config, logging, errors, and outpu
   - On "unknown flag", suggest closest flag name
   - Max edit distance: 3
 
+### 2.8 Config Enhancements (from Python-IAM-CLI v3.13.0)
+- [ ] Add `--api-url` global flag to override IAM API base URL
+- [ ] Add `api-url` field to credential config (for testing / private deployments)
+- [ ] Add `scopes` field to credential config (custom scopes per credential)
+- [ ] Add `environment-url` field to credential config (for apps/schemas commands)
+- [ ] Add `environment-token` field to credential config (separate env API token)
+- [ ] Bind all new fields to `DTIAM_API_URL`, `DTIAM_SCOPES`, `DTIAM_ENVIRONMENT_URL`, `DTIAM_ENVIRONMENT_TOKEN` env vars via Viper
+
 ## Key Files
 - REWRITE: `internal/client/client.go`, `internal/config/loader.go`
 - CREATE: `internal/logging/logger.go`, `internal/output/structprinter.go`, `internal/suggest/suggest.go`

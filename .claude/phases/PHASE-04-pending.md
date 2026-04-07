@@ -67,6 +67,23 @@ Group cloning, parameterized policies, app/schema boundary creation.
   - Query: `settings:schemaId IN ("builtin:alerting.profile", ...)`
   - Validate via SchemaHandler.Get (from Phase 3)
 
+### 4.5 Group Setup
+- [ ] Add `group setup --name NAME --policies-file FILE` subcommand
+  - Reads a YAML/JSON file with policies, bindings, and optional boundaries
+  - Creates group, then applies all policy bindings from file
+  - One-step provisioning for new teams
+  - Flags: `--name`, `--description`, `--policies-file`, `--dry-run`
+
+### 4.6 User Info & Bulk Group Operations
+- [ ] Add `user info IDENTIFIER` subcommand — detailed user view (alias for `describe user`)
+- [ ] Add `user bulk-add-groups --user EMAIL --groups "g1,g2,g3"` — add to multiple groups in one call
+- [ ] Add `user bulk-remove-groups --user EMAIL --groups "g1,g2,g3" --force` — remove from multiple groups
+
+### 4.7 Export Individual Resource Types
+- [ ] Enhance `export` to support per-resource exports:
+  - `export environments`, `export users`, `export bindings`, `export boundaries`, `export service-users`
+  - Same flags as `export all` (--output, --format, --detailed)
+
 ## Key Files
 - MODIFY: `internal/commands/group/group.go`, `internal/commands/create/create.go`, `internal/commands/boundary/boundary.go`
 - MODIFY: `internal/resources/bindings.go` (add parameters to Create)
