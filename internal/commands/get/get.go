@@ -27,6 +27,9 @@ func init() {
 	Cmd.AddCommand(bindingsCmd)
 	Cmd.AddCommand(environmentsCmd)
 	Cmd.AddCommand(boundariesCmd)
+	Cmd.AddCommand(tokensCmd)
+	Cmd.AddCommand(appsCmd)
+	Cmd.AddCommand(schemasCmd)
 }
 
 var groupsCmd = &cobra.Command{
@@ -404,4 +407,176 @@ var boundariesCmd = &cobra.Command{
 
 		return printer.Print(boundaries, output.BoundaryColumns())
 	},
+}
+
+var tokensCmd = &cobra.Command{
+	Use:     "tokens [identifier]",
+	Aliases: []string{"token"},
+	Short:   "List platform tokens or get a specific token by ID or name",
+	Example: `  # List all platform tokens
+  dtiam get tokens
+
+  # Get a specific token by ID
+  dtiam get tokens abc-123
+
+  # Output as JSON
+  dtiam get tokens -o json
+
+  # Machine-friendly output
+  dtiam get tokens --plain`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		c, err := common.CreateClient()
+		if err != nil {
+			return err
+		}
+		defer c.Close()
+
+		handler := resources.NewTokenHandler(c)
+		printer := cli.GlobalState.NewPrinter()
+		ctx := context.Background()
+
+		if len(args) > 0 {
+			token, err := handler.Get(ctx, args[0])
+			if err != nil {
+				return err
+			}
+			return printer.PrintSingle(token, output.TokenColumns())
+		}
+
+		tokens, err := handler.List(ctx, nil)
+		if err != nil {
+			return err
+		}
+
+		return printer.Print(tokens, output.TokenColumns())
+	},
+}
+
+var (
+	appsEnvironmentFlag   string
+	schemasEnvironmentFlag string
+)
+
+var appsCmd = &cobra.Command{
+	Use:     "apps [identifier]",
+	Aliases: []string{"app"},
+	Short:   "List apps from the App Engine Registry",
+	Long:    "List apps from the Dynatrace App Engine Registry. Requires --environment flag or DTIAM_ENVIRONMENT_URL.",
+	Example: `  # List all apps in an environment
+  dtiam get apps --environment abc12345
+
+  # Get a specific app by ID
+  dtiam get apps dynatrace.dashboards --environment abc12345
+
+  # Output as JSON
+  dtiam get apps --environment abc12345 -o json
+
+  # Use environment from config/env var
+  DTIAM_ENVIRONMENT_URL=abc12345 dtiam get apps`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		envURL := appsEnvironmentFlag
+		if envURL == "" {
+			envURL = cli.GlobalState.EnvironmentURL()
+		}
+		if envURL == "" {
+			return fmt.Errorf("--environment flag or DTIAM_ENVIRONMENT_URL is required")
+		}
+
+		c, err := common.CreateClient()
+		if err != nil {
+			return err
+		}
+		defer c.Close()
+
+		handler := resources.NewAppHandler(c, envURL)
+		printer := cli.GlobalState.NewPrinter()
+		ctx := context.Background()
+
+		if len(args) > 0 {
+			app, err := handler.Get(ctx, args[0])
+			if err != nil {
+				return err
+			}
+			return printer.PrintSingle(app, output.AppColumns())
+		}
+
+		apps, err := handler.List(ctx, nil)
+		if err != nil {
+			return err
+		}
+
+		return printer.Print(apps, output.AppColumns())
+	},
+}
+
+func init() {
+	appsCmd.Flags().StringVar(&appsEnvironmentFlag, "environment", "", "Environment ID or URL (required)")
+}
+
+var schemasCmd = &cobra.Command{
+	Use:     "schemas [identifier]",
+	Aliases: []string{"schema"},
+	Short:   "List settings schemas from the Environment API",
+	Long:    "List Settings 2.0 schemas from a Dynatrace environment. Requires --environment flag or DTIAM_ENVIRONMENT_URL.",
+	Example: `  # List all schemas
+  dtiam get schemas --environment abc12345
+
+  # Get a specific schema
+  dtiam get schemas builtin:alerting.profile --environment abc12345
+
+  # Search schemas by name
+  dtiam get schemas --environment abc12345 --name alerting
+
+  # Output as JSON
+  dtiam get schemas --environment abc12345 -o json`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		envURL := schemasEnvironmentFlag
+		if envURL == "" {
+			envURL = cli.GlobalState.EnvironmentURL()
+		}
+		if envURL == "" {
+			return fmt.Errorf("--environment flag or DTIAM_ENVIRONMENT_URL is required")
+		}
+
+		c, err := common.CreateClient()
+		if err != nil {
+			return err
+		}
+		defer c.Close()
+
+		handler := resources.NewSchemaHandler(c, envURL)
+		printer := cli.GlobalState.NewPrinter()
+		ctx := context.Background()
+
+		if len(args) > 0 {
+			schema, err := handler.Get(ctx, args[0])
+			if err != nil {
+				return err
+			}
+			return printer.PrintSingle(schema, output.SchemaColumns())
+		}
+
+		nameFilter, _ := cmd.Flags().GetString("name")
+		var schemas []map[string]any
+
+		if nameFilter != "" {
+			schemas, err = handler.Search(ctx, nameFilter)
+		} else {
+			schemas, err = handler.List(ctx, nil)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		return printer.Print(schemas, output.SchemaColumns())
+	},
+}
+
+func init() {
+	schemasCmd.Flags().StringVar(&schemasEnvironmentFlag, "environment", "", "Environment ID or URL (required)")
+	schemasCmd.Flags().String("name", "", "Filter schemas by name pattern")
 }

@@ -434,6 +434,71 @@ sub, err := handler.Get(ctx, "subscription-uuid")
 forecast, err := handler.GetForecast(ctx)
 ```
 
+### TokenHandler
+
+Platform token operations. Requires `platform-token:tokens:manage` scope.
+
+```go
+import "github.com/jtimothystewart/dtiam/internal/resources"
+
+handler := resources.NewTokenHandler(c)
+ctx := context.Background()
+
+// List all platform tokens
+tokens, err := handler.List(ctx, nil)
+
+// Get a specific token by ID
+token, err := handler.Get(ctx, "token-id")
+
+// Create a new token (value only returned once!)
+token, err := handler.Create(ctx, "CI Token", []string{"account-idm-read"}, "30d")
+
+// Delete a token
+err := handler.Delete(ctx, "token-id")
+```
+
+### AppHandler
+
+App Engine Registry operations. Requires environment URL and `app-engine:apps:run` scope.
+
+```go
+import "github.com/jtimothystewart/dtiam/internal/resources"
+
+// env-id is auto-expanded to full URL
+handler := resources.NewAppHandler(c, "abc12345")
+
+// List all apps
+apps, err := handler.List(ctx, nil)
+
+// Get a specific app
+app, err := handler.Get(ctx, "dynatrace.dashboards")
+
+// Get all app IDs (useful for policy statements)
+ids, err := handler.GetIDs(ctx)
+```
+
+### SchemaHandler
+
+Settings 2.0 schema operations. Requires environment URL and `settings.read` scope.
+
+```go
+import "github.com/jtimothystewart/dtiam/internal/resources"
+
+handler := resources.NewSchemaHandler(c, "abc12345")
+
+// List all schemas
+schemas, err := handler.List(ctx, nil)
+
+// Get a specific schema
+schema, err := handler.Get(ctx, "builtin:alerting.profile")
+
+// Search by pattern
+matches, err := handler.Search(ctx, "alerting")
+
+// Get only builtin schema IDs
+builtinIDs, err := handler.GetBuiltinIDs(ctx)
+```
+
 ## Output Formatting
 
 ### Using the Printer

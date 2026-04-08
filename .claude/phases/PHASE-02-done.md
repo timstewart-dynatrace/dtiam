@@ -1,5 +1,5 @@
 # Phase 02 — Architecture Alignment with go-dtctl-main
-Status: PENDING
+Status: DONE
 
 ## Goal
 Adopt go-dtctl-main patterns for HTTP client, config, logging, errors, and output. Replace internal plumbing without changing command behavior.

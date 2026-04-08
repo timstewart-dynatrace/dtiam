@@ -13,10 +13,13 @@ dtiam is a kubectl-inspired CLI for managing Dynatrace Identity and Access Manag
 | Component | Library | Purpose |
 |-----------|---------|---------|
 | CLI Framework | github.com/spf13/cobra | Command-line interface with subcommands |
+| HTTP Client | github.com/go-resty/resty/v2 | HTTP requests with retry and hooks |
+| Config | github.com/spf13/viper | Configuration management with env binding |
+| XDG Paths | github.com/adrg/xdg | XDG base directory support |
+| Logging | github.com/sirupsen/logrus | Structured logging |
 | Table Output | github.com/olekukonko/tablewriter | ASCII table formatting |
 | OAuth2 | net/http + net/url (stdlib) | Custom OAuth2 client credentials flow |
 | YAML | gopkg.in/yaml.v3 | Configuration and output formatting |
-| HTTP Client | net/http | HTTP requests with retry logic |
 
 ## Project Structure
 
@@ -74,6 +77,7 @@ dtiam/
 │   │   └── bearer.go                # StaticTokenManager
 │   ├── resources/
 │   │   ├── handler.go               # BaseHandler, interfaces
+│   │   ├── types.go                 # Typed response structs with table tags
 │   │   ├── groups.go                # GroupHandler
 │   │   ├── users.go                 # UserHandler
 │   │   ├── policies.go              # PolicyHandler
@@ -82,15 +86,25 @@ dtiam/
 │   │   ├── environments.go          # EnvironmentHandler
 │   │   ├── serviceusers.go          # ServiceUserHandler
 │   │   ├── limits.go                # LimitsHandler
-│   │   └── subscriptions.go         # SubscriptionHandler
+│   │   ├── subscriptions.go         # SubscriptionHandler
+│   │   ├── tokens.go                # TokenHandler (platform tokens)
+│   │   ├── apps.go                  # AppHandler (App Engine Registry)
+│   │   └── schemas.go               # SchemaHandler (Settings API)
 │   ├── prompt/
 │   │   └── confirm.go               # Confirmation prompts (Confirm, ConfirmDelete)
+│   ├── diagnostic/
+│   │   └── error.go                 # Enhanced errors with exit codes and suggestions
+│   ├── logging/
+│   │   └── logger.go                # Structured logging with logrus
+│   ├── suggest/
+│   │   └── suggest.go               # Levenshtein command/flag suggestions
 │   ├── utils/
 │   │   ├── permissions.go           # Permissions calculator, matrix, effective API
 │   │   └── safemap.go               # Safe type assertion helpers
 │   └── output/
 │       ├── format.go                # Format enum (table/json/yaml/csv)
 │       ├── columns.go               # Column definitions per resource
+│       ├── structprinter.go         # Struct-tag based printer
 │       ├── table.go                 # TableFormatter
 │       └── printer.go               # Unified Printer
 ├── pkg/

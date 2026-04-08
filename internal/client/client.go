@@ -2,17 +2,15 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"math"
 	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+
+	"github.com/jtimothystewart/dtiam/internal/logging"
 )
 
 // TokenProvider provides authentication headers for HTTP requests.
@@ -36,6 +34,24 @@ const (
 	DefaultTimeout = 30 * time.Second
 )
 
+// Client is the HTTP client for the Dynatrace IAM API.
+type Client struct {
+	accountUUID   string
+	tokenProvider TokenProvider
+	resty         *resty.Client
+	baseURL       string
+	verbose       bool
+}
+
+// Config holds client configuration options.
+type Config struct {
+	AccountUUID   string
+	TokenProvider TokenProvider
+	Timeout       time.Duration
+	RetryConfig   *RetryConfig
+	Verbose       bool
+}
+
 // RetryConfig configures retry behavior.
 type RetryConfig struct {
 	MaxRetries      int
@@ -56,25 +72,6 @@ func DefaultRetryConfig() RetryConfig {
 	}
 }
 
-// Client is the HTTP client for the Dynatrace IAM API.
-type Client struct {
-	accountUUID   string
-	tokenProvider TokenProvider
-	httpClient    *http.Client
-	baseURL       string
-	retryConfig   RetryConfig
-	verbose       bool
-}
-
-// Config holds client configuration options.
-type Config struct {
-	AccountUUID   string
-	TokenProvider TokenProvider
-	Timeout       time.Duration
-	RetryConfig   *RetryConfig
-	Verbose       bool
-}
-
 // New creates a new API client.
 func New(config Config) *Client {
 	timeout := config.Timeout
@@ -82,17 +79,62 @@ func New(config Config) *Client {
 		timeout = DefaultTimeout
 	}
 
-	retryConfig := DefaultRetryConfig()
+	rc := DefaultRetryConfig()
 	if config.RetryConfig != nil {
-		retryConfig = *config.RetryConfig
+		rc = *config.RetryConfig
 	}
+
+	baseURL := fmt.Sprintf("%s/%s", BaseURL, config.AccountUUID)
+
+	r := resty.New().
+		SetTimeout(timeout).
+		SetRetryCount(rc.MaxRetries).
+		SetRetryWaitTime(rc.InitialDelay).
+		SetRetryMaxWaitTime(rc.MaxDelay).
+		AddRetryCondition(func(resp *resty.Response, err error) bool {
+			if err != nil {
+				return false
+			}
+			code := resp.StatusCode()
+			for _, s := range rc.RetryStatuses {
+				if code == s {
+					return true
+				}
+			}
+			return false
+		}).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json")
+
+	if config.Verbose {
+		r.SetDebug(true)
+	}
+
+	// Pre-request hook: inject auth headers
+	r.OnBeforeRequest(func(_ *resty.Client, req *resty.Request) error {
+		headers, err := config.TokenProvider.GetHeaders()
+		if err != nil {
+			return fmt.Errorf("failed to get auth headers: %w", err)
+		}
+		for key, values := range headers {
+			for _, value := range values {
+				req.SetHeader(key, value)
+			}
+		}
+		return nil
+	})
+
+	// Post-response hook: log HTTP requests
+	r.OnAfterResponse(func(_ *resty.Client, resp *resty.Response) error {
+		logging.HTTPRequest(resp.Request.Method, resp.Request.URL, resp.StatusCode())
+		return nil
+	})
 
 	return &Client{
 		accountUUID:   config.AccountUUID,
 		tokenProvider: config.TokenProvider,
-		httpClient:    &http.Client{Timeout: timeout},
-		baseURL:       fmt.Sprintf("%s/%s", BaseURL, config.AccountUUID),
-		retryConfig:   retryConfig,
+		resty:         r,
+		baseURL:       baseURL,
 		verbose:       config.Verbose,
 	}
 }
@@ -107,210 +149,75 @@ func (c *Client) BaseURL() string {
 	return c.baseURL
 }
 
+// SetBaseURL overrides the base URL (for testing only).
+func (c *Client) SetBaseURL(url string) {
+	c.baseURL = url
+}
+
 // Get performs a GET request.
 func (c *Client) Get(ctx context.Context, path string, params map[string]string) ([]byte, error) {
-	return c.request(ctx, http.MethodGet, path, params, nil)
+	url := c.buildURL(path)
+	req := c.resty.R().SetContext(ctx)
+	if len(params) > 0 {
+		req.SetQueryParams(params)
+	}
+
+	resp, err := req.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+
+	return c.handleResponse(resp)
 }
 
 // Post performs a POST request.
 func (c *Client) Post(ctx context.Context, path string, body any) ([]byte, error) {
-	return c.request(ctx, http.MethodPost, path, nil, body)
+	url := c.buildURL(path)
+	resp, err := c.resty.R().SetContext(ctx).SetBody(body).Post(url)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	return c.handleResponse(resp)
 }
 
 // Put performs a PUT request.
 func (c *Client) Put(ctx context.Context, path string, body any) ([]byte, error) {
-	return c.request(ctx, http.MethodPut, path, nil, body)
+	url := c.buildURL(path)
+	resp, err := c.resty.R().SetContext(ctx).SetBody(body).Put(url)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	return c.handleResponse(resp)
 }
 
 // Patch performs a PATCH request.
 func (c *Client) Patch(ctx context.Context, path string, body any) ([]byte, error) {
-	return c.request(ctx, http.MethodPatch, path, nil, body)
+	url := c.buildURL(path)
+	resp, err := c.resty.R().SetContext(ctx).SetBody(body).Patch(url)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	return c.handleResponse(resp)
 }
 
 // Delete performs a DELETE request.
 func (c *Client) Delete(ctx context.Context, path string) ([]byte, error) {
-	return c.request(ctx, http.MethodDelete, path, nil, nil)
+	url := c.buildURL(path)
+	resp, err := c.resty.R().SetContext(ctx).Delete(url)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	return c.handleResponse(resp)
 }
 
 // DeleteWithBody performs a DELETE request with a body.
 func (c *Client) DeleteWithBody(ctx context.Context, path string, body any) ([]byte, error) {
-	return c.request(ctx, http.MethodDelete, path, nil, body)
-}
-
-// request performs an HTTP request with retry logic.
-func (c *Client) request(ctx context.Context, method, path string, params map[string]string, body any) ([]byte, error) {
-	// Build URL
-	reqURL := c.buildURL(path, params)
-
-	// Marshal body if present
-	var bodyReader io.Reader
-	if body != nil {
-		jsonBody, err := json.Marshal(body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", err)
-		}
-		bodyReader = bytes.NewReader(jsonBody)
-	}
-
-	var lastErr error
-	for attempt := 0; attempt <= c.retryConfig.MaxRetries; attempt++ {
-		if attempt > 0 {
-			delay := c.calculateDelay(attempt, nil)
-			if c.verbose {
-				fmt.Printf("Retrying request (attempt %d/%d) after %v\n", attempt+1, c.retryConfig.MaxRetries+1, delay)
-			}
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(delay):
-			}
-
-			// Reset body reader for retry
-			if body != nil {
-				jsonBody, _ := json.Marshal(body)
-				bodyReader = bytes.NewReader(jsonBody)
-			}
-		}
-
-		respBody, err := c.doRequest(ctx, method, reqURL, bodyReader)
-		if err == nil {
-			return respBody, nil
-		}
-
-		lastErr = err
-
-		// Check if error is retryable
-		apiErr, ok := err.(*APIError)
-		if !ok || !apiErr.IsRetryable() {
-			return nil, err
-		}
-	}
-
-	return nil, lastErr
-}
-
-// doRequest performs a single HTTP request.
-func (c *Client) doRequest(ctx context.Context, method, reqURL string, body io.Reader) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, method, reqURL, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Get auth headers
-	headers, err := c.tokenProvider.GetHeaders()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get auth headers: %w", err)
-	}
-
-	// Copy headers to request
-	for key, values := range headers {
-		for _, value := range values {
-			req.Header.Add(key, value)
-		}
-	}
-
-	if c.verbose {
-		fmt.Printf("%s %s\n", method, reqURL)
-	}
-
-	resp, err := c.httpClient.Do(req)
+	url := c.buildURL(path)
+	resp, err := c.resty.R().SetContext(ctx).SetBody(body).Delete(url)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if c.verbose {
-		fmt.Printf("Response status: %d\n", resp.StatusCode)
-	}
-
-	// Handle error responses
-	if resp.StatusCode >= 400 {
-		apiErr := &APIError{
-			StatusCode:   resp.StatusCode,
-			ResponseBody: string(respBody),
-		}
-
-		// Try to extract error message from JSON
-		var errResp struct {
-			Error   string `json:"error"`
-			Message string `json:"message"`
-		}
-		if json.Unmarshal(respBody, &errResp) == nil {
-			if errResp.Message != "" {
-				apiErr.Message = errResp.Message
-			} else if errResp.Error != "" {
-				apiErr.Message = errResp.Error
-			}
-		}
-
-		return nil, apiErr
-	}
-
-	return respBody, nil
-}
-
-// buildURL constructs the full URL for a request.
-func (c *Client) buildURL(path string, params map[string]string) string {
-	// Handle absolute URLs
-	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-		if len(params) == 0 {
-			return path
-		}
-		return path + "?" + buildQueryString(params)
-	}
-
-	// Handle relative paths
-	var fullURL string
-	if strings.HasPrefix(path, "/") {
-		fullURL = c.baseURL + path
-	} else {
-		fullURL = c.baseURL + "/" + path
-	}
-
-	if len(params) > 0 {
-		fullURL += "?" + buildQueryString(params)
-	}
-
-	return fullURL
-}
-
-// buildQueryString builds a URL query string from params.
-func buildQueryString(params map[string]string) string {
-	values := url.Values{}
-	for key, value := range params {
-		values.Set(key, value)
-	}
-	return values.Encode()
-}
-
-// calculateDelay calculates the delay for a retry attempt.
-func (c *Client) calculateDelay(attempt int, resp *http.Response) time.Duration {
-	// Check for Retry-After header
-	if resp != nil {
-		if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
-			if seconds, err := strconv.Atoi(retryAfter); err == nil {
-				return time.Duration(seconds) * time.Second
-			}
-		}
-	}
-
-	// Exponential backoff
-	delay := float64(c.retryConfig.InitialDelay) * math.Pow(c.retryConfig.ExponentialBase, float64(attempt-1))
-	if delay > float64(c.retryConfig.MaxDelay) {
-		delay = float64(c.retryConfig.MaxDelay)
-	}
-
-	return time.Duration(delay)
-}
-
-// Close closes the client and releases resources.
-func (c *Client) Close() error {
-	return c.tokenProvider.Close()
+	return c.handleResponse(resp)
 }
 
 // GetJSON performs a GET request and unmarshals the response into v.
@@ -349,4 +256,49 @@ func (c *Client) PutJSON(ctx context.Context, path string, reqBody any, v any) e
 // ParseJSON is a helper function to unmarshal JSON into the provided value.
 func ParseJSON(data []byte, v any) error {
 	return json.Unmarshal(data, v)
+}
+
+// Close closes the client and releases resources.
+func (c *Client) Close() error {
+	return c.tokenProvider.Close()
+}
+
+// handleResponse checks the response status and returns the body or an error.
+func (c *Client) handleResponse(resp *resty.Response) ([]byte, error) {
+	if resp.StatusCode() >= 400 {
+		apiErr := &APIError{
+			StatusCode:   resp.StatusCode(),
+			ResponseBody: string(resp.Body()),
+		}
+
+		// Try to extract error message from JSON
+		var errResp struct {
+			Error   string `json:"error"`
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(resp.Body(), &errResp) == nil {
+			if errResp.Message != "" {
+				apiErr.Message = errResp.Message
+			} else if errResp.Error != "" {
+				apiErr.Message = errResp.Error
+			}
+		}
+
+		return nil, apiErr
+	}
+
+	return resp.Body(), nil
+}
+
+// buildURL constructs the full URL for a request.
+func (c *Client) buildURL(path string) string {
+	// Handle absolute URLs
+	if len(path) > 7 && (path[:7] == "http://" || path[:8] == "https://") {
+		return path
+	}
+
+	if len(path) > 0 && path[0] == '/' {
+		return c.baseURL + path
+	}
+	return c.baseURL + "/" + path
 }

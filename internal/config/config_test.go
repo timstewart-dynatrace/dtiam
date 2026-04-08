@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 )
 
@@ -275,5 +276,131 @@ func TestConfig_Validate(t *testing.T) {
 	}
 	if err := cfg3.Validate(); err == nil {
 		t.Error("Validate() should return error for nonexistent credential ref")
+	}
+}
+
+func TestSetCredentialField(t *testing.T) {
+	cfg := NewConfig()
+	cfg.SetCredential("test", "id", "secret")
+
+	tests := []struct {
+		field string
+		value string
+		check func(*Credential) string
+	}{
+		{"api-url", "https://custom.api.com", func(c *Credential) string { return c.APIURL }},
+		{"scopes", "account-idm-read,iam-policies-management", func(c *Credential) string { return c.Scopes }},
+		{"environment-url", "abc123.apps.dynatrace.com", func(c *Credential) string { return c.EnvironmentURL }},
+		{"environment-token", "env-token-123", func(c *Credential) string { return c.EnvironmentToken }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.field, func(t *testing.T) {
+			if !cfg.SetCredentialField("test", tt.field, tt.value) {
+				t.Fatalf("SetCredentialField(%q) returned false", tt.field)
+			}
+			cred := cfg.GetCredential("test")
+			if got := tt.check(cred); got != tt.value {
+				t.Errorf("field %q = %q, want %q", tt.field, got, tt.value)
+			}
+		})
+	}
+}
+
+func TestSetCredentialField_NonExistent(t *testing.T) {
+	cfg := NewConfig()
+	if cfg.SetCredentialField("nonexistent", "api-url", "value") {
+		t.Error("SetCredentialField() should return false for nonexistent credential")
+	}
+}
+
+func TestSetCredentialField_UnknownField(t *testing.T) {
+	cfg := NewConfig()
+	cfg.SetCredential("test", "id", "secret")
+	if cfg.SetCredentialField("test", "unknown-field", "value") {
+		t.Error("SetCredentialField() should return false for unknown field")
+	}
+}
+
+func TestGetEffectiveAPIURL(t *testing.T) {
+	defaultURL := "https://api.dynatrace.com/iam/v1"
+
+	t.Run("returns default when no overrides", func(t *testing.T) {
+		os.Unsetenv(EnvAPIURL)
+		got := GetEffectiveAPIURL(nil, defaultURL)
+		if got != defaultURL {
+			t.Errorf("got %q, want default %q", got, defaultURL)
+		}
+	})
+
+	t.Run("credential overrides default", func(t *testing.T) {
+		os.Unsetenv(EnvAPIURL)
+		cred := &Credential{APIURL: "https://custom.api.com"}
+		got := GetEffectiveAPIURL(cred, defaultURL)
+		if got != "https://custom.api.com" {
+			t.Errorf("got %q, want credential URL", got)
+		}
+	})
+
+	t.Run("env overrides credential", func(t *testing.T) {
+		os.Setenv(EnvAPIURL, "https://env.api.com")
+		defer os.Unsetenv(EnvAPIURL)
+		cred := &Credential{APIURL: "https://custom.api.com"}
+		got := GetEffectiveAPIURL(cred, defaultURL)
+		if got != "https://env.api.com" {
+			t.Errorf("got %q, want env URL", got)
+		}
+	})
+}
+
+func TestGetEffectiveEnvironmentURL(t *testing.T) {
+	t.Run("returns empty when no overrides", func(t *testing.T) {
+		os.Unsetenv(EnvEnvironmentURL)
+		got := GetEffectiveEnvironmentURL(nil)
+		if got != "" {
+			t.Errorf("got %q, want empty", got)
+		}
+	})
+
+	t.Run("credential returns URL", func(t *testing.T) {
+		os.Unsetenv(EnvEnvironmentURL)
+		cred := &Credential{EnvironmentURL: "abc.apps.dynatrace.com"}
+		got := GetEffectiveEnvironmentURL(cred)
+		if got != "abc.apps.dynatrace.com" {
+			t.Errorf("got %q, want credential URL", got)
+		}
+	})
+
+	t.Run("env overrides credential", func(t *testing.T) {
+		os.Setenv(EnvEnvironmentURL, "env.apps.dynatrace.com")
+		defer os.Unsetenv(EnvEnvironmentURL)
+		cred := &Credential{EnvironmentURL: "abc.apps.dynatrace.com"}
+		got := GetEffectiveEnvironmentURL(cred)
+		if got != "env.apps.dynatrace.com" {
+			t.Errorf("got %q, want env URL", got)
+		}
+	})
+}
+
+func TestCredentialNewFields_YAML(t *testing.T) {
+	cfg := NewConfig()
+	cfg.SetCredential("full", "id", "secret")
+	cfg.SetCredentialField("full", "api-url", "https://custom.api.com")
+	cfg.SetCredentialField("full", "scopes", "read,write")
+	cfg.SetCredentialField("full", "environment-url", "abc.apps.dynatrace.com")
+	cfg.SetCredentialField("full", "environment-token", "env-token")
+
+	cred := cfg.GetCredential("full")
+	if cred.APIURL != "https://custom.api.com" {
+		t.Errorf("APIURL = %q", cred.APIURL)
+	}
+	if cred.Scopes != "read,write" {
+		t.Errorf("Scopes = %q", cred.Scopes)
+	}
+	if cred.EnvironmentURL != "abc.apps.dynatrace.com" {
+		t.Errorf("EnvironmentURL = %q", cred.EnvironmentURL)
+	}
+	if cred.EnvironmentToken != "env-token" {
+		t.Errorf("EnvironmentToken = %q", cred.EnvironmentToken)
 	}
 }

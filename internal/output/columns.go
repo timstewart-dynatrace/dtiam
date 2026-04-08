@@ -114,6 +114,36 @@ func SubscriptionColumns() []Column {
 	}
 }
 
+// TokenColumns returns columns for platform token resources.
+func TokenColumns() []Column {
+	return []Column{
+		{Key: "id", Header: "ID"},
+		{Key: "name", Header: "NAME"},
+		{Key: "expiresIn", Header: "EXPIRES"},
+		{Key: "scopes", Header: "SCOPES", WideOnly: true, Formatter: FormatList},
+		{Key: "createdAt", Header: "CREATED", WideOnly: true},
+	}
+}
+
+// AppColumns returns columns for app resources.
+func AppColumns() []Column {
+	return []Column{
+		{Key: "id", Header: "ID"},
+		{Key: "name", Header: "NAME"},
+		{Key: "version", Header: "VERSION"},
+		{Key: "description", Header: "DESCRIPTION", WideOnly: true},
+	}
+}
+
+// SchemaColumns returns columns for schema resources.
+func SchemaColumns() []Column {
+	return []Column{
+		{Key: "schemaId", Header: "SCHEMA ID"},
+		{Key: "displayName", Header: "DISPLAY NAME"},
+		{Key: "latestSchemaVersion", Header: "VERSION", WideOnly: true},
+	}
+}
+
 // ContextColumns returns columns for context configuration.
 func ContextColumns() []Column {
 	return []Column{

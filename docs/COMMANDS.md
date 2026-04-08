@@ -285,6 +285,48 @@ dtiam get boundaries [IDENTIFIER] [OPTIONS]
 | `IDENTIFIER`    |       | Boundary UUID or name (optional) |
 | `--output`      | `-o`  | Output format                    |
 
+### get tokens
+
+List or get platform tokens.
+
+```bash
+dtiam get tokens [IDENTIFIER] [OPTIONS]
+```
+
+| Argument/Option | Short | Description                    |
+| --------------- | ----- | ------------------------------ |
+| `IDENTIFIER`    |       | Token ID (optional)            |
+| `--output`      | `-o`  | Output format                  |
+
+### get apps
+
+List apps from the App Engine Registry. Requires `--environment`.
+
+```bash
+dtiam get apps [IDENTIFIER] --environment ENV [OPTIONS]
+```
+
+| Argument/Option | Short | Description                              |
+| --------------- | ----- | ---------------------------------------- |
+| `IDENTIFIER`    |       | App ID (optional)                        |
+| `--environment` |       | Environment ID or URL (required)         |
+| `--output`      | `-o`  | Output format                            |
+
+### get schemas
+
+List Settings 2.0 schemas from the Environment API. Requires `--environment`.
+
+```bash
+dtiam get schemas [IDENTIFIER] --environment ENV [OPTIONS]
+```
+
+| Argument/Option | Short | Description                              |
+| --------------- | ----- | ---------------------------------------- |
+| `IDENTIFIER`    |       | Schema ID (optional)                     |
+| `--environment` |       | Environment ID or URL (required)         |
+| `--name`        |       | Filter schemas by name pattern           |
+| `--output`      | `-o`  | Output format                            |
+
 ---
 
 ## describe
@@ -436,6 +478,27 @@ Either `--zones` or `--query` must be provided.
 dtiam create boundary --name "prod-only" --zones "Production,Staging"
 ```
 
+### create token
+
+Create a new platform token. The token value is only returned once during creation.
+
+```bash
+dtiam create token [OPTIONS]
+```
+
+| Option         | Short | Description                              |
+| -------------- | ----- | ---------------------------------------- |
+| `--name`       | `-n`  | Token name (required)                    |
+| `--scopes`     |       | Comma-separated scopes                   |
+| `--expires-in` |       | Token expiration (e.g., 30d, 1y)         |
+| `--output`     | `-o`  | Output format                            |
+
+**Example:**
+
+```bash
+dtiam create token --name "CI Token" --scopes "account-idm-read" --expires-in 30d
+```
+
 ---
 
 ## delete
@@ -502,6 +565,14 @@ Delete a service user.
 
 ```bash
 dtiam delete service-user IDENTIFIER [--force]
+```
+
+### delete token
+
+Delete a platform token.
+
+```bash
+dtiam delete token IDENTIFIER [--force]
 ```
 
 ---

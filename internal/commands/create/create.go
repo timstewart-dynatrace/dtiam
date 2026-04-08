@@ -4,6 +4,7 @@ package create
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -25,6 +26,7 @@ func init() {
 	Cmd.AddCommand(policyCmd)
 	Cmd.AddCommand(bindingCmd)
 	Cmd.AddCommand(boundaryCmd)
+	Cmd.AddCommand(tokenCmd)
 }
 
 var groupCmd = &cobra.Command{
@@ -276,4 +278,86 @@ func init() {
 	boundaryCmd.Flags().StringSliceP("zone", "z", nil, "Management zone names")
 	boundaryCmd.Flags().StringP("query", "q", "", "Boundary query")
 	boundaryCmd.Flags().StringP("description", "d", "", "Boundary description")
+}
+
+var tokenCmd = &cobra.Command{
+	Use:   "token",
+	Short: "Create a new platform token",
+	Long: `Create a new platform token. The token value is only returned once during creation
+and cannot be retrieved later — save it immediately.`,
+	Example: `  # Create a token with name
+  dtiam create token --name "CI Token"
+
+  # Create a token with scopes and expiration
+  dtiam create token --name "CI Token" --scopes "account-idm-read,iam-policies-management" --expires-in 30d
+
+  # Dry run
+  dtiam create token --name "CI Token" --dry-run
+
+  # Machine-friendly output
+  dtiam create token --name "CI Token" -o json`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+		scopesStr, _ := cmd.Flags().GetString("scopes")
+		expiresIn, _ := cmd.Flags().GetString("expires-in")
+
+		if name == "" {
+			return fmt.Errorf("--name is required")
+		}
+
+		printer := cli.GlobalState.NewPrinter()
+		if cli.GlobalState.IsDryRun() {
+			printer.PrintWarning("Would create platform token: %s", name)
+			return nil
+		}
+
+		c, err := common.CreateClient()
+		if err != nil {
+			return err
+		}
+		defer c.Close()
+
+		handler := resources.NewTokenHandler(c)
+		ctx := context.Background()
+
+		var scopes []string
+		if scopesStr != "" {
+			for _, s := range splitAndTrim(scopesStr) {
+				scopes = append(scopes, s)
+			}
+		}
+
+		token, err := handler.Create(ctx, name, scopes, expiresIn)
+		if err != nil {
+			return err
+		}
+
+		printer.PrintSuccess("Platform token created successfully")
+
+		// Show the token value prominently — it cannot be retrieved later
+		if tokenValue, ok := token["token"].(string); ok && tokenValue != "" {
+			printer.PrintWarning("Save this token now — it cannot be retrieved later:")
+			printer.PrintMessage("%s", tokenValue)
+		}
+
+		return printer.Print([]map[string]any{token}, output.TokenColumns())
+	},
+}
+
+func init() {
+	tokenCmd.Flags().StringP("name", "n", "", "Token name (required)")
+	tokenCmd.Flags().String("scopes", "", "Comma-separated scopes")
+	tokenCmd.Flags().String("expires-in", "", "Token expiration (e.g., 30d, 1y)")
+}
+
+// splitAndTrim splits a comma-separated string and trims whitespace.
+func splitAndTrim(s string) []string {
+	parts := make([]string, 0)
+	for _, p := range strings.Split(s, ",") {
+		trimmed := strings.TrimSpace(p)
+		if trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return parts
 }

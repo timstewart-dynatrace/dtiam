@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/jtimothystewart/dtiam/internal/config"
 	"github.com/jtimothystewart/dtiam/internal/output"
 	"github.com/jtimothystewart/dtiam/pkg/version"
 )
@@ -59,6 +60,13 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose output")
 	RootCmd.PersistentFlags().BoolVar(&plainFlag, "plain", false, "Disable colors and interactive features")
 	RootCmd.PersistentFlags().BoolVar(&dryRunFlag, "dry-run", false, "Preview changes without applying them")
+
+	// Bind cobra flags to Viper for automatic env var support
+	_ = config.V.BindPFlag("context", RootCmd.PersistentFlags().Lookup("context"))
+	_ = config.V.BindPFlag("output", RootCmd.PersistentFlags().Lookup("output"))
+	_ = config.V.BindPFlag("verbose", RootCmd.PersistentFlags().Lookup("verbose"))
+	_ = config.V.BindPFlag("plain", RootCmd.PersistentFlags().Lookup("plain"))
+	_ = config.V.BindPFlag("dry_run", RootCmd.PersistentFlags().Lookup("dry-run"))
 
 	// Add version command
 	RootCmd.AddCommand(versionCmd)

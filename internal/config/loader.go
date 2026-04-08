@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/adrg/xdg"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -13,19 +16,44 @@ const (
 	configFile = "config"
 )
 
-// GetConfigDir returns the configuration directory path.
+// Environment variable names
+const (
+	EnvBearerToken    = "DTIAM_BEARER_TOKEN"
+	EnvClientID       = "DTIAM_CLIENT_ID"
+	EnvClientSecret   = "DTIAM_CLIENT_SECRET"
+	EnvAccountUUID    = "DTIAM_ACCOUNT_UUID"
+	EnvContext        = "DTIAM_CONTEXT"
+	EnvOutput         = "DTIAM_OUTPUT"
+	EnvVerbose        = "DTIAM_VERBOSE"
+	EnvAPIURL         = "DTIAM_API_URL"
+	EnvScopes         = "DTIAM_SCOPES"
+	EnvEnvironmentURL = "DTIAM_ENVIRONMENT_URL"
+	EnvEnvironmentTkn = "DTIAM_ENVIRONMENT_TOKEN"
+)
+
+// V is the package-level Viper instance for env/flag binding.
+var V = viper.New()
+
+func init() {
+	V.SetEnvPrefix("DTIAM")
+	V.AutomaticEnv()
+	V.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	// Bind known env vars with defaults
+	V.SetDefault("context", "")
+	V.SetDefault("output", "")
+	V.SetDefault("verbose", false)
+	V.SetDefault("plain", false)
+	V.SetDefault("dry_run", false)
+	V.SetDefault("api_url", "")
+	V.SetDefault("scopes", "")
+	V.SetDefault("environment_url", "")
+	V.SetDefault("environment_token", "")
+}
+
+// GetConfigDir returns the configuration directory path using XDG base directories.
 func GetConfigDir() (string, error) {
-	// Use XDG_CONFIG_HOME if set, otherwise use os.UserConfigDir
-	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
-		return filepath.Join(xdgConfig, configDir), nil
-	}
-
-	userConfigDir, err := os.UserConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get user config directory: %w", err)
-	}
-
-	return filepath.Join(userConfigDir, configDir), nil
+	return filepath.Join(xdg.ConfigHome, configDir), nil
 }
 
 // GetConfigPath returns the configuration file path.
@@ -52,7 +80,9 @@ func LoadFromPath(path string) (*Config, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Return new config if file doesn't exist
-			return NewConfig(), nil
+			cfg := NewConfig()
+			applyEnvOverrides(cfg)
+			return cfg, nil
 		}
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
@@ -62,7 +92,7 @@ func LoadFromPath(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
-	// Apply environment variable overrides
+	// Apply environment variable overrides via Viper
 	applyEnvOverrides(config)
 
 	return config, nil
@@ -97,26 +127,15 @@ func SaveToPath(config *Config, path string) error {
 	return nil
 }
 
-// Environment variable names
-const (
-	EnvBearerToken  = "DTIAM_BEARER_TOKEN"
-	EnvClientID     = "DTIAM_CLIENT_ID"
-	EnvClientSecret = "DTIAM_CLIENT_SECRET"
-	EnvAccountUUID  = "DTIAM_ACCOUNT_UUID"
-	EnvContext      = "DTIAM_CONTEXT"
-	EnvOutput       = "DTIAM_OUTPUT"
-	EnvVerbose      = "DTIAM_VERBOSE"
-)
-
-// applyEnvOverrides applies environment variable overrides to the config.
+// applyEnvOverrides applies environment variable overrides to the config via Viper.
 func applyEnvOverrides(config *Config) {
 	// Context override
-	if ctx := os.Getenv(EnvContext); ctx != "" {
+	if ctx := V.GetString("context"); ctx != "" {
 		config.CurrentContext = ctx
 	}
 
 	// Output preference override
-	if output := os.Getenv(EnvOutput); output != "" {
+	if output := V.GetString("output"); output != "" {
 		config.Preferences.Output = output
 	}
 }
@@ -170,4 +189,14 @@ func Exists() bool {
 	}
 	_, err = os.Stat(path)
 	return err == nil
+}
+
+// GetViperString returns a string from Viper (env or flag binding).
+func GetViperString(key string) string {
+	return V.GetString(key)
+}
+
+// GetViperBool returns a bool from Viper (env or flag binding).
+func GetViperBool(key string) bool {
+	return V.GetBool(key)
 }

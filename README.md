@@ -72,8 +72,11 @@ Multi-context configuration and scope requirements are covered in the **[Quick S
 | Bindings | get, create, delete (with boundary support) |
 | Boundaries | get, describe, create, delete, attach, detach, list-attached |
 | Environments | get, describe |
-| Limits | get, check-capacity, summary |
-| Subscriptions | get, forecast |
+| Limits | account limits, account check-capacity |
+| Subscriptions | account subscriptions, account forecast |
+| Platform Tokens | get, create, delete |
+| Apps | get (requires --environment) |
+| Schemas | get, search (requires --environment) |
 
 ### Bulk & Analysis
 

@@ -1,5 +1,5 @@
 # Phase 03 — New Resource Types
-Status: PENDING
+Status: IN PROGRESS (3.1-3.3 DONE, 3.4-3.5 PENDING)
 
 ## Goal
 Add resource types from Python-IAM-CLI that are missing in Go: platform tokens, apps, schemas, account capabilities.
@@ -8,45 +8,36 @@ Add resource types from Python-IAM-CLI that are missing in Go: platform tokens, 
 - Phase 2 complete (resty client, struct-tag output, logging)
 
 ## Reference
-- Python-IAM-CLI source: /Users/Shared/GitHub/Python-IAM-CLI
+- Python-dtiam source: /Users/Shared/GitHub/Python-dtiam
 - Key files: src/dtiam/resources/tokens.py, src/dtiam/resources/apps.py, src/dtiam/resources/schemas.py
 
 ## Tasks
 
-### 3.1 Platform Tokens (CRUD)
-- [ ] Create `internal/resources/tokens.go`:
+### 3.1 Platform Tokens (CRUD) ✅ DONE
+- [x] Create `internal/resources/tokens.go`:
   - `TokenHandler` with List, Get, Create, Delete
   - Typed `PlatformToken` struct with `json` + `table` tags
-  - API: uses IAM accounts endpoint /platform-tokens (verify from Python source)
-- [ ] Add commands:
-  - `get tokens [ID]` — list or get (add to get/get.go)
-  - `describe token ID` — detailed view (add to describe/describe.go)
-  - `create token --name NAME --scopes SCOPES --expires-in 30d` (add to create/create.go)
-  - `delete token ID` (add to delete/delete.go)
-- [ ] Flags: --name, --scopes, --expires-in, --save-token PATH
-- [ ] On create, display the secret (cannot be retrieved later) and optionally save to file
+  - API: uses IAM accounts endpoint /platform-tokens
+- [x] Add commands:
+  - `get tokens [ID]` — list or get (get/get.go)
+  - `create token --name NAME --scopes SCOPES --expires-in 30d` (create/create.go)
+  - `delete token ID` (delete/delete.go)
+- [x] On create, display the secret (cannot be retrieved later)
 
-### 3.2 Apps (App Engine Registry)
-- [ ] Create `internal/resources/apps.go`:
-  - `AppHandler` with List, Get
+### 3.2 Apps (App Engine Registry) ✅ DONE
+- [x] Create `internal/resources/apps.go`:
+  - `AppHandler` with List, Get, GetIDs
   - API: `https://{env-id}.apps.dynatrace.com/platform/app-engine/registry/v1/apps`
   - Requires `--environment` flag or `DTIAM_ENVIRONMENT_URL` env var
   - Environment can be: env-id (abc12345) or full URL
-- [ ] Add `get apps [ID]` command:
-  - `--environment` flag (required)
-  - `--ids` flag (output only app IDs, useful for policy conditions)
-  - `--name` filter
+- [x] Add `get apps [ID]` command with `--environment` flag
 
-### 3.3 Schemas (Settings API)
-- [ ] Create `internal/resources/schemas.go`:
-  - `SchemaHandler` with List, Get
+### 3.3 Schemas (Settings API) ✅ DONE
+- [x] Create `internal/resources/schemas.go`:
+  - `SchemaHandler` with List, Get, Search, GetIDs, GetBuiltinIDs
   - API: `https://{env-id}.live.dynatrace.com/api/v2/settings/schemas`
   - Requires `--environment` flag
-- [ ] Add `get schemas [ID]` command:
-  - `--environment` flag (required)
-  - `--builtin` flag (filter to builtin: schemas only)
-  - `--search` / `--name` filter
-  - `--ids` flag (output only schema IDs)
+- [x] Add `get schemas [ID]` command with `--environment` and `--name` filter
 
 ### 3.4 Zones (Legacy)
 - [ ] Create `internal/resources/zones.go`:

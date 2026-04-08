@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-04-08
+
+### Added
+
+- **Platform tokens** — `get tokens`, `create token`, `delete token` commands for IAM platform token management
+- **App Engine Registry** — `get apps` command with `--environment` flag for listing apps
+- **Settings schemas** — `get schemas` command with `--environment` and `--name` filter for Settings 2.0 schemas
+- **Resty HTTP client** — replaced stdlib `net/http` with `go-resty/resty/v2` for built-in retry, debug mode, and request hooks
+- **Viper config** — automatic `DTIAM_*` env var binding via `spf13/viper`, XDG paths via `adrg/xdg`
+- **Structured logging** — `internal/logging/` package with `sirupsen/logrus` (verbosity levels, HTTP request logging)
+- **Diagnostic errors** — `internal/diagnostic/` package with exit codes (auth=3, not-found=4, forbidden=5) and troubleshooting suggestions
+- **Command suggestions** — `internal/suggest/` Levenshtein engine for typo correction
+- **Struct-tag output** — `internal/output/structprinter.go` reads `table` struct tags via reflection for type-safe column rendering
+- **Typed resource structs** — `internal/resources/types.go` with `json` + `table` tags for all 12 resource types
+- **Credential enhancements** — `api-url`, `scopes`, `environment-url`, `environment-token` fields per credential
+- **New env vars** — `DTIAM_API_URL`, `DTIAM_SCOPES`, `DTIAM_ENVIRONMENT_URL`, `DTIAM_ENVIRONMENT_TOKEN`, `DTIAM_OUTPUT`, `DTIAM_VERBOSE`
+- **Comprehensive test coverage** — 737 tests across 26 packages (resource handlers, commands, output, auth, prompt, CLI state)
+
+### Fixed
+
+- **Bulk flag conflict** — removed duplicate `-f` shorthand on `remove-users-from-group` (was `--file` and `--force` both using `-f`)
+
 ## [1.2.1] - 2026-04-07
 
 ### Fixed

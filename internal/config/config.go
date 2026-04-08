@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -36,8 +37,12 @@ type NamedCredential struct {
 
 // Credential holds OAuth2 credentials.
 type Credential struct {
-	ClientID     string `yaml:"client-id" json:"client-id"`
-	ClientSecret string `yaml:"client-secret" json:"client-secret"`
+	ClientID         string `yaml:"client-id" json:"client-id"`
+	ClientSecret     string `yaml:"client-secret" json:"client-secret"`
+	APIURL           string `yaml:"api-url,omitempty" json:"api-url,omitempty"`
+	Scopes           string `yaml:"scopes,omitempty" json:"scopes,omitempty"`
+	EnvironmentURL   string `yaml:"environment-url,omitempty" json:"environment-url,omitempty"`
+	EnvironmentToken string `yaml:"environment-token,omitempty" json:"environment-token,omitempty"`
 }
 
 // Preferences holds user preferences.
@@ -150,6 +155,52 @@ func (c *Config) SetCredential(name, clientID, clientSecret string) {
 			ClientSecret: clientSecret,
 		},
 	})
+}
+
+// SetCredentialField updates a single field on an existing credential.
+// Returns false if the credential does not exist.
+func (c *Config) SetCredentialField(name, field, value string) bool {
+	for i := range c.Credentials {
+		if c.Credentials[i].Name == name {
+			cred := &c.Credentials[i].Credential
+			switch field {
+			case "api-url":
+				cred.APIURL = value
+			case "scopes":
+				cred.Scopes = value
+			case "environment-url":
+				cred.EnvironmentURL = value
+			case "environment-token":
+				cred.EnvironmentToken = value
+			default:
+				return false
+			}
+			return true
+		}
+	}
+	return false
+}
+
+// GetEffectiveAPIURL returns the API base URL, checking env > credential > default.
+func GetEffectiveAPIURL(cred *Credential, defaultURL string) string {
+	if envURL := os.Getenv(EnvAPIURL); envURL != "" {
+		return envURL
+	}
+	if cred != nil && cred.APIURL != "" {
+		return cred.APIURL
+	}
+	return defaultURL
+}
+
+// GetEffectiveEnvironmentURL returns the environment URL, checking env > credential.
+func GetEffectiveEnvironmentURL(cred *Credential) string {
+	if envURL := os.Getenv(EnvEnvironmentURL); envURL != "" {
+		return envURL
+	}
+	if cred != nil && cred.EnvironmentURL != "" {
+		return cred.EnvironmentURL
+	}
+	return ""
 }
 
 // DeleteContext removes a context by name. Returns true if deleted.

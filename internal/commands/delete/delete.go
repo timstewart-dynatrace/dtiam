@@ -27,6 +27,7 @@ func init() {
 	Cmd.AddCommand(boundaryCmd)
 	Cmd.AddCommand(userCmd)
 	Cmd.AddCommand(serviceUserCmd)
+	Cmd.AddCommand(tokenCmd)
 }
 
 var groupCmd = &cobra.Command{
@@ -374,4 +375,52 @@ var serviceUserCmd = &cobra.Command{
 
 func init() {
 	serviceUserCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+}
+
+var tokenCmd = &cobra.Command{
+	Use:   "token IDENTIFIER",
+	Short: "Delete a platform token by ID",
+	Example: `  # Delete a token by ID
+  dtiam delete token abc-123
+
+  # Delete without confirmation
+  dtiam delete token abc-123 --force
+
+  # Preview deletion
+  dtiam delete token abc-123 --dry-run`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		force, _ := cmd.Flags().GetBool("force")
+		printer := cli.GlobalState.NewPrinter()
+
+		if cli.GlobalState.IsDryRun() {
+			printer.PrintWarning("Would delete platform token: %s", args[0])
+			return nil
+		}
+
+		if !prompt.ConfirmDelete("platform token", args[0], force || cli.GlobalState.IsPlain()) {
+			printer.PrintMessage("Aborted.")
+			return nil
+		}
+
+		c, err := common.CreateClient()
+		if err != nil {
+			return err
+		}
+		defer c.Close()
+
+		handler := resources.NewTokenHandler(c)
+		ctx := context.Background()
+
+		if err := handler.Delete(ctx, args[0]); err != nil {
+			return err
+		}
+
+		printer.PrintSuccess("Platform token %q deleted successfully", args[0])
+		return nil
+	},
+}
+
+func init() {
+	tokenCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
