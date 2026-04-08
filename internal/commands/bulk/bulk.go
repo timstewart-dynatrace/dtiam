@@ -375,7 +375,7 @@ func init() {
 	removeUsersFromGroupCmd.Flags().StringP("group", "g", "", "Group UUID or name")
 	removeUsersFromGroupCmd.Flags().StringP("user-field", "u", "email", "Field name containing email or UID")
 	removeUsersFromGroupCmd.Flags().Bool("continue-on-error", false, "Continue processing on errors")
-	removeUsersFromGroupCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	removeUsersFromGroupCmd.Flags().Bool("force", false, "Skip confirmation prompt")
 }
 
 var createGroupsCmd = &cobra.Command{

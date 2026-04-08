@@ -149,6 +149,11 @@ func (c *Client) BaseURL() string {
 	return c.baseURL
 }
 
+// SetBaseURL overrides the base URL (for testing only).
+func (c *Client) SetBaseURL(url string) {
+	c.baseURL = url
+}
+
 // Get performs a GET request.
 func (c *Client) Get(ctx context.Context, path string, params map[string]string) ([]byte, error) {
 	url := c.buildURL(path)
