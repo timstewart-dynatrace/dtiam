@@ -51,7 +51,7 @@ This file provides guidance for AI agents working with the dtiam codebase.
    - Include Co-Authored-By line
 ```
 
-**Current Version: 1.2.1** (as of 2026-04-07)
+**Current Version: 1.3.0** (as of 2026-04-07)
 
 **FAILURE TO FOLLOW THIS CHECKLIST WILL RESULT IN INCOMPLETE RELEASES.**
 
@@ -166,7 +166,7 @@ git push
 
 **ALL merges to main that add features or fixes MUST increment the version number.**
 
-Current version: **1.2.1** (defined in `pkg/version/version.go` and set via ldflags)
+Current version: **1.3.0** (defined in `pkg/version/version.go` and set via ldflags)
 
 #### Semantic Versioning (SemVer)
 

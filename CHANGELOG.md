@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-04-08
+
 ### Added
 
 - **Platform tokens** — `get tokens`, `create token`, `delete token` commands for IAM platform token management
