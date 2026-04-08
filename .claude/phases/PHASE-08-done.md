@@ -1,5 +1,5 @@
 # Phase 08 — Retroactive Test Coverage
-Status: PENDING
+Status: DONE
 
 ## Goal
 Comprehensive test coverage for ALL features that existed before Phase 2. Every resource handler, command, output format, and utility must have tests. Target: establish a regression safety net so Phase 2+ refactoring doesn't break existing behavior.

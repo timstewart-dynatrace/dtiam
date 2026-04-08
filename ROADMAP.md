@@ -16,7 +16,7 @@ This document consolidates all implementation phases for bringing dtiam to full 
 | 5 | Templates & Apply | Pending | Template engine, declarative apply, bulk create-groups-with-policies |
 | 6 | Caching & Analysis | Pending | TTL cache, permission gaps, permission diff, risk scoring |
 | 7 | Polish & Release | Pending | >70% coverage, full docs, v2.0.0 tag |
-| 8 | Retroactive Tests | Pending | Test coverage for all existing (pre-Phase 2) features |
+| 8 | Retroactive Tests | **Done** | 737 tests across 26 packages — resource handlers, commands, output, auth, prompt |
 
 ---
 
