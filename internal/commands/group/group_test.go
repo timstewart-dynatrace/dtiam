@@ -7,7 +7,7 @@ import (
 )
 
 func TestGroupCmd_HasSubcommands(t *testing.T) {
-	expected := []string{"members", "add-member", "remove-member", "bindings"}
+	expected := []string{"members", "add-member", "remove-member", "bindings", "clone", "setup"}
 
 	subcmds := Cmd.Commands()
 	names := make(map[string]bool)
@@ -112,6 +112,61 @@ func TestBindingsCmd_Args(t *testing.T) {
 	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when no args provided to bindings")
+	}
+}
+
+func TestCloneCmd_Args(t *testing.T) {
+	var buf bytes.Buffer
+	Cmd.SetOut(&buf)
+	Cmd.SetErr(&buf)
+	Cmd.SetArgs([]string{"clone"})
+
+	err := Cmd.Execute()
+	if err == nil {
+		t.Error("expected error when no args provided to clone")
+	}
+}
+
+func TestCloneCmd_Flags(t *testing.T) {
+	flags := []string{"name", "description", "include-members", "include-policies"}
+	for _, name := range flags {
+		f := cloneCmd.Flags().Lookup(name)
+		if f == nil {
+			t.Errorf("clone command should have --%s flag", name)
+		}
+	}
+}
+
+func TestCloneCmd_NameRequired(t *testing.T) {
+	f := cloneCmd.Flags().Lookup("name")
+	if f == nil {
+		t.Fatal("clone command should have --name flag")
+	}
+	// MarkFlagRequired sets annotations
+	if _, ok := f.Annotations["cobra_annotation_bash_completion_one_required_flag"]; !ok {
+		t.Error("--name flag should be marked as required")
+	}
+}
+
+func TestSetupCmd_Flags(t *testing.T) {
+	flags := []string{"name", "description", "policies-file"}
+	for _, name := range flags {
+		f := setupCmd.Flags().Lookup(name)
+		if f == nil {
+			t.Errorf("setup command should have --%s flag", name)
+		}
+	}
+}
+
+func TestSetupCmd_RequiredFlags(t *testing.T) {
+	for _, name := range []string{"name", "policies-file"} {
+		f := setupCmd.Flags().Lookup(name)
+		if f == nil {
+			t.Fatalf("setup command should have --%s flag", name)
+		}
+		if _, ok := f.Annotations["cobra_annotation_bash_completion_one_required_flag"]; !ok {
+			t.Errorf("--%s flag should be marked as required", name)
+		}
 	}
 }
 

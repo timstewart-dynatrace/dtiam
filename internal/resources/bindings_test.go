@@ -112,7 +112,7 @@ func TestBindingHandler_Create_Success(t *testing.T) {
 	})
 
 	h := newTestBindingHandler(t, mux)
-	result, err := h.Create(context.Background(), "g1", "p1", []string{"b1"})
+	result, err := h.Create(context.Background(), "g1", "p1", []string{"b1"}, nil)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestBindingHandler_Create_NoBoundaries(t *testing.T) {
 	})
 
 	h := newTestBindingHandler(t, mux)
-	_, err := h.Create(context.Background(), "g1", "p1", nil)
+	_, err := h.Create(context.Background(), "g1", "p1", nil, nil)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}

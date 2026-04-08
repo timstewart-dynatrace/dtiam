@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-04-08
+
+### Added
+
+- **Group clone** — `group clone SOURCE --name NEW [--include-members] [--include-policies]` clones a group with optional members and policy bindings
+- **App boundaries** — `boundary create-app-boundary NAME --app-ids ...` creates boundaries scoped to specific Dynatrace apps with optional validation
+- **Schema boundaries** — `boundary create-schema-boundary NAME --schema-ids ...` creates boundaries scoped to specific Settings 2.0 schemas with optional validation
+- **Group setup** — `group setup --name NAME --policies-file FILE` one-step group provisioning from YAML/JSON policy definitions
+- **Parameterized policies** — `create binding --param key=value` passes bind parameters for `${bindParam:name}` substitution in policy statements
+
 ## [1.4.0] - 2026-04-08
 
 ### Added

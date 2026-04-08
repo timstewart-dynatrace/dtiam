@@ -589,7 +589,7 @@ JSON/YAML example:
 				boundaries = []string{boundaryID}
 			}
 
-			_, err = bindingHandler.Create(ctx, groupUUID, policyUUID, boundaries)
+			_, err = bindingHandler.Create(ctx, groupUUID, policyUUID, boundaries, nil)
 			if err != nil {
 				failCount++
 				fmt.Printf("  Failed to create binding %s -> %s: %v\n", groupID, policyID, err)
