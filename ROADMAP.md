@@ -12,7 +12,7 @@ This document consolidates all implementation phases for bringing dtiam to full 
 | 1.5 | Command Standards | **Done** | Centralized prompts, --plain JSON override, Example help text |
 | 2 | Architecture Alignment | **Done** | Resty client, Viper config, Logrus logging, struct-tag output |
 | 3 | Quick Wins | **Done** | Account capabilities command, per-resource exports, user info alias |
-| 4 | Advanced Operations | Pending | Group clone, app/schema boundaries, group setup, parameterized policies |
+| 4 | Advanced Operations | **Done** | Group clone, app/schema boundaries, group setup, parameterized policies |
 | 5 | Templates & Apply | Pending | Template engine, template commands, declarative apply, bulk groups+policies |
 | 6 | Analysis & Caching | Pending | Permission diff/gaps, enhanced least-privilege, functional cache |
 | 7 | Zones (Legacy) | Pending | Management zones via entities API (legacy, low priority) |
@@ -131,7 +131,7 @@ Resty HTTP client with retry/backoff, Viper config with env binding, Logrus stru
 
 ## Current Implementation Summary
 
-**Fully implemented (65+ subcommands, 13 resource handlers, 750+ tests):**
+**Fully implemented (70+ subcommands, 13 resource handlers, 770+ tests):**
 - All core CRUD: groups, users, service users, policies, bindings, boundaries
 - Resource types: environments, limits, subscriptions, platform tokens, apps, schemas
 - Bulk ops: add/remove users, create groups, create bindings, export group members
@@ -145,10 +145,7 @@ Resty HTTP client with retry/backoff, Viper config with env binding, Logrus stru
 **Stub/placeholder:**
 - Cache commands (no-op, documented as non-persistent)
 
-**Not yet implemented (~6% of Python CLI parity):**
+**Not yet implemented (~4% of Python CLI parity):**
 - Templates & apply (Phase 5)
 - Zones (Phase 7)
-- Group clone/setup (Phase 4)
-- App/schema boundary helpers (Phase 4)
-- Parameterized policies (Phase 4)
 - Permission diff/gaps (Phase 6)

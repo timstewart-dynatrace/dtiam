@@ -77,7 +77,7 @@ func TestCreatePolicyCmd_Flags(t *testing.T) {
 }
 
 func TestCreateBindingCmd_Flags(t *testing.T) {
-	flags := []string{"group", "policy", "boundary"}
+	flags := []string{"group", "policy", "boundary", "param"}
 	for _, name := range flags {
 		f := bindingCmd.Flags().Lookup(name)
 		if f == nil {

@@ -162,6 +162,9 @@ var bindingCmd = &cobra.Command{
   # Create a binding with boundary constraints
   dtiam create binding --group GROUP_UUID --policy POLICY_UUID --boundary BOUNDARY_UUID
 
+  # Create a binding with parameters for parameterized policies
+  dtiam create binding --group GROUP_UUID --policy POLICY_UUID --param env=production --param region=us-east
+
   # Dry run to preview
   dtiam create binding --group GROUP_UUID --policy POLICY_UUID --dry-run
 
@@ -171,6 +174,7 @@ var bindingCmd = &cobra.Command{
 		groupID, _ := cmd.Flags().GetString("group")
 		policyID, _ := cmd.Flags().GetString("policy")
 		boundaries, _ := cmd.Flags().GetStringSlice("boundary")
+		params, _ := cmd.Flags().GetStringSlice("param")
 
 		if groupID == "" {
 			return fmt.Errorf("--group is required")
@@ -179,9 +183,25 @@ var bindingCmd = &cobra.Command{
 			return fmt.Errorf("--policy is required")
 		}
 
+		// Parse --param key=value pairs
+		var parameters map[string]string
+		if len(params) > 0 {
+			parameters = make(map[string]string)
+			for _, p := range params {
+				parts := strings.SplitN(p, "=", 2)
+				if len(parts) != 2 {
+					return fmt.Errorf("invalid --param format %q: expected key=value", p)
+				}
+				parameters[parts[0]] = parts[1]
+			}
+		}
+
 		printer := cli.GlobalState.NewPrinter()
 		if cli.GlobalState.IsDryRun() {
 			printer.PrintWarning("Would create binding: group=%s policy=%s", groupID, policyID)
+			if len(parameters) > 0 {
+				printer.PrintWarning("  with parameters: %v", parameters)
+			}
 			return nil
 		}
 
@@ -194,7 +214,7 @@ var bindingCmd = &cobra.Command{
 		handler := resources.NewBindingHandler(c)
 		ctx := context.Background()
 
-		binding, err := handler.Create(ctx, groupID, policyID, boundaries)
+		binding, err := handler.Create(ctx, groupID, policyID, boundaries, parameters)
 		if err != nil {
 			return err
 		}
@@ -208,6 +228,7 @@ func init() {
 	bindingCmd.Flags().StringP("group", "g", "", "Group UUID (required)")
 	bindingCmd.Flags().StringP("policy", "p", "", "Policy UUID (required)")
 	bindingCmd.Flags().StringSliceP("boundary", "b", nil, "Boundary UUIDs")
+	bindingCmd.Flags().StringSlice("param", nil, "Bind parameters as key=value (repeatable)")
 }
 
 var boundaryCmd = &cobra.Command{

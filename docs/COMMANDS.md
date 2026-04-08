@@ -441,17 +441,19 @@ Create a policy binding (bind a policy to a group).
 dtiam create binding [OPTIONS]
 ```
 
-| Option       | Short | Description                      |
-| ------------ | ----- | -------------------------------- |
-| `--group`    | `-g`  | Group UUID or name (required)    |
-| `--policy`   | `-p`  | Policy UUID or name (required)   |
-| `--boundary` | `-b`  | Boundary UUID or name (optional) |
-| `--output`   | `-o`  | Output format                    |
+| Option       | Short | Description                                    |
+| ------------ | ----- | ---------------------------------------------- |
+| `--group`    | `-g`  | Group UUID or name (required)                  |
+| `--policy`   | `-p`  | Policy UUID or name (required)                 |
+| `--boundary` | `-b`  | Boundary UUID or name (optional)               |
+| `--param`    |       | Bind parameter as key=value (repeatable)       |
+| `--output`   | `-o`  | Output format                                  |
 
-**Example:**
+**Examples:**
 
 ```bash
 dtiam create binding --group "DevOps Team" --policy "admin-policy"
+dtiam create binding --group "DevOps Team" --policy "env-policy" --param env=production --param region=us-east
 ```
 
 ### create boundary
@@ -842,6 +844,60 @@ List all policy bindings for a group.
 dtiam group bindings IDENTIFIER [--output FORMAT]
 ```
 
+### group clone
+
+Clone an existing group with optional members and policy bindings.
+
+```bash
+dtiam group clone SOURCE --name NEW_NAME [OPTIONS]
+```
+
+| Option               | Short | Description                                |
+| -------------------- | ----- | ------------------------------------------ |
+| `--name`             | `-n`  | Name for the new group (required)          |
+| `--description`      | `-d`  | Description for the new group              |
+| `--include-members`  |       | Copy group members to the new group        |
+| `--include-policies` |       | Copy policy bindings to the new group      |
+
+**Examples:**
+
+```bash
+dtiam group clone "Production Team" --name "Staging Team"
+dtiam group clone "Production Team" --name "Staging Team" --include-members --include-policies
+dtiam group clone "Production Team" --name "Staging Team" --dry-run
+```
+
+### group setup
+
+One-step group provisioning from a YAML/JSON policies file.
+
+```bash
+dtiam group setup --name NAME --policies-file FILE [OPTIONS]
+```
+
+| Option             | Short | Description                                       |
+| ------------------ | ----- | ------------------------------------------------- |
+| `--name`           | `-n`  | Name for the new group (required)                 |
+| `--description`    | `-d`  | Group description                                 |
+| `--policies-file`  | `-f`  | YAML or JSON file with policy definitions (required) |
+
+**Policies file format:**
+
+```yaml
+policies:
+  - name: "ReadOnly Policy"
+    boundaries:
+      - "boundary-uuid-1"
+  - name: "Admin Policy"
+```
+
+**Examples:**
+
+```bash
+dtiam group setup --name "New Team" --policies-file policies.yaml
+dtiam group setup --name "New Team" --policies-file policies.yaml --dry-run
+```
+
 ---
 
 ## boundary
@@ -888,6 +944,53 @@ List all bindings that use a boundary.
 
 ```bash
 dtiam boundary list-attached BOUNDARY [--output FORMAT]
+```
+
+### boundary create-app-boundary
+
+Create a boundary scoped to specific Dynatrace app IDs.
+
+```bash
+dtiam boundary create-app-boundary NAME --app-ids ID1,ID2 [OPTIONS]
+```
+
+| Option              | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| `--app-ids`         | Comma-separated app IDs (required)             |
+| `--not-in`          | Use NOT IN (exclude apps instead of allow)     |
+| `--environment`     | Environment ID for app validation              |
+| `--description`     | Boundary description                           |
+| `--skip-validation` | Skip app ID validation                         |
+
+**Examples:**
+
+```bash
+dtiam boundary create-app-boundary "Dashboard Apps" --app-ids dynatrace.dashboards,dynatrace.notebooks
+dtiam boundary create-app-boundary "No Classic" --app-ids dynatrace.classic.smartscape --not-in
+dtiam boundary create-app-boundary "My Apps" --app-ids dynatrace.dashboards --environment abc12345
+```
+
+### boundary create-schema-boundary
+
+Create a boundary scoped to specific Settings 2.0 schema IDs.
+
+```bash
+dtiam boundary create-schema-boundary NAME --schema-ids ID1,ID2 [OPTIONS]
+```
+
+| Option              | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| `--schema-ids`      | Comma-separated schema IDs (required)          |
+| `--not-in`          | Use NOT IN (exclude schemas instead of allow)  |
+| `--environment`     | Environment ID for schema validation           |
+| `--description`     | Boundary description                           |
+| `--skip-validation` | Skip schema ID validation                      |
+
+**Examples:**
+
+```bash
+dtiam boundary create-schema-boundary "Alerting Only" --schema-ids builtin:alerting.profile,builtin:alerting.maintenance-window
+dtiam boundary create-schema-boundary "No Spans" --schema-ids builtin:span-attribute --not-in
 ```
 
 ---

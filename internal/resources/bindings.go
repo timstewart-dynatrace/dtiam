@@ -76,14 +76,17 @@ func (h *BindingHandler) GetForGroup(ctx context.Context, groupID string) ([]map
 	return h.flattenBindings(body)
 }
 
-// Create creates a new binding.
-func (h *BindingHandler) Create(ctx context.Context, groupUUID, policyUUID string, boundaries []string) (map[string]any, error) {
+// Create creates a new binding. Parameters is optional and can be nil.
+func (h *BindingHandler) Create(ctx context.Context, groupUUID, policyUUID string, boundaries []string, parameters map[string]string) (map[string]any, error) {
 	binding := map[string]any{
 		"policyUuid": policyUUID,
 		"groups":     []string{groupUUID},
 	}
 	if len(boundaries) > 0 {
 		binding["boundaries"] = boundaries
+	}
+	if len(parameters) > 0 {
+		binding["parameters"] = parameters
 	}
 
 	data := map[string]any{
@@ -96,13 +99,17 @@ func (h *BindingHandler) Create(ctx context.Context, groupUUID, policyUUID strin
 	}
 
 	if len(body) == 0 {
-		return map[string]any{
+		result := map[string]any{
 			"groupUuid":  groupUUID,
 			"policyUuid": policyUUID,
 			"boundaries": boundaries,
 			"levelType":  h.LevelType,
 			"levelId":    h.LevelID,
-		}, nil
+		}
+		if len(parameters) > 0 {
+			result["parameters"] = parameters
+		}
+		return result, nil
 	}
 
 	var result map[string]any

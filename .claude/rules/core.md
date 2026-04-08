@@ -53,7 +53,7 @@ git merge feature/my-feature --no-ff
 
 **ALL merges to main that add features or fixes MUST increment the version number.**
 
-Current version: **1.4.0** (defined in `pkg/version/version.go`)
+Current version: **1.5.0** (defined in `pkg/version/version.go`)
 
 **Semantic Versioning:**
 - **MAJOR** (X.0.0) — Breaking CLI changes, removed commands/options

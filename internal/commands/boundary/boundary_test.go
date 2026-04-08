@@ -7,7 +7,7 @@ import (
 )
 
 func TestBoundaryCmd_HasSubcommands(t *testing.T) {
-	expected := []string{"attach", "detach", "list-attached"}
+	expected := []string{"attach", "detach", "list-attached", "create-app-boundary", "create-schema-boundary"}
 
 	subcmds := Cmd.Commands()
 	names := make(map[string]bool)
@@ -92,6 +92,91 @@ func TestListAttachedCmd_Args(t *testing.T) {
 	err := Cmd.Execute()
 	if err == nil {
 		t.Error("expected error when no args provided to list-attached")
+	}
+}
+
+func TestCreateAppBoundaryCmd_Args(t *testing.T) {
+	var buf bytes.Buffer
+	Cmd.SetOut(&buf)
+	Cmd.SetErr(&buf)
+	Cmd.SetArgs([]string{"create-app-boundary"})
+
+	err := Cmd.Execute()
+	if err == nil {
+		t.Error("expected error when no args provided to create-app-boundary")
+	}
+}
+
+func TestCreateAppBoundaryCmd_Flags(t *testing.T) {
+	flags := []string{"app-ids", "not-in", "environment", "description", "skip-validation"}
+	for _, name := range flags {
+		f := createAppBoundaryCmd.Flags().Lookup(name)
+		if f == nil {
+			t.Errorf("create-app-boundary command should have --%s flag", name)
+		}
+	}
+}
+
+func TestCreateSchemaBoundaryCmd_Args(t *testing.T) {
+	var buf bytes.Buffer
+	Cmd.SetOut(&buf)
+	Cmd.SetErr(&buf)
+	Cmd.SetArgs([]string{"create-schema-boundary"})
+
+	err := Cmd.Execute()
+	if err == nil {
+		t.Error("expected error when no args provided to create-schema-boundary")
+	}
+}
+
+func TestCreateSchemaBoundaryCmd_Flags(t *testing.T) {
+	flags := []string{"schema-ids", "not-in", "environment", "description", "skip-validation"}
+	for _, name := range flags {
+		f := createSchemaBoundaryCmd.Flags().Lookup(name)
+		if f == nil {
+			t.Errorf("create-schema-boundary command should have --%s flag", name)
+		}
+	}
+}
+
+func TestBuildBoundaryQuery(t *testing.T) {
+	tests := []struct {
+		name     string
+		prefix   string
+		operator string
+		ids      []string
+		expected string
+	}{
+		{
+			name:     "app IN single",
+			prefix:   "shared:app-id",
+			operator: "IN",
+			ids:      []string{"dynatrace.dashboards"},
+			expected: `shared:app-id IN ("dynatrace.dashboards")`,
+		},
+		{
+			name:     "app NOT IN multiple",
+			prefix:   "shared:app-id",
+			operator: "NOT IN",
+			ids:      []string{"app1", "app2"},
+			expected: `shared:app-id NOT IN ("app1", "app2")`,
+		},
+		{
+			name:     "schema IN",
+			prefix:   "settings:schemaId",
+			operator: "IN",
+			ids:      []string{"builtin:alerting.profile", "builtin:alerting.maintenance-window"},
+			expected: `settings:schemaId IN ("builtin:alerting.profile", "builtin:alerting.maintenance-window")`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildBoundaryQuery(tt.prefix, tt.operator, tt.ids)
+			if got != tt.expected {
+				t.Errorf("buildBoundaryQuery() = %q, want %q", got, tt.expected)
+			}
+		})
 	}
 }
 

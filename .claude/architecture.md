@@ -205,6 +205,20 @@ Level types: `account`, `environment`, `global`
 | `analyze effective-user` | Get user permissions via API |
 | `analyze effective-group` | Get group permissions via API |
 
+### Advanced Group Operations
+
+| Command | Description |
+|---------|-------------|
+| `group clone SOURCE` | Clone group with optional members and policy bindings |
+| `group setup` | One-step group provisioning from YAML/JSON policies file |
+
+### Boundary Helpers
+
+| Command | Description |
+|---------|-------------|
+| `boundary create-app-boundary NAME` | Create boundary scoped to app IDs (`shared:app-id IN/NOT IN`) |
+| `boundary create-schema-boundary NAME` | Create boundary scoped to schema IDs (`settings:schemaId IN/NOT IN`) |
+
 ### Not Yet Implemented
 
 | Feature | Description | Priority |

@@ -210,3 +210,4 @@ __marimo__/
 bin/dtiam
 internal/.DS_Store
 .DS_Store
+coverage.out
