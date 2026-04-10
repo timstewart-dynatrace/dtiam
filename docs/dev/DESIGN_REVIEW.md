@@ -37,7 +37,7 @@ The following dtiam features have a 1:1 mapping in the proposed `dtctl iam` name
 | `group clone SOURCE` (clone with members and bindings) | Not mentioned | **Gap worth noting.** Group cloning is a high-value operation for account provisioning. It's a compound operation (create group + copy members + copy bindings) that doesn't map to a single CRUD verb. Should be considered for Phase 4 or as a separate proposal. |
 | `group setup` (one-step provisioning from YAML) | Not mentioned | **Covered by apply.** This was dtiam's precursor to the full apply system. dtctl's apply handles the same use case. |
 | `boundary create-app-boundary / create-schema-boundary` | Not mentioned | **Minor gap.** These are convenience commands that construct boundary query strings from simpler inputs. Could be added as `dtctl iam create boundary --type app --ids "dynatrace.dashboards,dynatrace.logs"` or similar. |
-| `analyze group-permissions / policy / effective-user / effective-group` | Not mentioned (only `user-permissions`, `permissions-matrix`, `least-privilege` listed) | **Gap.** dtiam has 7 analyze subcommands; the design lists 3. The omitted ones (`group-permissions`, `policy`, `effective-user`, `effective-group`) are useful. `effective-user` and `effective-group` use the Resolution API directly. |
+| `analyze group-permissions / policy / effective-user / effective-group` | Not mentioned (only `user-permissions`, `permissions-matrix`, `least-privilege` listed) | **Not recommended for dtctl.** These fill a niche in dtiam but saw limited real-world use. The client-side permission analysis algorithms are complex to maintain and produce approximations that can diverge from the platform's actual resolution. dtctl should focus on the Resolution API-based commands (`effective-user`, `effective-group`) if anything — those show authoritative results. The client-side calculators are not worth the implementation and maintenance cost. |
 | `export --as-template` (export policy as Go template) | Not mentioned | **Minor.** Useful for template authors but niche. |
 | `bulk remove-users-from-group / export-group-members` | Not mentioned (only `add-users-to-group`, `create-groups`, `create-bindings` listed) | **Gap.** `remove-users-from-group` is the inverse of `add-users-to-group`. `export-group-members` is useful for auditing. Both should be included. |
 
@@ -245,18 +245,21 @@ This is a Phase 4+ addition but should be noted in the design.
 
 **Recommendation:** Add to Phase 4 as `dtctl iam clone group`.
 
-### 4. Missing Analyze Subcommands
+### 4. Analyze Subcommands — Not Recommended
 
-The IAM design lists 3 analyze operations. dtiam has 7:
-- `analyze user-permissions` (listed)
-- `analyze group-permissions` (missing)
-- `analyze permissions-matrix` (listed)
-- `analyze policy` (missing)
-- `analyze least-privilege` (listed)
-- `analyze effective-user` (missing — uses Resolution API)
-- `analyze effective-group` (missing — uses Resolution API)
+The IAM design lists 3 analyze operations. dtiam has 7, but most are **not recommended for dtctl**:
 
-**Recommendation:** Include all 7 in Phase 4. The Resolution API-based commands (`effective-user`, `effective-group`) are especially valuable because they show what the Dynatrace platform actually computes, not just what the client calculates.
+- `analyze user-permissions` (listed) — client-side approximation, niche use
+- `analyze group-permissions` (missing) — client-side approximation, niche use
+- `analyze permissions-matrix` (listed) — interesting for audits but complex to maintain
+- `analyze policy` (missing) — niche
+- `analyze least-privilege` (listed) — heuristic, not authoritative
+- `analyze effective-user` (missing) — **worth considering** — uses Resolution API, shows authoritative platform results
+- `analyze effective-group` (missing) — **worth considering** — same, for groups
+
+The client-side permission analysis algorithms (`user-permissions`, `group-permissions`, `permissions-matrix`, `policy`, `least-privilege`) are complex to implement, make many API calls (O(groups * bindings)), and produce approximations that can diverge from what Dynatrace actually computes. They filled a niche in dtiam but saw limited real-world use.
+
+**Recommendation:** Skip the client-side analysis commands. If analyze functionality is desired, implement only `effective-user` and `effective-group` — these call the Dynatrace Resolution API and return authoritative results with minimal client-side logic.
 
 ### 5. Missing Bulk Operations
 
@@ -289,7 +292,7 @@ dtiam should document this trajectory for its users. The current v2.0.0 release 
 | 1 | Resolve PKCE scope coverage before Phase 1 | **Blocker** |
 | 2 | Add `dtctl iam export` for backup/migration use cases | High |
 | 3 | Add `dtctl iam clone group` for compound provisioning | Medium |
-| 4 | Include all 7 analyze subcommands from dtiam | Medium |
+| 4 | Skip client-side analyze commands; consider only `effective-user` and `effective-group` (Resolution API) | Low |
 | 5 | Include all 5 bulk operations from dtiam | Medium |
 | 6 | Add boundary convenience commands (app-boundary, schema-boundary) | Low |
 | 7 | Document tab-completion caching strategy for API-backed completions | Low |
