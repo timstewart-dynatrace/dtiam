@@ -187,6 +187,7 @@ make build-all   # Build for all platforms
 - [Command Reference](docs/COMMANDS.md) - All verbs, flags, resource types, and examples
 - [Architecture](docs/ARCHITECTURE.md) - Technical design and implementation
 - [API Reference](docs/API_REFERENCE.md) - Programmatic usage for Go consumers
+- [Policies with Boundaries](docs/POLICIES_WITH_BOUNDARIES.md) - How effective permissions are calculated when boundaries apply
 
 ## License
 

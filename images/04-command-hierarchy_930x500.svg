@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 500" font-family="Inter, system-ui, sans-serif">
+  <rect width="930" height="500" fill="#0F172A"/>
+
+  <!-- Title -->
+  <text x="465" y="38" text-anchor="middle" fill="#F8FAFC" font-size="22" font-weight="700">Command Hierarchy</text>
+  <text x="465" y="62" text-anchor="middle" fill="#94A3B8" font-size="13">kubectl-inspired shape: dtiam [VERB] [RESOURCE] [OPTIONS]</text>
+
+  <!-- Band 1: Core CRUD Verbs -->
+  <rect x="40" y="80" width="850" height="78" fill="#1496FF" opacity="0.08" stroke="#1496FF" stroke-width="1.5" rx="8"/>
+  <text x="60" y="103" fill="#BFDBFE" font-size="13" font-weight="700">Core verbs</text>
+  <text x="60" y="119" fill="#94A3B8" font-size="10">universal CRUD over all resources, plus declarative apply</text>
+
+  <rect x="180" y="95" width="130" height="52" fill="#1E293B" stroke="#1496FF" rx="6"/>
+  <text x="245" y="116" text-anchor="middle" fill="#BFDBFE" font-size="13" font-weight="700">get</text>
+  <text x="245" y="136" text-anchor="middle" fill="#94A3B8" font-size="10">list / retrieve</text>
+
+  <rect x="320" y="95" width="130" height="52" fill="#1E293B" stroke="#1496FF" rx="6"/>
+  <text x="385" y="116" text-anchor="middle" fill="#BFDBFE" font-size="13" font-weight="700">describe</text>
+  <text x="385" y="136" text-anchor="middle" fill="#94A3B8" font-size="10">details + related</text>
+
+  <rect x="460" y="95" width="130" height="52" fill="#1E293B" stroke="#1496FF" rx="6"/>
+  <text x="525" y="116" text-anchor="middle" fill="#BFDBFE" font-size="13" font-weight="700">create</text>
+  <text x="525" y="136" text-anchor="middle" fill="#94A3B8" font-size="10">new resource</text>
+
+  <rect x="600" y="95" width="130" height="52" fill="#1E293B" stroke="#1496FF" rx="6"/>
+  <text x="665" y="116" text-anchor="middle" fill="#BFDBFE" font-size="13" font-weight="700">delete</text>
+  <text x="665" y="136" text-anchor="middle" fill="#94A3B8" font-size="10">remove resource</text>
+
+  <rect x="740" y="95" width="130" height="52" fill="#1E293B" stroke="#1496FF" rx="6"/>
+  <text x="805" y="116" text-anchor="middle" fill="#BFDBFE" font-size="13" font-weight="700">apply</text>
+  <text x="805" y="136" text-anchor="middle" fill="#94A3B8" font-size="10">-f manifest.yaml</text>
+
+  <!-- Band 2: Resource-scoped commands -->
+  <rect x="40" y="170" width="850" height="78" fill="#A78BFA" opacity="0.08" stroke="#A78BFA" stroke-width="1.5" rx="8"/>
+  <text x="60" y="193" fill="#DDD6FE" font-size="13" font-weight="700">Resource-scoped commands</text>
+  <text x="60" y="209" fill="#94A3B8" font-size="10">advanced operations grouped by the resource they act on</text>
+
+  <rect x="240" y="185" width="95" height="50" fill="#1E293B" stroke="#A78BFA" rx="6"/>
+  <text x="287" y="205" text-anchor="middle" fill="#DDD6FE" font-size="12" font-weight="700">user</text>
+  <text x="287" y="223" text-anchor="middle" fill="#94A3B8" font-size="10">group memberships</text>
+
+  <rect x="345" y="185" width="95" height="50" fill="#1E293B" stroke="#A78BFA" rx="6"/>
+  <text x="392" y="205" text-anchor="middle" fill="#DDD6FE" font-size="12" font-weight="700">group</text>
+  <text x="392" y="223" text-anchor="middle" fill="#94A3B8" font-size="10">clone / setup</text>
+
+  <rect x="450" y="185" width="110" height="50" fill="#1E293B" stroke="#A78BFA" rx="6"/>
+  <text x="505" y="205" text-anchor="middle" fill="#DDD6FE" font-size="12" font-weight="700">service-user</text>
+  <text x="505" y="223" text-anchor="middle" fill="#94A3B8" font-size="10">OAuth clients</text>
+
+  <rect x="570" y="185" width="95" height="50" fill="#1E293B" stroke="#A78BFA" rx="6"/>
+  <text x="617" y="205" text-anchor="middle" fill="#DDD6FE" font-size="12" font-weight="700">boundary</text>
+  <text x="617" y="223" text-anchor="middle" fill="#94A3B8" font-size="10">attach / detach</text>
+
+  <rect x="675" y="185" width="95" height="50" fill="#1E293B" stroke="#A78BFA" rx="6"/>
+  <text x="722" y="205" text-anchor="middle" fill="#DDD6FE" font-size="12" font-weight="700">account</text>
+  <text x="722" y="223" text-anchor="middle" fill="#94A3B8" font-size="10">limits / subs</text>
+
+  <rect x="780" y="185" width="95" height="50" fill="#1E293B" stroke="#A78BFA" rx="6"/>
+  <text x="827" y="205" text-anchor="middle" fill="#DDD6FE" font-size="12" font-weight="700">config</text>
+  <text x="827" y="223" text-anchor="middle" fill="#94A3B8" font-size="10">contexts / creds</text>
+
+  <!-- Band 3: Specialized workflow commands -->
+  <rect x="40" y="260" width="850" height="78" fill="#FFB800" opacity="0.08" stroke="#FFB800" stroke-width="1.5" rx="8"/>
+  <text x="60" y="283" fill="#FCD34D" font-size="13" font-weight="700">Specialized workflows</text>
+  <text x="60" y="299" fill="#94A3B8" font-size="10">bulk processing, templates, analysis, backup, caching</text>
+
+  <rect x="240" y="275" width="95" height="50" fill="#1E293B" stroke="#FFB800" rx="6"/>
+  <text x="287" y="295" text-anchor="middle" fill="#FCD34D" font-size="12" font-weight="700">bulk</text>
+  <text x="287" y="313" text-anchor="middle" fill="#94A3B8" font-size="10">CSV / YAML / JSON</text>
+
+  <rect x="345" y="275" width="95" height="50" fill="#1E293B" stroke="#FFB800" rx="6"/>
+  <text x="392" y="295" text-anchor="middle" fill="#FCD34D" font-size="12" font-weight="700">template</text>
+  <text x="392" y="313" text-anchor="middle" fill="#94A3B8" font-size="10">render / apply</text>
+
+  <rect x="450" y="275" width="95" height="50" fill="#1E293B" stroke="#FFB800" rx="6"/>
+  <text x="497" y="295" text-anchor="middle" fill="#FCD34D" font-size="12" font-weight="700">analyze</text>
+  <text x="497" y="313" text-anchor="middle" fill="#94A3B8" font-size="10">effective perms</text>
+
+  <rect x="555" y="275" width="95" height="50" fill="#1E293B" stroke="#FFB800" rx="6"/>
+  <text x="602" y="295" text-anchor="middle" fill="#FCD34D" font-size="12" font-weight="700">export</text>
+  <text x="602" y="313" text-anchor="middle" fill="#94A3B8" font-size="10">backup / migrate</text>
+
+  <rect x="660" y="275" width="95" height="50" fill="#1E293B" stroke="#FFB800" rx="6"/>
+  <text x="707" y="295" text-anchor="middle" fill="#FCD34D" font-size="12" font-weight="700">cache</text>
+  <text x="707" y="313" text-anchor="middle" fill="#94A3B8" font-size="10">clear / show</text>
+
+  <!-- Band 4: Resource vocabulary -->
+  <rect x="40" y="350" width="850" height="110" fill="#73BE28" opacity="0.08" stroke="#73BE28" stroke-width="1.5" rx="8"/>
+  <text x="60" y="373" fill="#86EFAC" font-size="13" font-weight="700">Resource vocabulary</text>
+  <text x="60" y="389" fill="#94A3B8" font-size="10">every core verb accepts any of these resource types (plural for lists, singular for single items)</text>
+
+  <!-- Resource grid: 11 items in 2 rows -->
+  <text x="110" y="415" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">groups</text>
+  <text x="110" y="432" text-anchor="middle" fill="#94A3B8" font-size="10">/groups</text>
+
+  <text x="200" y="415" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">users</text>
+  <text x="200" y="432" text-anchor="middle" fill="#94A3B8" font-size="10">/users</text>
+
+  <text x="305" y="415" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">service-users</text>
+  <text x="305" y="432" text-anchor="middle" fill="#94A3B8" font-size="10">/service-users</text>
+
+  <text x="410" y="415" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">policies</text>
+  <text x="410" y="432" text-anchor="middle" fill="#94A3B8" font-size="10">/repo/.../policies</text>
+
+  <text x="510" y="415" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">bindings</text>
+  <text x="510" y="432" text-anchor="middle" fill="#94A3B8" font-size="10">/repo/.../bindings</text>
+
+  <text x="615" y="415" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">boundaries</text>
+  <text x="615" y="432" text-anchor="middle" fill="#94A3B8" font-size="10">/repo/.../boundaries</text>
+
+  <text x="720" y="415" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">environments</text>
+  <text x="720" y="432" text-anchor="middle" fill="#94A3B8" font-size="10">/environments</text>
+
+  <text x="815" y="415" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">subscriptions</text>
+  <text x="815" y="432" text-anchor="middle" fill="#94A3B8" font-size="10">/subscriptions</text>
+
+  <text x="160" y="451" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">tokens</text>
+  <text x="160" y="468" text-anchor="middle" fill="#94A3B8" font-size="10">/platform-tokens</text>
+
+  <text x="305" y="451" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">apps</text>
+  <text x="305" y="468" text-anchor="middle" fill="#94A3B8" font-size="10">{tenant}/api/v2/apps</text>
+
+  <text x="455" y="451" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">schemas</text>
+  <text x="455" y="468" text-anchor="middle" fill="#94A3B8" font-size="10">{tenant}/api/v2/schemas</text>
+
+  <text x="620" y="451" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="600">limits</text>
+  <text x="620" y="468" text-anchor="middle" fill="#94A3B8" font-size="10">/limits</text>
+
+  <!-- Footnote -->
+  <line x1="40" y1="480" x2="890" y2="480" stroke="#334155" stroke-width="1"/>
+  <text x="465" y="496" text-anchor="middle" fill="#64748B" font-size="10">Global flags: -c context, -o output, -v verbose, --plain, --dry-run</text>
+</svg>

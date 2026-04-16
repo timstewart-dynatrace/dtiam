@@ -4,6 +4,19 @@
 
 Complete reference for all dtiam commands and their options.
 
+![dtiam command hierarchy: core CRUD verbs, resource-scoped verbs, specialized workflows, and the resource vocabulary](../images/04-command-hierarchy_930x500.svg)
+
+<!-- MARKDOWN_TABLE_ALTERNATIVE
+| Tier | Verbs | Notes |
+|------|-------|-------|
+| Core verbs | `get`, `describe`, `create`, `delete`, `apply` | Universal CRUD plus declarative apply |
+| Resource-scoped | `user`, `group`, `service-user`, `boundary`, `account`, `config` | Advanced operations grouped by the resource they act on |
+| Specialized workflows | `bulk`, `template`, `analyze`, `export`, `cache` | Bulk processing, templates, analysis, backup, caching |
+| Resource vocabulary | `groups`, `users`, `service-users`, `policies`, `bindings`, `boundaries`, `environments`, `subscriptions`, `tokens`, `apps`, `schemas`, `limits` | Plural for lists, singular for single items |
+
+Global flags: `-c context`, `-o output`, `-v verbose`, `--plain`, `--dry-run`.
+-->
+
 ## Table of Contents
 
 - [Global Options](#global-options)

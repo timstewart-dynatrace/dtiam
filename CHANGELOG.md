@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-04-16
+
+### Added
+
+- **Policies-with-boundaries doc** — `docs/POLICIES_WITH_BOUNDARIES.md` ported from Python-dtiam; documents the six rules for resolving effective permissions when boundaries apply, with seven worked examples and a dtiam-specific command table
+- **Command hierarchy diagram** — `images/04-command-hierarchy_930x500.svg` embedded in `docs/COMMANDS.md`; visualizes the four tiers (core CRUD verbs, resource-scoped commands, specialized workflows, resource vocabulary) with a `MARKDOWN_TABLE_ALTERNATIVE` fallback
+- **README/ARCHITECTURE cross-links** — both now reference `POLICIES_WITH_BOUNDARIES.md`
+
 ## [2.0.1] - 2026-04-16
 
 ### Added
