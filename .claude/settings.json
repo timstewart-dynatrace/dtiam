@@ -1,0 +1,44 @@
+{
+  "projectName": "dtiam",
+  "projectType": "go",
+  "version": "2.0.0",
+  "description": "A kubectl-inspired CLI for managing Dynatrace Identity and Access Management (IAM) resources",
+
+  "repository": {
+    "owner": "timstewart-dynatrace",
+    "name": "dtiam",
+    "url": "https://github.com/timstewart-dynatrace/dtiam"
+  },
+
+  "standards": {
+    "semanticVersioning": true,
+    "branchingStrategy": "feature/fix",
+    "requiresDocumentation": true,
+    "requiresTests": true,
+    "requiresChangeLog": true
+  },
+
+  "minimumCodeQuality": {
+    "linting": "golangci-lint",
+    "formatter": "gofmt",
+    "testing": "go test",
+    "coverage": 80,
+    "errorHandling": "explicit"
+  },
+
+  "goEnvironment": {
+    "version": "1.23+",
+    "modules": true,
+    "buildTool": "make"
+  },
+
+  "design": {
+    "pattern": "resource-oriented",
+    "cliFramework": "cobra",
+    "configFramework": "viper",
+    "httpClient": "resty",
+    "logging": "logrus"
+  },
+
+  "customInstructions": "When a task is complete, perform the 'Reflection Protocol': 1. Update MEMORY.md with non-obvious quirks discovered. 2. Log design decisions to DECISIONS.md. 3. Update active phase file with next step. 4. Do automatically before summarizing."
+}
