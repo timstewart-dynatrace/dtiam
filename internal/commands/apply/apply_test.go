@@ -7,7 +7,7 @@ import (
 func TestApplyCmd_HasFileFlag(t *testing.T) {
 	f := Cmd.Flags().Lookup("file")
 	if f == nil {
-		t.Error("apply command should have --file flag")
+		t.Fatal("apply command should have --file flag")
 	}
 	if f.Shorthand != "f" {
 		t.Errorf("--file should have shorthand -f, got -%s", f.Shorthand)

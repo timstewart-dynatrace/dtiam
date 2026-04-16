@@ -35,7 +35,7 @@ func limitsResponse() map[string]any {
 func TestLimitsHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(limitsResponse())
+		_ = json.NewEncoder(w).Encode(limitsResponse())
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -51,7 +51,7 @@ func TestLimitsHandler_List_Success(t *testing.T) {
 func TestLimitsHandler_List_LimitsKey(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"limits": []any{
 				map[string]any{"name": "user-count", "current": float64(10), "max": float64(50)},
 			},
@@ -71,7 +71,7 @@ func TestLimitsHandler_List_LimitsKey(t *testing.T) {
 func TestLimitsHandler_List_ArrayResponse(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode([]any{
+		_ = json.NewEncoder(w).Encode([]any{
 			map[string]any{"name": "user-count"},
 		})
 	})
@@ -89,7 +89,7 @@ func TestLimitsHandler_List_ArrayResponse(t *testing.T) {
 func TestLimitsHandler_List_SingleItemResponse(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"name": "user-count", "current": float64(10)})
+		_ = json.NewEncoder(w).Encode(map[string]any{"name": "user-count", "current": float64(10)})
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -106,7 +106,7 @@ func TestLimitsHandler_List_ServerError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
-		w.Write([]byte(`{"message":"server error"}`))
+		_, _ = w.Write([]byte(`{"message":"server error"}`))
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -119,7 +119,7 @@ func TestLimitsHandler_List_ServerError(t *testing.T) {
 func TestLimitsHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(limitsResponse())
+		_ = json.NewEncoder(w).Encode(limitsResponse())
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -135,7 +135,7 @@ func TestLimitsHandler_Get_Success(t *testing.T) {
 func TestLimitsHandler_Get_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -148,7 +148,7 @@ func TestLimitsHandler_Get_NotFound(t *testing.T) {
 func TestLimitsHandler_GetSummary_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(limitsResponse())
+		_ = json.NewEncoder(w).Encode(limitsResponse())
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -170,7 +170,7 @@ func TestLimitsHandler_GetSummary_Success(t *testing.T) {
 func TestLimitsHandler_CheckCapacity_HasCapacity(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(limitsResponse())
+		_ = json.NewEncoder(w).Encode(limitsResponse())
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -189,7 +189,7 @@ func TestLimitsHandler_CheckCapacity_HasCapacity(t *testing.T) {
 func TestLimitsHandler_CheckCapacity_NoCapacity(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(limitsResponse())
+		_ = json.NewEncoder(w).Encode(limitsResponse())
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -205,7 +205,7 @@ func TestLimitsHandler_CheckCapacity_NoCapacity(t *testing.T) {
 func TestLimitsHandler_CheckCapacity_LimitNotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	})
 
 	h := newTestLimitsHandler(t, mux)

@@ -43,7 +43,7 @@ func bindingsResponse() map[string]any {
 func TestBindingHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/bindings", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(bindingsResponse())
+		_ = json.NewEncoder(w).Encode(bindingsResponse())
 	})
 
 	h := newTestBindingHandler(t, mux)
@@ -72,7 +72,7 @@ func TestBindingHandler_List_Success(t *testing.T) {
 func TestBindingHandler_List_EmptyBindings(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/bindings", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"policyBindings": []any{},
 		})
 	})
@@ -91,7 +91,7 @@ func TestBindingHandler_List_ServerError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/bindings", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
-		w.Write([]byte(`{"message":"server error"}`))
+		_, _ = w.Write([]byte(`{"message":"server error"}`))
 	})
 
 	h := newTestBindingHandler(t, mux)
@@ -132,7 +132,7 @@ func TestBindingHandler_Create_NoBoundaries(t *testing.T) {
 			return
 		}
 		var body map[string]any
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		bindings := body["policyBindings"].([]any)
 		binding := bindings[0].(map[string]any)
 		if _, ok := binding["boundaries"]; ok {
@@ -155,10 +155,10 @@ func TestBindingHandler_Delete_Success(t *testing.T) {
 		callCount++
 		switch r.Method {
 		case http.MethodGet:
-			json.NewEncoder(w).Encode(bindingsResponse())
+			_ = json.NewEncoder(w).Encode(bindingsResponse())
 		case http.MethodPut:
 			w.WriteHeader(200)
-			w.Write([]byte(`{}`))
+			_, _ = w.Write([]byte(`{}`))
 		default:
 			w.WriteHeader(405)
 		}
@@ -174,7 +174,7 @@ func TestBindingHandler_Delete_Success(t *testing.T) {
 func TestBindingHandler_Delete_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/bindings", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(bindingsResponse())
+		_ = json.NewEncoder(w).Encode(bindingsResponse())
 	})
 
 	h := newTestBindingHandler(t, mux)
@@ -187,7 +187,7 @@ func TestBindingHandler_Delete_NotFound(t *testing.T) {
 func TestBindingHandler_GetForGroup_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/bindings/groups/g1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"policyBindings": []any{
 				map[string]any{
 					"policyUuid": "p1",
@@ -211,7 +211,7 @@ func TestBindingHandler_GetForGroup_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/bindings/groups/g-missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestBindingHandler(t, mux)
@@ -227,7 +227,7 @@ func TestBindingHandler_GetForGroup_NotFound(t *testing.T) {
 func TestBindingHandler_GetForPolicy_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/bindings/p1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"policyUuid": "p1",
 			"groups":     []any{"g1", "g2"},
 		})
@@ -246,7 +246,7 @@ func TestBindingHandler_GetForPolicy_Success(t *testing.T) {
 func TestBindingHandler_ListRaw_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/bindings", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(bindingsResponse())
+		_ = json.NewEncoder(w).Encode(bindingsResponse())
 	})
 
 	h := newTestBindingHandler(t, mux)

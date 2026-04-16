@@ -48,7 +48,7 @@ func subscriptionsResponse() map[string]any {
 func TestSubscriptionHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(subscriptionsResponse())
+		_ = json.NewEncoder(w).Encode(subscriptionsResponse())
 	})
 
 	h := newTestSubscriptionHandler(t, mux)
@@ -64,7 +64,7 @@ func TestSubscriptionHandler_List_Success(t *testing.T) {
 func TestSubscriptionHandler_List_SubscriptionsKey(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"subscriptions": []any{
 				map[string]any{"uuid": "sub1", "name": "Enterprise"},
 			},
@@ -84,7 +84,7 @@ func TestSubscriptionHandler_List_SubscriptionsKey(t *testing.T) {
 func TestSubscriptionHandler_List_SingleItemResponse(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uuid": "sub1",
 			"name": "Enterprise",
 		})
@@ -104,7 +104,7 @@ func TestSubscriptionHandler_List_ServerError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
-		w.Write([]byte(`{"message":"server error"}`))
+		_, _ = w.Write([]byte(`{"message":"server error"}`))
 	})
 
 	h := newTestSubscriptionHandler(t, mux)
@@ -117,7 +117,7 @@ func TestSubscriptionHandler_List_ServerError(t *testing.T) {
 func TestSubscriptionHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions/sub1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uuid":   "sub1",
 			"name":   "Enterprise",
 			"status": "ACTIVE",
@@ -138,7 +138,7 @@ func TestSubscriptionHandler_Get_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestSubscriptionHandler(t, mux)
@@ -151,7 +151,7 @@ func TestSubscriptionHandler_Get_NotFound(t *testing.T) {
 func TestSubscriptionHandler_GetByName_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(subscriptionsResponse())
+		_ = json.NewEncoder(w).Encode(subscriptionsResponse())
 	})
 
 	h := newTestSubscriptionHandler(t, mux)
@@ -170,7 +170,7 @@ func TestSubscriptionHandler_GetByName_Success(t *testing.T) {
 func TestSubscriptionHandler_GetByName_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(subscriptionsResponse())
+		_ = json.NewEncoder(w).Encode(subscriptionsResponse())
 	})
 
 	h := newTestSubscriptionHandler(t, mux)
@@ -186,7 +186,7 @@ func TestSubscriptionHandler_GetByName_NotFound(t *testing.T) {
 func TestSubscriptionHandler_GetSummary_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(subscriptionsResponse())
+		_ = json.NewEncoder(w).Encode(subscriptionsResponse())
 	})
 
 	h := newTestSubscriptionHandler(t, mux)
@@ -205,7 +205,7 @@ func TestSubscriptionHandler_GetSummary_Success(t *testing.T) {
 func TestSubscriptionHandler_GetUsage_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions/sub1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uuid":   "sub1",
 			"name":   "Enterprise",
 			"status": "ACTIVE",
@@ -236,7 +236,7 @@ func TestSubscriptionHandler_GetUsage_Success(t *testing.T) {
 func TestSubscriptionHandler_GetForecast_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions/forecast", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"forecast": "data",
 		})
 	})
@@ -254,7 +254,7 @@ func TestSubscriptionHandler_GetForecast_Success(t *testing.T) {
 func TestSubscriptionHandler_GetCapabilities_All(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{
 					"uuid": "sub1",
@@ -295,7 +295,7 @@ func TestSubscriptionHandler_GetCapabilities_All(t *testing.T) {
 func TestSubscriptionHandler_GetCapabilities_SingleSubscription(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions/sub1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uuid": "sub1",
 			"name": "Enterprise",
 			"capabilities": []any{
@@ -321,7 +321,7 @@ func TestSubscriptionHandler_GetCapabilities_SingleSubscription(t *testing.T) {
 func TestSubscriptionHandler_GetCapabilities_NoCapabilities(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{
 					"uuid": "sub1",
@@ -344,7 +344,7 @@ func TestSubscriptionHandler_GetCapabilities_NoCapabilities(t *testing.T) {
 func TestSubscriptionHandler_GetForecast_WithUUID(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/subscriptions/sub1/forecast", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"forecast": "specific",
 		})
 	})

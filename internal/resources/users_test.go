@@ -16,7 +16,7 @@ func newTestUserHandler(t *testing.T, mux *http.ServeMux) *UserHandler {
 func TestUserHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uid": "u1", "email": "alice@example.com"},
 				map[string]any{"uid": "u2", "email": "bob@example.com"},
@@ -37,7 +37,7 @@ func TestUserHandler_List_Success(t *testing.T) {
 func TestUserHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users/u1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uid":   "u1",
 			"email": "alice@example.com",
 		})
@@ -56,7 +56,7 @@ func TestUserHandler_Get_Success(t *testing.T) {
 func TestUserHandler_GetByEmail_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uid": "u1", "email": "alice@example.com"},
 				map[string]any{"uid": "u2", "email": "bob@example.com"},
@@ -80,7 +80,7 @@ func TestUserHandler_GetByEmail_Success(t *testing.T) {
 func TestUserHandler_GetByEmail_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	})
 
 	h := newTestUserHandler(t, mux)
@@ -96,7 +96,7 @@ func TestUserHandler_GetByEmail_NotFound(t *testing.T) {
 func TestUserHandler_GetByName_AliasForGetByEmail(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uid": "u1", "email": "alice@example.com"},
 			},
@@ -124,12 +124,12 @@ func TestUserHandler_Create_Success(t *testing.T) {
 			return
 		}
 		var body map[string]any
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["email"] != "new@example.com" {
 			t.Errorf("expected email new@example.com, got %v", body["email"])
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uid": "u-new", "email": "new@example.com"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "u-new", "email": "new@example.com"})
 	})
 
 	h := newTestUserHandler(t, mux)
@@ -152,12 +152,12 @@ func TestUserHandler_Create_MinimalFields(t *testing.T) {
 			return
 		}
 		var body map[string]any
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		if _, ok := body["name"]; ok {
 			t.Error("Create() should not send name when nil")
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uid": "u-new", "email": body["email"]})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "u-new", "email": body["email"]})
 	})
 
 	h := newTestUserHandler(t, mux)
@@ -190,7 +190,7 @@ func TestUserHandler_Delete_Success(t *testing.T) {
 func TestUserHandler_GetGroups_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users/u1/groups", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uuid": "g1", "name": "Admins"},
 			},
@@ -211,10 +211,10 @@ func TestUserHandler_GetGroups_FallbackToUserObject(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users/u1/groups", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 	mux.HandleFunc("/users/u1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uid":   "u1",
 			"email": "alice@example.com",
 			"groups": []any{
@@ -290,7 +290,7 @@ func TestUserHandler_ListWithServiceUsers(t *testing.T) {
 		if r.URL.Query().Get("service-users") != "true" {
 			t.Errorf("expected service-users=true query param")
 		}
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uid": "u1", "email": "alice@example.com"},
 			},

@@ -24,7 +24,7 @@ func newTestBaseHandler(t *testing.T, mux *http.ServeMux) *BaseHandler {
 func TestBaseHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uuid": "w1", "name": "Alpha"},
 				map[string]any{"uuid": "w2", "name": "Beta"},
@@ -48,7 +48,7 @@ func TestBaseHandler_List_Success(t *testing.T) {
 func TestBaseHandler_List_ArrayResponse(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode([]any{
+		_ = json.NewEncoder(w).Encode([]any{
 			map[string]any{"uuid": "w1"},
 		})
 	})
@@ -67,7 +67,7 @@ func TestBaseHandler_List_ServerError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
-		w.Write([]byte(`{"message":"internal error"}`))
+		_, _ = w.Write([]byte(`{"message":"internal error"}`))
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -80,7 +80,7 @@ func TestBaseHandler_List_ServerError(t *testing.T) {
 func TestBaseHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/w1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "w1", "name": "Alpha"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "w1", "name": "Alpha"})
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -97,7 +97,7 @@ func TestBaseHandler_Get_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -118,7 +118,7 @@ func TestBaseHandler_Create_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "new-1", "name": "Gamma"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "new-1", "name": "Gamma"})
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -169,7 +169,7 @@ func TestBaseHandler_Delete_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -186,7 +186,7 @@ func TestBaseHandler_Update_Success(t *testing.T) {
 			w.WriteHeader(405)
 			return
 		}
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "w1", "name": "Updated"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "w1", "name": "Updated"})
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -202,7 +202,7 @@ func TestBaseHandler_Update_Success(t *testing.T) {
 func TestBaseHandler_GetByName_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uuid": "w1", "name": "Alpha"},
 				map[string]any{"uuid": "w2", "name": "Beta"},
@@ -226,7 +226,7 @@ func TestBaseHandler_GetByName_Success(t *testing.T) {
 func TestBaseHandler_GetByName_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uuid": "w1", "name": "Alpha"},
 			},
@@ -246,7 +246,7 @@ func TestBaseHandler_GetByName_NotFound(t *testing.T) {
 func TestBaseHandler_Exists_True(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/w1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "w1"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "w1"})
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -259,7 +259,7 @@ func TestBaseHandler_Exists_False(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -271,7 +271,7 @@ func TestBaseHandler_Exists_False(t *testing.T) {
 func TestBaseHandler_Resolve_ByID(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/w1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "w1", "name": "Alpha"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "w1", "name": "Alpha"})
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -288,10 +288,10 @@ func TestBaseHandler_Resolve_ByName(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/Alpha", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uuid": "w1", "name": "Alpha"},
 			},
@@ -312,10 +312,10 @@ func TestBaseHandler_Resolve_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -342,7 +342,7 @@ func TestBaseHandler_APIPath(t *testing.T) {
 func TestGetOrResolve_ByID(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/w1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "w1", "name": "Alpha"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "w1", "name": "Alpha"})
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -359,10 +359,10 @@ func TestGetOrResolve_FallbackToList_ByName(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/Alpha", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uuid": "w1", "name": "Alpha"},
 			},
@@ -386,10 +386,10 @@ func TestGetOrResolve_FallbackToList_ByUUID(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/w1", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uuid": "w1", "name": "Alpha"},
 			},
@@ -413,10 +413,10 @@ func TestGetOrResolve_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 	mux.HandleFunc("/widgets", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	})
 
 	h := newTestBaseHandler(t, mux)
@@ -433,7 +433,7 @@ func TestGetOrResolve_NonNotFoundError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/widgets/w1", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(403)
-		w.Write([]byte(`{"message":"access denied"}`))
+		_, _ = w.Write([]byte(`{"message":"access denied"}`))
 	})
 
 	h := newTestBaseHandler(t, mux)
