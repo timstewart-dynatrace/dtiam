@@ -60,6 +60,20 @@ Multi-context configuration and scope requirements are covered in the **[Quick S
 - **Bulk operations**: Process users, groups, and bindings from CSV/YAML/JSON files
 - **Machine-friendly**: `--plain` mode forces JSON output with no colors for scripting and automation
 - **Dry-run support**: Preview all mutating operations before executing them
+- **First-class two-tier access control**: `create binding` + `boundary create-mz-boundary` compose into the least-privilege pattern shown below
+
+![Two-tier binding pattern: account-level read with no boundary, environment-level write scoped to a management zone](images/02-two-tier-bindings_930x500.svg)
+
+<!-- MARKDOWN_TABLE_ALTERNATIVE
+| Tier | Level | Permissions | Boundary |
+|------|-------|-------------|----------|
+| 1 | `account/{uuid}` | `environment:roles:viewer`, `storage:*:read`, `settings:objects:read`, `document:documents:read` | none (global) |
+| 2 | `environment/{envId}` | `environment:roles:manage-settings`, `storage:metrics:write`, `settings:objects:write`, `automation:workflows:write`, `document:documents:write` | `environment:management-zone IN ("Platform-Team")` |
+
+Outcome: universal read visibility, writes isolated to the group's assigned management zone.
+-->
+
+
 
 ## Supported Resources
 
