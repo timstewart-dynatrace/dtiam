@@ -16,7 +16,7 @@ func newTestServiceUserHandler(t *testing.T, mux *http.ServeMux) *ServiceUserHan
 func TestServiceUserHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/service-users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uid": "su1", "name": "CI Bot"},
 				map[string]any{"uid": "su2", "name": "Deploy Bot"},
@@ -37,7 +37,7 @@ func TestServiceUserHandler_List_Success(t *testing.T) {
 func TestServiceUserHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/service-users/su1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uid":  "su1",
 			"name": "CI Bot",
 		})
@@ -56,7 +56,7 @@ func TestServiceUserHandler_Get_Success(t *testing.T) {
 func TestServiceUserHandler_GetByName_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/service-users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uid": "su1", "name": "CI Bot"},
 				map[string]any{"uid": "su2", "name": "Deploy Bot"},
@@ -80,7 +80,7 @@ func TestServiceUserHandler_GetByName_Success(t *testing.T) {
 func TestServiceUserHandler_GetByName_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/service-users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	})
 
 	h := newTestServiceUserHandler(t, mux)
@@ -101,12 +101,12 @@ func TestServiceUserHandler_Create_Success(t *testing.T) {
 			return
 		}
 		var body map[string]any
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["name"] != "NewBot" {
 			t.Errorf("expected name NewBot, got %v", body["name"])
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uid": "su-new", "name": "NewBot"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su-new", "name": "NewBot"})
 	})
 
 	h := newTestServiceUserHandler(t, mux)
@@ -128,7 +128,7 @@ func TestServiceUserHandler_Create_MinimalFields(t *testing.T) {
 			return
 		}
 		var body map[string]any
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		if _, ok := body["description"]; ok {
 			t.Error("should not include description when nil")
 		}
@@ -136,7 +136,7 @@ func TestServiceUserHandler_Create_MinimalFields(t *testing.T) {
 			t.Error("should not include groups when nil")
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uid": "su-new", "name": body["name"]})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su-new", "name": body["name"]})
 	})
 
 	h := newTestServiceUserHandler(t, mux)
@@ -170,7 +170,7 @@ func TestServiceUserHandler_Delete_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/service-users/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestServiceUserHandler(t, mux)
@@ -183,7 +183,7 @@ func TestServiceUserHandler_Delete_NotFound(t *testing.T) {
 func TestServiceUserHandler_GetGroups_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/service-users/su1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uid":  "su1",
 			"name": "CI Bot",
 			"groups": []any{
@@ -214,7 +214,7 @@ func TestServiceUserHandler_GetGroups_Success(t *testing.T) {
 func TestServiceUserHandler_GetGroups_NoGroups(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/service-users/su1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uid":  "su1",
 			"name": "CI Bot",
 		})
@@ -235,10 +235,10 @@ func TestServiceUserHandler_Update_Success(t *testing.T) {
 	mux.HandleFunc("/service-users/su1", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			// GET for other tests
-			json.NewEncoder(w).Encode(map[string]any{"uid": "su1", "name": "CI Bot"})
+			_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su1", "name": "CI Bot"})
 			return
 		}
-		json.NewEncoder(w).Encode(map[string]any{"uid": "su1", "name": "Updated Bot"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su1", "name": "Updated Bot"})
 	})
 
 	h := newTestServiceUserHandler(t, mux)

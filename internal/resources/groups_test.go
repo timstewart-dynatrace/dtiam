@@ -16,7 +16,7 @@ func newTestGroupHandler(t *testing.T, mux *http.ServeMux) *GroupHandler {
 func TestGroupHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/groups", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uuid": "g1", "name": "Admins"},
 				map[string]any{"uuid": "g2", "name": "Readers"},
@@ -37,7 +37,7 @@ func TestGroupHandler_List_Success(t *testing.T) {
 func TestGroupHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/groups/g1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uuid": "g1",
 			"name": "Admins",
 		})
@@ -61,7 +61,7 @@ func TestGroupHandler_Create_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "g-new", "name": "NewGroup"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "g-new", "name": "NewGroup"})
 	})
 
 	h := newTestGroupHandler(t, mux)
@@ -103,7 +103,7 @@ func TestGroupHandler_Delete_Success(t *testing.T) {
 func TestGroupHandler_GetMembers_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/groups/g1/users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{
 				map[string]any{"uid": "u1", "email": "alice@example.com"},
 				map[string]any{"uid": "u2", "email": "bob@example.com"},
@@ -125,7 +125,7 @@ func TestGroupHandler_GetMembers_ServerError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/groups/g1/users", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
-		w.Write([]byte(`{"message":"server error"}`))
+		_, _ = w.Write([]byte(`{"message":"server error"}`))
 	})
 
 	h := newTestGroupHandler(t, mux)
@@ -172,7 +172,7 @@ func TestGroupHandler_RemoveMember_Success(t *testing.T) {
 func TestGroupHandler_GetMemberCount_WithCountField(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/groups/g1/users", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"count": float64(42),
 		})
 	})
@@ -194,10 +194,10 @@ func TestGroupHandler_GetMemberCount_FallbackToList(t *testing.T) {
 		callCount++
 		if callCount == 1 {
 			// First call with count=true returns no count field
-			json.NewEncoder(w).Encode(map[string]any{"other": "data"})
+			_ = json.NewEncoder(w).Encode(map[string]any{"other": "data"})
 		} else {
 			// Fallback call returns items
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"items": []any{
 					map[string]any{"uid": "u1"},
 					map[string]any{"uid": "u2"},

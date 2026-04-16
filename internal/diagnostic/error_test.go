@@ -153,7 +153,7 @@ func TestWrapWithStatus(t *testing.T) {
 
 func TestWithSuggestions(t *testing.T) {
 	err := New("op", "msg")
-	WithSuggestions(err, "try A", "try B")
+	_ = WithSuggestions(err, "try A", "try B")
 	if len(err.Suggestions) != 2 {
 		t.Errorf("WithSuggestions: expected 2 suggestions, got %d", len(err.Suggestions))
 	}

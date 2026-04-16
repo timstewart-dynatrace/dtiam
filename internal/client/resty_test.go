@@ -51,7 +51,7 @@ func TestClient_Get(t *testing.T) {
 			t.Errorf("missing or wrong auth header: %s", r.Header.Get("Authorization"))
 		}
 		w.WriteHeader(200)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 	defer srv.Close()
 
@@ -70,7 +70,7 @@ func TestClient_Get_WithParams(t *testing.T) {
 			t.Errorf("expected query param name=test, got %s", r.URL.Query().Get("name"))
 		}
 		w.WriteHeader(200)
-		w.Write([]byte(`{"found": true}`))
+		_, _ = w.Write([]byte(`{"found": true}`))
 	})
 	defer srv.Close()
 
@@ -89,12 +89,12 @@ func TestClient_Post(t *testing.T) {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
 		var body map[string]string
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["name"] != "new-group" {
 			t.Errorf("expected name='new-group', got %q", body["name"])
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]string{"uuid": "abc-123"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"uuid": "abc-123"})
 	})
 	defer srv.Close()
 
@@ -113,7 +113,7 @@ func TestClient_Put(t *testing.T) {
 			t.Errorf("expected PUT, got %s", r.Method)
 		}
 		w.WriteHeader(200)
-		w.Write([]byte(`{"updated": true}`))
+		_, _ = w.Write([]byte(`{"updated": true}`))
 	})
 	defer srv.Close()
 
@@ -132,7 +132,7 @@ func TestClient_Patch(t *testing.T) {
 			t.Errorf("expected PATCH, got %s", r.Method)
 		}
 		w.WriteHeader(200)
-		w.Write([]byte(`{"patched": true}`))
+		_, _ = w.Write([]byte(`{"patched": true}`))
 	})
 	defer srv.Close()
 
@@ -166,7 +166,7 @@ func TestClient_DeleteWithBody(t *testing.T) {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
 		var body []string
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		if len(body) != 2 {
 			t.Errorf("expected 2 items in body, got %d", len(body))
 		}
@@ -211,7 +211,7 @@ func TestClient_ErrorResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, srv := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.status)
-				w.Write([]byte(tt.body))
+				_, _ = w.Write([]byte(tt.body))
 			})
 			defer srv.Close()
 
@@ -237,7 +237,7 @@ func TestClient_ErrorResponse(t *testing.T) {
 func TestClient_GetJSON(t *testing.T) {
 	c, srv := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		json.NewEncoder(w).Encode(map[string]string{"name": "test-group"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"name": "test-group"})
 	})
 	defer srv.Close()
 
@@ -254,7 +254,7 @@ func TestClient_GetJSON(t *testing.T) {
 func TestClient_PostJSON(t *testing.T) {
 	c, srv := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]string{"uuid": "new-123"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"uuid": "new-123"})
 	})
 	defer srv.Close()
 
@@ -283,7 +283,7 @@ func TestClient_PostJSON_NilTarget(t *testing.T) {
 func TestClient_PutJSON(t *testing.T) {
 	c, srv := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		json.NewEncoder(w).Encode(map[string]string{"updated": "true"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"updated": "true"})
 	})
 	defer srv.Close()
 

@@ -25,7 +25,7 @@ func newTestBoundaryHandler(t *testing.T, mux *http.ServeMux) *BoundaryHandler {
 func TestBoundaryHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/boundaries", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"boundaries": []any{
 				map[string]any{"uuid": "b1", "name": "Production"},
 				map[string]any{"uuid": "b2", "name": "Staging"},
@@ -46,7 +46,7 @@ func TestBoundaryHandler_List_Success(t *testing.T) {
 func TestBoundaryHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/boundaries/b1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uuid":          "b1",
 			"name":          "Production",
 			"boundaryQuery": "environment:management-zone IN (\"Production\");",
@@ -67,7 +67,7 @@ func TestBoundaryHandler_Get_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/boundaries/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestBoundaryHandler(t, mux)
@@ -85,7 +85,7 @@ func TestBoundaryHandler_Create_WithManagementZones(t *testing.T) {
 			return
 		}
 		var body map[string]any
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["name"] != "ProdBoundary" {
 			t.Errorf("expected name ProdBoundary, got %v", body["name"])
 		}
@@ -94,7 +94,7 @@ func TestBoundaryHandler_Create_WithManagementZones(t *testing.T) {
 			t.Error("expected boundaryQuery to be set from management zones")
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "b-new", "name": "ProdBoundary"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "b-new", "name": "ProdBoundary"})
 	})
 
 	h := newTestBoundaryHandler(t, mux)
@@ -116,7 +116,7 @@ func TestBoundaryHandler_Create_WithBoundaryQuery(t *testing.T) {
 			return
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "b-new"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "b-new"})
 	})
 
 	h := newTestBoundaryHandler(t, mux)
@@ -160,7 +160,7 @@ func TestBoundaryHandler_Delete_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/boundaries/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestBoundaryHandler(t, mux)

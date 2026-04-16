@@ -25,7 +25,7 @@ func newTestEnvironmentHandler(t *testing.T, mux *http.ServeMux) *EnvironmentHan
 func TestEnvironmentHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"tenants": []any{
 				map[string]any{"id": "env1", "name": "Production"},
 				map[string]any{"id": "env2", "name": "Staging"},
@@ -46,7 +46,7 @@ func TestEnvironmentHandler_List_Success(t *testing.T) {
 func TestEnvironmentHandler_List_EnvironmentsKey(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"environments": []any{
 				map[string]any{"id": "env1", "name": "Production"},
 			},
@@ -66,7 +66,7 @@ func TestEnvironmentHandler_List_EnvironmentsKey(t *testing.T) {
 func TestEnvironmentHandler_List_ArrayResponse(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode([]any{
+		_ = json.NewEncoder(w).Encode([]any{
 			map[string]any{"id": "env1", "name": "Production"},
 		})
 	})
@@ -85,7 +85,7 @@ func TestEnvironmentHandler_List_ServerError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
-		w.Write([]byte(`{"message":"server error"}`))
+		_, _ = w.Write([]byte(`{"message":"server error"}`))
 	})
 
 	h := newTestEnvironmentHandler(t, mux)
@@ -98,7 +98,7 @@ func TestEnvironmentHandler_List_ServerError(t *testing.T) {
 func TestEnvironmentHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments/env1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":   "env1",
 			"name": "Production",
 		})
@@ -118,7 +118,7 @@ func TestEnvironmentHandler_Get_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments/missing", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"not found"}`))
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
 	})
 
 	h := newTestEnvironmentHandler(t, mux)
@@ -131,7 +131,7 @@ func TestEnvironmentHandler_Get_NotFound(t *testing.T) {
 func TestEnvironmentHandler_GetByName_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"tenants": []any{
 				map[string]any{"id": "env1", "name": "Production"},
 				map[string]any{"id": "env2", "name": "Staging"},
@@ -155,7 +155,7 @@ func TestEnvironmentHandler_GetByName_Success(t *testing.T) {
 func TestEnvironmentHandler_GetByName_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"tenants": []any{
 				map[string]any{"id": "env1", "name": "Production"},
 			},
@@ -175,7 +175,7 @@ func TestEnvironmentHandler_GetByName_NotFound(t *testing.T) {
 func TestEnvironmentHandler_List_Empty(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/environments", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"tenants": []any{},
 		})
 	})

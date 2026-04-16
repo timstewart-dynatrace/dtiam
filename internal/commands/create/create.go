@@ -343,9 +343,7 @@ and cannot be retrieved later — save it immediately.`,
 
 		var scopes []string
 		if scopesStr != "" {
-			for _, s := range splitAndTrim(scopesStr) {
-				scopes = append(scopes, s)
-			}
+			scopes = append(scopes, splitAndTrim(scopesStr)...)
 		}
 
 		token, err := handler.Create(ctx, name, scopes, expiresIn)

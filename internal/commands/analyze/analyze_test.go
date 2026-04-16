@@ -57,7 +57,7 @@ func TestAnalyzeUserPermissionsCmd_Args(t *testing.T) {
 func TestAnalyzeUserPermissionsCmd_Flags(t *testing.T) {
 	f := userPermissionsCmd.Flags().Lookup("export")
 	if f == nil {
-		t.Error("user-permissions command should have --export flag")
+		t.Fatal("user-permissions command should have --export flag")
 	}
 	if f.Shorthand != "e" {
 		t.Errorf("--export should have shorthand -e, got -%s", f.Shorthand)

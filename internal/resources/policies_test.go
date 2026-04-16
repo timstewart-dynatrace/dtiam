@@ -32,7 +32,7 @@ func newTestPolicyHandler(t *testing.T, mux *http.ServeMux) *PolicyHandler {
 func TestPolicyHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/policies", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"policies": []any{
 				map[string]any{"uuid": "p1", "name": "ReadOnly"},
 				map[string]any{"uuid": "p2", "name": "Admin"},
@@ -53,7 +53,7 @@ func TestPolicyHandler_List_Success(t *testing.T) {
 func TestPolicyHandler_Get_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/policies/p1", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"uuid":           "p1",
 			"name":           "ReadOnly",
 			"statementQuery": "ALLOW settings:objects:read;",
@@ -78,7 +78,7 @@ func TestPolicyHandler_Create_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(map[string]any{"uuid": "p-new", "name": "NewPolicy"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uuid": "p-new", "name": "NewPolicy"})
 	})
 
 	h := newTestPolicyHandler(t, mux)
@@ -140,7 +140,7 @@ func TestPolicyHandler_Validate_Valid(t *testing.T) {
 			w.WriteHeader(405)
 			return
 		}
-		json.NewEncoder(w).Encode(map[string]any{"valid": true})
+		_ = json.NewEncoder(w).Encode(map[string]any{"valid": true})
 	})
 
 	h := newTestPolicyHandler(t, mux)
@@ -163,7 +163,7 @@ func TestPolicyHandler_Validate_Invalid(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repo/account/test-uuid/policies/validation", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
-		w.Write([]byte(`{"message":"invalid syntax"}`))
+		_, _ = w.Write([]byte(`{"message":"invalid syntax"}`))
 	})
 
 	h := newTestPolicyHandler(t, mux)
@@ -186,7 +186,7 @@ func TestPolicyHandler_ListAllLevels(t *testing.T) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Both account and global requests come here
 		if strings.Contains(r.URL.Path, "policies") {
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"policies": []any{
 					map[string]any{"uuid": "p1", "name": "Policy1"},
 				},
