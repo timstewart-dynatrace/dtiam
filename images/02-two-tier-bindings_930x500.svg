@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 500" font-family="Inter, system-ui, sans-serif">
+  <rect width="930" height="500" fill="#0F172A"/>
+
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="10" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="465" y="38" text-anchor="middle" fill="#F8FAFC" font-size="22" font-weight="700">Two-Tier Binding Pattern</text>
+  <text x="465" y="62" text-anchor="middle" fill="#94A3B8" font-size="13">Read everything globally, write only within your management zone</text>
+
+  <!-- Group box -->
+  <rect x="365" y="85" width="200" height="52" fill="#1E293B" stroke="#A78BFA" stroke-width="1.5" rx="6"/>
+  <text x="465" y="108" text-anchor="middle" fill="#DDD6FE" font-size="14" font-weight="700">Platform Team (group)</text>
+  <text x="465" y="126" text-anchor="middle" fill="#94A3B8" font-size="11">receives two bindings</text>
+
+  <!-- Fan-out -->
+  <line x1="465" y1="137" x2="465" y2="155" stroke="#64748B" stroke-width="1.5"/>
+  <line x1="230" y1="155" x2="700" y2="155" stroke="#64748B" stroke-width="1.5"/>
+  <line x1="230" y1="155" x2="230" y2="175" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow2)"/>
+  <line x1="700" y1="155" x2="700" y2="175" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+  <!-- Tier 1: Account-level (no boundary) -->
+  <rect x="50" y="180" width="360" height="280" fill="#73BE28" opacity="0.08" stroke="#73BE28" stroke-width="1.5" rx="8"/>
+  <text x="230" y="205" text-anchor="middle" fill="#86EFAC" font-size="15" font-weight="700">Tier 1 - Account-level</text>
+  <text x="230" y="225" text-anchor="middle" fill="#94A3B8" font-size="11">Global read - no boundary</text>
+
+  <rect x="70" y="240" width="320" height="200" fill="#1E293B" stroke="#73BE28" rx="6"/>
+  <text x="230" y="262" text-anchor="middle" fill="#86EFAC" font-size="12" font-weight="700">Policy statements</text>
+  <text x="230" y="284" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW environment:roles:viewer;</text>
+  <text x="230" y="302" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW storage:metrics:read;</text>
+  <text x="230" y="320" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW storage:logs:read;</text>
+  <text x="230" y="338" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW storage:events:read;</text>
+  <text x="230" y="356" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW settings:objects:read;</text>
+  <text x="230" y="374" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW document:documents:read;</text>
+  <text x="230" y="410" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="700">boundary: none</text>
+  <text x="230" y="428" text-anchor="middle" fill="#94A3B8" font-size="10">level: account/{uuid}</text>
+
+  <!-- Tier 2: Environment-level (zone boundary) -->
+  <rect x="520" y="180" width="360" height="280" fill="#1496FF" opacity="0.08" stroke="#1496FF" stroke-width="1.5" rx="8"/>
+  <text x="700" y="205" text-anchor="middle" fill="#BFDBFE" font-size="15" font-weight="700">Tier 2 - Environment-level</text>
+  <text x="700" y="225" text-anchor="middle" fill="#94A3B8" font-size="11">Zone-scoped write - with boundary</text>
+
+  <rect x="540" y="240" width="320" height="200" fill="#1E293B" stroke="#1496FF" rx="6"/>
+  <text x="700" y="262" text-anchor="middle" fill="#BFDBFE" font-size="12" font-weight="700">Policy statements</text>
+  <text x="700" y="284" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW environment:roles:manage-settings;</text>
+  <text x="700" y="302" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW storage:metrics:write;</text>
+  <text x="700" y="320" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW settings:objects:write;</text>
+  <text x="700" y="338" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW automation:workflows:write;</text>
+  <text x="700" y="356" text-anchor="middle" fill="#94A3B8" font-size="11">ALLOW document:documents:write;</text>
+  <text x="700" y="388" text-anchor="middle" fill="#BFDBFE" font-size="11" font-weight="700">boundary</text>
+  <text x="700" y="406" text-anchor="middle" fill="#94A3B8" font-size="11">environment:management-zone</text>
+  <text x="700" y="422" text-anchor="middle" fill="#94A3B8" font-size="11">IN ("Platform-Team")</text>
+
+  <!-- Divider + footnote -->
+  <line x1="40" y1="480" x2="890" y2="480" stroke="#334155" stroke-width="1"/>
+  <text x="465" y="496" text-anchor="middle" fill="#64748B" font-size="10">Outcome: universal visibility with least-privilege writes isolated to assigned zones</text>
+</svg>

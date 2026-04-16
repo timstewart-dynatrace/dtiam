@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 500" font-family="Inter, system-ui, sans-serif">
+  <rect width="930" height="500" fill="#0F172A"/>
+
+  <defs>
+    <marker id="arrow3" viewBox="0 0 10 10" refX="10" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+    <marker id="arrow3warn" viewBox="0 0 10 10" refX="10" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFB800"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="465" y="38" text-anchor="middle" fill="#F8FAFC" font-size="22" font-weight="700">OAuth2 Token Flow</text>
+  <text x="465" y="62" text-anchor="middle" fill="#94A3B8" font-size="13">Client credentials grant with automatic refresh on 401</text>
+
+  <!-- Pipeline stages -->
+  <!-- Stage 1: dtiam CLI -->
+  <rect x="35" y="175" width="150" height="70" fill="#1E293B" stroke="#1496FF" rx="6"/>
+  <text x="110" y="205" text-anchor="middle" fill="#BFDBFE" font-size="13" font-weight="700">dtiam CLI</text>
+  <text x="110" y="224" text-anchor="middle" fill="#94A3B8" font-size="11">command execution</text>
+
+  <line x1="185" y1="210" x2="208" y2="210" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+  <!-- Stage 2: Token Manager -->
+  <rect x="210" y="175" width="170" height="70" fill="#1E293B" stroke="#A78BFA" rx="6"/>
+  <text x="295" y="200" text-anchor="middle" fill="#DDD6FE" font-size="13" font-weight="700">Token Manager</text>
+  <text x="295" y="218" text-anchor="middle" fill="#94A3B8" font-size="11">check cache and expiry</text>
+  <text x="295" y="234" text-anchor="middle" fill="#94A3B8" font-size="11">(30s buffer)</text>
+
+  <line x1="380" y1="210" x2="408" y2="210" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow3)"/>
+  <text x="395" y="198" text-anchor="middle" fill="#94A3B8" font-size="10">miss</text>
+
+  <!-- Stage 3: Dynatrace SSO -->
+  <rect x="410" y="175" width="175" height="70" fill="#1E293B" stroke="#FFB800" rx="6"/>
+  <text x="497" y="198" text-anchor="middle" fill="#FCD34D" font-size="13" font-weight="700">Dynatrace SSO</text>
+  <text x="497" y="216" text-anchor="middle" fill="#94A3B8" font-size="11">sso.dynatrace.com</text>
+  <text x="497" y="232" text-anchor="middle" fill="#94A3B8" font-size="11">grant=client_credentials</text>
+
+  <line x1="585" y1="210" x2="613" y2="210" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow3)"/>
+  <text x="600" y="198" text-anchor="middle" fill="#94A3B8" font-size="10">token</text>
+
+  <!-- Stage 4: API Request -->
+  <rect x="615" y="175" width="180" height="70" fill="#1E293B" stroke="#73BE28" rx="6"/>
+  <text x="705" y="198" text-anchor="middle" fill="#86EFAC" font-size="13" font-weight="700">API Request</text>
+  <text x="705" y="216" text-anchor="middle" fill="#94A3B8" font-size="11">Authorization: Bearer</text>
+  <text x="705" y="232" text-anchor="middle" fill="#94A3B8" font-size="11">api.dynatrace.com</text>
+
+  <line x1="795" y1="210" x2="823" y2="210" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+  <!-- Stage 5: 200 OK -->
+  <rect x="825" y="175" width="70" height="70" fill="#1E293B" stroke="#73BE28" rx="6"/>
+  <text x="860" y="205" text-anchor="middle" fill="#86EFAC" font-size="13" font-weight="700">200</text>
+  <text x="860" y="224" text-anchor="middle" fill="#94A3B8" font-size="11">OK</text>
+
+  <!-- 401 refresh loop -->
+  <path d="M 860 245 Q 860 325, 600 325 Q 295 325, 295 253" stroke="#FFB800" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrow3warn)"/>
+  <text x="577" y="348" text-anchor="middle" fill="#FCD34D" font-size="11" font-weight="700">401 Unauthorized -- invalidate cache, refresh token, retry</text>
+
+  <!-- Scopes panel -->
+  <rect x="40" y="380" width="850" height="80" fill="#1496FF" opacity="0.08" stroke="#1496FF" stroke-width="1.5" rx="8"/>
+  <text x="465" y="405" text-anchor="middle" fill="#BFDBFE" font-size="13" font-weight="700">Required scopes -- set on the OAuth2 client in Dynatrace Account Management</text>
+  <text x="465" y="426" text-anchor="middle" fill="#94A3B8" font-size="11">account-idm-read - account-idm-write - iam-policies-management - account-env-read</text>
+  <text x="465" y="444" text-anchor="middle" fill="#94A3B8" font-size="11">iam:effective-permissions:read - platform-token:tokens:manage - app-engine:apps:run</text>
+
+  <!-- Divider + footnote -->
+  <line x1="40" y1="480" x2="890" y2="480" stroke="#334155" stroke-width="1"/>
+  <text x="465" y="496" text-anchor="middle" fill="#64748B" font-size="10">Bearer-token mode skips the SSO step -- static tokens fail abruptly when they expire</text>
+</svg>

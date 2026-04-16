@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-04-16
+
+### Added
+
+- **Architecture diagrams** — three SVG diagrams (`images/01-architecture_930x500.svg`, `02-two-tier-bindings_930x500.svg`, `03-oauth2-flow_930x500.svg`) embedded in `README.md`, `docs/ARCHITECTURE.md`, and `docs/QUICK_START.md`, with `MARKDOWN_TABLE_ALTERNATIVE` text fallbacks for environments that strip images
+
 ## [2.0.0] - 2026-04-08
 
 ### Added

@@ -55,6 +55,21 @@ dtiam supports two authentication methods:
 
 OAuth2 is the recommended authentication method because tokens automatically refresh when expired, making it reliable for unattended operation.
 
+![OAuth2 client-credentials flow: dtiam calls the token manager, which fetches a bearer token from Dynatrace SSO and retries on 401](../images/03-oauth2-flow_930x500.svg)
+
+<!-- MARKDOWN_TABLE_ALTERNATIVE
+| Step | Component | Action |
+|------|-----------|--------|
+| 1 | dtiam CLI | Command executes; needs Authorization header |
+| 2 | Token Manager | Check in-memory cache; treat tokens within 30s of expiry as expired |
+| 3 | Dynatrace SSO | `POST sso.dynatrace.com/sso/oauth2/token`, `grant_type=client_credentials` |
+| 4 | API Request | Call `api.dynatrace.com/iam/v1/...` with `Authorization: Bearer <token>` |
+| 5 | 401 response | Invalidate cached token, refetch from SSO, retry the original request |
+
+Bearer-token mode skips step 3 — tokens do not refresh and fail abruptly when they expire.
+-->
+
+
 #### Required OAuth2 Scopes
 
 Your OAuth2 client needs the following scopes for full functionality:

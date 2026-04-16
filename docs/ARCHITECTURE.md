@@ -8,6 +8,20 @@ Technical design and implementation details for dtiam.
 
 dtiam is a kubectl-inspired CLI for managing Dynatrace Identity and Access Management resources. It's written in Go using the Cobra CLI framework and follows idiomatic Go patterns for configuration, HTTP clients, and output formatting.
 
+![dtiam architecture: Cobra CLI layer, resource handlers, HTTP client with OAuth2, and three Dynatrace APIs](../images/01-architecture_930x500.svg)
+
+<!-- MARKDOWN_TABLE_ALTERNATIVE
+| Layer | Responsibility | Key packages |
+|-------|----------------|--------------|
+| CLI Layer | Cobra root, subcommands, global flags (`-c`, `-o`, `-v`, `--plain`, `--dry-run`) | `internal/cli`, `internal/commands/*` |
+| Resource Handlers | Typed CRUD over `BaseHandler` for groups, users, policies, bindings, boundaries, etc. | `internal/resources` |
+| HTTP Client + Auth | resty transport, retry (429/5xx), OAuth2 token refresh, bearer token | `internal/client`, `internal/auth` |
+| Account Management API | `/iam/v1/accounts/{uuid}` — groups, users, service users, subscriptions, tokens | — |
+| Policy Repository API | `/iam/v1/repo/{level}/{id}` — policies, bindings, boundaries (account/env/global) | — |
+| Environment Config API | `{tenant}/api/v2/settings` — apps, schemas (uses Api-Token, separate auth) | — |
+-->
+
+
 ## Technology Stack
 
 | Component | Library | Purpose |
