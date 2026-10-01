@@ -26,11 +26,23 @@ Fixes land on the latest minor release. There are no long-term support branches.
 
 Understanding this matters for assessing your own exposure.
 
-**Credentials are stored in plaintext.** `~/.config/dtiam/config` (or the
-platform equivalent — `dtiam config path` prints it) holds `client-secret` in
-plain YAML. dtiam does **not** currently use an OS keyring. Treat the config file
-as a secret: keep it at `0600`, exclude it from backups and dotfile repos, and
-prefer environment variables in CI.
+**Client secrets go to the OS keyring when one is available.** `dtiam config
+set-credentials` stores the secret in the OS keyring (service name `dtiam`) and
+records only a reference in the config file. Where the secret went is always
+reported, and `dtiam config keyring-status` shows the current state.
+
+**They fall back to plaintext when no keyring exists** — headless Linux,
+containers, CI. In that case the secret is written to
+`~/.config/dtiam/config` (or the platform equivalent; `dtiam config path` prints
+it) in plain YAML, and a warning says so. `dtiam doctor` reports plaintext
+secrets on every run.
+
+Treat that file as a secret: keep it at `0600`, exclude it from backups and
+dotfile repos, and prefer environment variables in CI.
+
+Migrate existing plaintext secrets with `dtiam config migrate-secrets`. Use
+`--require-keyring` on `set-credentials` to fail rather than ever write a
+plaintext secret, or `DTIAM_DISABLE_KEYRING=1` to opt out of the keyring.
 
 **Credentials dtiam never writes to disk.** Values supplied through
 `DTIAM_CLIENT_SECRET`, `DTIAM_BEARER_TOKEN`, or `DTIAM_ACCOUNT_UUID` are read at
@@ -54,5 +66,5 @@ dependency vulnerabilities, and anything causing dtiam to act on the wrong
 account or escalate privileges unintentionally.
 
 Out of scope: vulnerabilities in the Dynatrace platform or its APIs (report to
-Dynatrace), and the plaintext credential storage described above, which is a
-known limitation documented here rather than an undisclosed flaw.
+Dynatrace), and the plaintext fallback described above, which is a documented
+behavior on systems without a keyring rather than an undisclosed flaw.

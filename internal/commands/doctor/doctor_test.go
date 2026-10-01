@@ -190,3 +190,65 @@ func TestDoctorColumns(t *testing.T) {
 		}
 	}
 }
+
+func TestSecretStorageCheck(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *config.Config
+		want string
+	}{
+		{
+			name: "should skip when no credentials are stored",
+			cfg:  &config.Config{},
+			want: StatusSkip,
+		},
+		{
+			name: "should pass when every secret is in the keyring",
+			cfg: &config.Config{Credentials: []config.NamedCredential{
+				{Name: "a", Credential: config.Credential{ClientSecret: config.KeyringMarker()}},
+			}},
+			want: StatusOK,
+		},
+		{
+			// Plaintext works, so this is a warning -- but it must be surfaced
+			// every run, because a secret in a dotfile is easy to forget.
+			name: "should warn about plaintext secrets",
+			cfg: &config.Config{Credentials: []config.NamedCredential{
+				{Name: "a", Credential: config.Credential{ClientSecret: "dt0s01.ABC.XYZ"}},
+			}},
+			want: StatusWarn,
+		},
+		{
+			name: "should skip when a credential has no secret at all",
+			cfg: &config.Config{Credentials: []config.NamedCredential{
+				{Name: "a", Credential: config.Credential{ClientSecret: ""}},
+			}},
+			want: StatusSkip,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := secretStorageCheck(tt.cfg)
+			if got.Status != tt.want {
+				t.Errorf("Status = %q, want %q (detail: %s)", got.Status, tt.want, got.Detail)
+			}
+		})
+	}
+}
+
+func TestSecretStorageCheck_PointsAtTheFixWhenKeyringIsAvailable(t *testing.T) {
+	// When a keyring exists, the warning should name the command that fixes it.
+	t.Setenv(config.EnvDisableKeyring, "")
+	cfg := &config.Config{Credentials: []config.NamedCredential{
+		{Name: "a", Credential: config.Credential{ClientSecret: "dt0s01.ABC.XYZ"}},
+	}}
+
+	got := secretStorageCheck(cfg)
+	if got.Status != StatusWarn {
+		t.Fatalf("Status = %q, want warn", got.Status)
+	}
+	if config.KeyringAvailable() && !strings.Contains(got.Detail, "migrate-secrets") {
+		t.Errorf("Detail = %q, want it to name 'migrate-secrets'", got.Detail)
+	}
+}

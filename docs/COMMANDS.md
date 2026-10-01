@@ -1918,6 +1918,31 @@ dtiam analyze effective-group DevOps --level environment --level-id env123
 | 0    | Success                                             |
 | 1    | Error (resource not found, permission denied, etc.) |
 
+### config migrate-secrets
+
+Move plaintext client secrets from the config file into the OS keyring.
+
+```bash
+dtiam config migrate-secrets [--dry-run]
+```
+
+Idempotent — credentials already referencing the keyring are skipped. If the
+keyring is unavailable the command fails without changing anything, and a
+credential that cannot be migrated keeps its plaintext secret, so the config is
+never left in a broken state.
+
+### config keyring-status
+
+Show whether the OS keyring is in use and where each credential's secret lives.
+
+```bash
+dtiam config keyring-status [--output FORMAT]
+```
+
+Use this to confirm no plaintext secrets remain after `config migrate-secrets`.
+
+---
+
 ## doctor
 
 Diagnose configuration, credentials, and API connectivity.

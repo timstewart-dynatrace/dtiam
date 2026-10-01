@@ -108,13 +108,22 @@ not reliable for response shapes.** Six commands were silently returning empty.
 - [x] Test helpers now use production constructors
 - [x] Re-audited live: all 12 list commands return data; doctor 8/8 ok
 
-### Step 5 — Credential & UX parity (2.4.0)
-- [ ] OS keyring for client secrets (currently plaintext YAML)
-- [ ] `diff`, `watch`, agent auto-detection
+### Step 5 — Credential storage (2.5.0) — DONE
+- [x] OS keyring for client secrets, with a reported plaintext fallback
+- [x] `config migrate-secrets`, `config keyring-status`
+- [x] `--require-keyring` / `--no-keyring` / `DTIAM_DISABLE_KEYRING`
+- [x] `doctor` secret-storage check naming the fix
+- [x] `delete-credentials` cleans up the keyring entry
+- [x] SECURITY.md rewritten; plaintext is now a documented fallback, not the default
+
+### Step 5b — Remaining dtctl UX parity (deferred)
+- [ ] `diff` — preview what `apply` would change
+- [ ] `watch` — `get --watch`
+- [ ] Agent auto-detection (dtctl's `aidetect`) to imply `--plain`
 
 ### Step 6 — internal/ -> pkg/ (3.0.0, BREAKING)
 - [ ] Promote reusable packages to `pkg/` so dtiam is importable like dtctl
 
 ## Next Step
 
-Step 5 — credential and UX parity (keyring, diff, watch).
+Step 5b (diff/watch/agent-detection), then Step 6 (internal/ -> pkg/).
