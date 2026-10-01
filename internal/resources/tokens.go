@@ -21,9 +21,12 @@ func NewTokenHandler(c *client.Client) *TokenHandler {
 			Client:    c,
 			Name:      "platform-token",
 			Path:      "/platform-tokens",
-			ListKey:   "items",
+			ListKey:   "results",
 			IDField:   "id",
 			NameField: "name",
+			// The platform token API paginates and returns
+			// {pageSize, pageNumber, total, results}.
+			Pagination: client.PlatformTokenPagination(),
 		},
 	}
 }

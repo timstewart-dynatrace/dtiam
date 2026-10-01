@@ -69,3 +69,21 @@
 **Why:** Two commands (`account subscriptions`, `get platform-tokens`) were shipping broken — the token request omitted `account-uac-read` and `platform-token:tokens:manage`, so every call returned HTTP 403. The scope for platform tokens was even documented in `tokens.go` but never requested, which is exactly the drift an annotated list plus a test prevents. Lazy per-command scoping would mean a token cache per scope set and more SSO round trips for no benefit, since Dynatrace grants only the scopes the OAuth client actually has.
 **Trade-offs:** Requesting more scopes than a given command needs. Harmless — the SSO endpoint grants the intersection of requested and granted scopes, so an OAuth client without `account-uac-read` still gets a working token for everything else.
 **Revisit if:** Dynatrace starts rejecting token requests that ask for scopes the client lacks, rather than returning the intersection. That would force per-command scope sets.
+
+---
+
+## 2026-10-01 — Pagination Declared Per Handler, Resolved Inside List
+**Chosen:** A `*client.PaginationConfig` field on `BaseHandler` describing the endpoint's paging style, with `BaseHandler.List` looping internally until the collection is exhausted. Nil means unpaginated.
+**Alternatives:** A separate `ListAll` method; paginate unconditionally on every endpoint; expose pages to callers and let commands loop.
+**Why:** The Account Management API is not uniform — users/groups return `{count, items}` with no paging parameters at all, service users use a `page-key` cursor returning `{results, nextPageKey, totalCount}`, and platform tokens use 1-based `page`/`size` returning `{pageSize, pageNumber, total, results}`. Paginating unconditionally would send parameters that unpaginated endpoints ignore, which is harmless but misleading; worse, it invites assuming a uniformity that does not exist. Keeping the loop inside `List` means no command can accidentally render a truncated list, which is the failure mode that made `get service-users` and `get platform-tokens` return wrong results silently. A separate `ListAll` would have left the broken `List` as the easy default.
+**Trade-offs:** Each new paginated endpoint needs its config wired up explicitly; forgetting it yields first-page-only results. Mitigated by asserting the config in each handler's constructor test.
+**Revisit if:** Dynatrace unifies pagination across the Account Management API, at which point the style enum collapses to one case.
+
+---
+
+## 2026-10-01 — Trust Documented Response Shapes Over Existing Test Fixtures
+**Chosen:** When a handler's `ListKey` disagreed with the documented response shape, treat the documentation as correct and rewrite the test fixture.
+**Alternatives:** Preserve the fixtures and support both keys; leave as-is since tests were green.
+**Why:** `serviceusers.go` and `tokens.go` both read `items`, but those endpoints return `results`. The tests mocked `items`, so a full green suite coexisted with two commands that returned an empty list against the live API. Green tests over a fabricated fixture are worse than no tests: they actively argue the code is correct. The fallback chain still accepts `items` for safety, but the fixtures now encode the documented shape so the tests would catch a regression.
+**Trade-offs:** The fixtures are only as good as the documentation; neither was verified against a live account in this pass.
+**Revisit if:** A live-account smoke test contradicts the documented shapes. That test is the real fix and is not yet written.

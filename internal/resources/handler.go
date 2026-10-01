@@ -79,6 +79,11 @@ type BaseHandler struct {
 	ListKey   string
 	IDField   string
 	NameField string
+
+	// Pagination describes how to page through List results. Nil means the
+	// endpoint returns its whole collection in a single response, which is true
+	// for most Account Management endpoints.
+	Pagination *client.PaginationConfig
 }
 
 // ResourceName returns the resource name.
@@ -91,14 +96,61 @@ func (h *BaseHandler) APIPath() string {
 	return h.Path
 }
 
-// List lists resources.
+// List lists resources, following pagination to completion when the endpoint
+// is paginated. Callers always receive the full collection.
 func (h *BaseHandler) List(ctx context.Context, params map[string]string) ([]map[string]any, error) {
-	body, err := h.Client.Get(ctx, h.Path, params)
-	if err != nil {
-		return nil, h.handleError("list", err)
+	if h.Pagination == nil {
+		body, err := h.Client.Get(ctx, h.Path, params)
+		if err != nil {
+			return nil, h.handleError("list", err)
+		}
+		return h.extractList(body)
 	}
 
-	return h.extractList(body)
+	var (
+		all     []map[string]any
+		pageKey string
+	)
+
+	for page := 1; page <= client.MaxPageRequests; page++ {
+		body, err := h.Client.Get(ctx, h.Path, h.Pagination.Params(params, page, pageKey))
+		if err != nil {
+			return nil, h.handleError("list", err)
+		}
+
+		items, nextKey, total, err := h.extractPage(body)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, items...)
+
+		// An empty page always terminates: it is the only reliable end marker
+		// shared by both paging styles.
+		if len(items) == 0 {
+			break
+		}
+
+		switch h.Pagination.Style {
+		case client.PaginationPageKey:
+			if nextKey == "" || nextKey == pageKey {
+				return all, nil
+			}
+			pageKey = nextKey
+		case client.PaginationPageNumber:
+			// total is authoritative when present; otherwise rely on a short
+			// final page, then on the empty page above.
+			if total > 0 && len(all) >= total {
+				return all, nil
+			}
+			if len(items) < h.Pagination.EffectivePageSize() {
+				return all, nil
+			}
+		case client.PaginationNone:
+			return all, nil
+		}
+	}
+
+	return all, nil
 }
 
 // Get gets a single resource by ID.
@@ -207,8 +259,9 @@ func (h *BaseHandler) extractList(body []byte) ([]map[string]any, error) {
 		return items, nil
 	}
 
-	// Try common list keys
-	keys := []string{h.ListKey, "items", h.Name + "s", h.Name}
+	// Try common list keys. "results" is the shape used by the paginated
+	// endpoints (service users, platform tokens); "items" by the rest.
+	keys := []string{h.ListKey, "items", "results", h.Name + "s", h.Name}
 	for _, key := range keys {
 		if key == "" {
 			continue
@@ -220,6 +273,79 @@ func (h *BaseHandler) extractList(body []byte) ([]map[string]any, error) {
 
 	// Return empty slice if no items found
 	return []map[string]any{}, nil
+}
+
+// extractPage extracts one page of items plus the paging metadata needed to
+// decide whether another request is required.
+func (h *BaseHandler) extractPage(body []byte) (items []map[string]any, nextPageKey string, total int, err error) {
+	var response map[string]any
+	if err := json.Unmarshal(body, &response); err != nil {
+		// A bare array is inherently a single, complete page.
+		var direct []map[string]any
+		if err := json.Unmarshal(body, &direct); err != nil {
+			return nil, "", 0, fmt.Errorf("failed to parse response: %w", err)
+		}
+		return direct, "", 0, nil
+	}
+
+	p := h.Pagination
+
+	// Resolve the items key, preferring the one the pagination config declares.
+	keys := []string{}
+	if p != nil && p.ItemsKey != "" {
+		keys = append(keys, p.ItemsKey)
+	}
+	keys = append(keys, h.ListKey, "items", "results", h.Name+"s", h.Name)
+
+	for _, key := range keys {
+		if key == "" {
+			continue
+		}
+		raw, ok := response[key]
+		if !ok {
+			continue
+		}
+		items, err = toMapSlice(raw)
+		if err != nil {
+			return nil, "", 0, err
+		}
+		break
+	}
+
+	if p != nil {
+		if p.NextKeyField != "" {
+			if s, ok := response[p.NextKeyField].(string); ok {
+				nextPageKey = s
+			}
+		}
+		if p.TotalField != "" {
+			if n, ok := toInt(response[p.TotalField]); ok {
+				total = n
+			}
+		}
+	}
+
+	return items, nextPageKey, total, nil
+}
+
+// toInt converts a JSON number to an int. JSON numbers decode as float64, but
+// accept the integer types too so the helper is safe for hand-built maps in tests.
+func toInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case float64:
+		return int(n), true
+	case float32:
+		return int(n), true
+	case int:
+		return n, true
+	case int64:
+		return int(n), true
+	case json.Number:
+		i, err := n.Int64()
+		return int(i), err == nil
+	default:
+		return 0, false
+	}
 }
 
 // toMapSlice converts an interface to []map[string]any.

@@ -16,11 +16,13 @@ func newTestServiceUserHandler(t *testing.T, mux *http.ServeMux) *ServiceUserHan
 func TestServiceUserHandler_List_Success(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/service-users", func(w http.ResponseWriter, r *http.Request) {
+		// Live shape: {results, nextPageKey, totalCount}.
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []any{
+			"results": []any{
 				map[string]any{"uid": "su1", "name": "CI Bot"},
 				map[string]any{"uid": "su2", "name": "Deploy Bot"},
 			},
+			"totalCount": 2,
 		})
 	})
 
