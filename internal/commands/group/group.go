@@ -42,6 +42,9 @@ func init() {
 	Cmd.AddCommand(bindingsCmd)
 	Cmd.AddCommand(cloneCmd)
 	Cmd.AddCommand(setupCmd)
+	Cmd.AddCommand(permissionsCmd)
+	Cmd.AddCommand(grantPermissionCmd)
+	Cmd.AddCommand(revokePermissionCmd)
 }
 
 var membersCmd = &cobra.Command{

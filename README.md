@@ -87,10 +87,15 @@ Outcome: universal read visibility, writes isolated to the group's assigned mana
 | Boundaries | get, describe, create, delete, attach, detach, list-attached |
 | Environments | get, describe |
 | Limits | account limits, account check-capacity |
-| Subscriptions | account subscriptions, account forecast |
+| Subscriptions | account subscriptions, account forecast, account environment-usage, account environment-cost |
 | Platform Tokens | get, create, delete |
+| Group Permissions | group permissions, group grant-permission, group revoke-permission |
+| Audit Logs | get audit-logs |
+| Notifications | account notifications |
+| Reference Data | get available-permissions |
 | Apps | get (requires --environment) |
 | Schemas | get, search (requires --environment) |
+| Environment-level IAM | get env-users, get env-groups (requires --environment) |
 
 ### Templates & Declarative Apply
 
@@ -159,17 +164,35 @@ credentials:
 
 ## Required OAuth2 Scopes
 
+All of the scopes below are requested by default (see `auth.DefaultScopeList`).
+Dynatrace grants the intersection of requested and granted scopes, so an OAuth
+client that lacks one still gets a working token for everything else.
+
 | Scope | Operations |
 |-------|------------|
-| `account-idm-read` | List/get groups, users, service users, limits |
-| `account-idm-write` | Create/delete groups, users, service users |
-| `account-env-read` | List environments |
+| `account-idm-read` | List/get groups, users, service users, limits, group permissions |
+| `account-idm-write` | Create/delete groups, users, service users; grant/revoke permissions |
+| `account-env-read` | List environments, reference data (`get available-permissions`) |
+| `account-uac-read` | Subscriptions, forecast, environment usage/cost, notifications |
+| `account-audit-logs-read` | Account audit logs (`get audit-logs`) |
+| `platform-token:tokens:manage` | Platform token list/create/delete |
 | `iam-policies-management` | Full policy, binding, and boundary management |
 | `iam:effective-permissions:read` | Effective permissions analysis |
 
-**Read-only:** `account-idm-read`, `account-env-read`, `iam:policies:read`, `iam:bindings:read`, `iam:boundaries:read`
+**Read-only:** `account-idm-read`, `account-env-read`, `account-uac-read`, `account-audit-logs-read`, `iam:policies:read`, `iam:bindings:read`
 
-**Full management:** `account-idm-read`, `account-idm-write`, `account-env-read`, `iam-policies-management`
+**Full management:** add `account-idm-write`, `iam-policies-management`, `platform-token:tokens:manage`
+
+Two commands need scopes granted on the **environment** rather than the account,
+so they are not requested by default:
+
+| Scope | Operations |
+|-------|------------|
+| `iam:users:read` | `get env-users`, `get env-groups` |
+| `app-engine:apps:run` | `get apps` |
+| `settings.read` | `get schemas` |
+
+Override the requested set with `DTIAM_SCOPES` (space-separated, as OAuth2 requires).
 
 ## Building
 

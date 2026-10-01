@@ -28,13 +28,20 @@ func (a *tokenProviderAdapter) Close() error {
 	return a.provider.Close()
 }
 
-// NewOAuthProvider creates a new OAuth token provider.
+// NewOAuthProvider creates a new OAuth token provider using the default scopes.
 func NewOAuthProvider(clientID, clientSecret, accountUUID string) client.TokenProvider {
+	return NewOAuthProviderWithScopes(clientID, clientSecret, accountUUID, "")
+}
+
+// NewOAuthProviderWithScopes creates an OAuth token provider with an explicit
+// scope override. An empty scopes string uses auth.DefaultScopeList.
+func NewOAuthProviderWithScopes(clientID, clientSecret, accountUUID, scopes string) client.TokenProvider {
 	return &tokenProviderAdapter{
 		provider: auth.NewOAuthTokenManager(auth.OAuthConfig{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 			AccountUUID:  accountUUID,
+			Scopes:       scopes,
 		}),
 	}
 }
@@ -64,7 +71,10 @@ func CreateClient() (*client.Client, error) {
 		if clientID == "" || clientSecret == "" {
 			return nil, fmt.Errorf("OAuth credentials not configured. Use 'dtiam config set-credentials' or set DTIAM_CLIENT_ID and DTIAM_CLIENT_SECRET")
 		}
-		tokenProvider = NewOAuthProvider(clientID, clientSecret, accountUUID)
+		// Honor a DTIAM_SCOPES or per-credential scope override. Without this
+		// the configured value is parsed and then silently ignored.
+		scopes := config.GetEffectiveScopes(cfg.GetCurrentCredential())
+		tokenProvider = NewOAuthProviderWithScopes(clientID, clientSecret, accountUUID, scopes)
 	} else if bearerToken != "" {
 		tokenProvider = NewBearerProvider(bearerToken)
 	} else {

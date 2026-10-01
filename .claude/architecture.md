@@ -140,6 +140,29 @@ returning, so command code never sees a partial result.
 **App Engine Registry API**:
 `https://{environment-id}.apps.dynatrace.com/platform/app-engine/registry/v1/apps`
 
+**Audit API**: `https://api.dynatrace.com/audit/v1/accounts/{uuid}`
+(response `{audits, warnings}`; warnings signal a partial result)
+
+**Reference Data API**: `https://api.dynatrace.com/ref/v1/account/permissions`
+(bare JSON array, not account-scoped)
+
+**Notifications API**: `https://api.dynatrace.com/v1/accounts/{uuid}/notifications`
+(POST with the filter in the body; note the unprefixed `/v1` path)
+
+**Permission Management API**:
+`https://api.dynatrace.com/iam/v1/accounts/{uuid}/groups/{group}/permissions`
+(GET/POST/PUT/DELETE; role-style grants that coexist with IAM policies)
+
+**Subscription API v3**:
+`https://api.dynatrace.com/sub/v3/accounts/{uuid}/subscriptions/{sub}/environments/cost`
+(cost moved to v3; listing, usage and forecast remain on v2)
+
+**Environment-level Platform IAM API**:
+`https://{environment-id}.apps.dynatrace.com/platform/iam/v1/organizational-levels/{level_type}/{level_id}/{users,groups,service-users}`
+(served from the environment, not api.dynatrace.com; needs `iam:users:read`
+granted on the environment. Organizational level types are `account` and
+`environment` only -- `global` is not valid here.)
+
 Level types: `account`, `environment`, `global`
 
 ## API Coverage
