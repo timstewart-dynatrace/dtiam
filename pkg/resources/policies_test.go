@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jtimothystewart/dtiam/internal/client"
+	"github.com/jtimothystewart/dtiam/pkg/client"
 )
 
 func newTestPolicyHandler(t *testing.T, mux *http.ServeMux) *PolicyHandler {

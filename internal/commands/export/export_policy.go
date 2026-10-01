@@ -11,8 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/resources"
-	"github.com/jtimothystewart/dtiam/internal/utils"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
+	"github.com/jtimothystewart/dtiam/pkg/utils"
 )
 
 var policyCmd = &cobra.Command{

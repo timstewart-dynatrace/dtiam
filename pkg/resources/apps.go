@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jtimothystewart/dtiam/internal/client"
+	"github.com/jtimothystewart/dtiam/pkg/client"
 )
 
 // AppHandler handles App Engine Registry resources.

@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-01
+
+### Changed — BREAKING
+
+Thirteen packages moved from `internal/` to `pkg/`, making dtiam usable as a Go
+library rather than only a binary:
+
+```
+internal/{auth,client,config,diagnostic,diff,logging,output,
+          prompt,resources,suggest,template,utils,watch}
+  ->  pkg/{...}
+```
+
+`internal/cli` and `internal/commands` **stay internal** — they are the cobra
+wiring, and exposing them would invite callers to depend on command plumbing
+rather than on the API client and resource handlers. The move was possible
+because none of the thirteen referenced either one.
+
+**Impact:** only code importing these paths. The CLI is unaffected: the complete
+`--help` tree for every command and subcommand is byte-identical before and after
+(4,110 lines diffed). An external module importing `pkg/auth`, `pkg/client`,
+`pkg/config`, `pkg/diff`, `pkg/output`, `pkg/resources`, `pkg/version` and
+`pkg/watch` was built and run to confirm the packages resolve from outside the
+module.
+
+**Migration:** replace `internal/` with `pkg/` in your imports.
+
+```go
+// before
+import "github.com/jtimothystewart/dtiam/internal/resources"
+// after
+import "github.com/jtimothystewart/dtiam/pkg/resources"
+```
+
 ## [2.6.0] - 2026-10-01
 
 ### Added

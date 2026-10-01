@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jtimothystewart/dtiam/internal/client"
+	"github.com/jtimothystewart/dtiam/pkg/client"
 )
 
 // TokenHandler handles platform token resources.

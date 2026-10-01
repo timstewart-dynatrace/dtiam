@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/jtimothystewart/dtiam/internal/config"
+	"github.com/jtimothystewart/dtiam/pkg/config"
 )
 
 var viewCmd = &cobra.Command{

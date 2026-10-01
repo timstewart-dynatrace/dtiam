@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jtimothystewart/dtiam/internal/client"
+	"github.com/jtimothystewart/dtiam/pkg/client"
 )
 
 // Organizational level types for the environment-level Platform IAM API.
