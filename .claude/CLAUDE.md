@@ -32,9 +32,9 @@ Before starting work, check `.claude/phases/` for the active phase.
 - When done: rename `PHASE-XX-active.md` to `PHASE-XX-done.md`
 
 ## Skills (Domain Knowledge)
-@/Users/Shared/GitHub/PROJECTS/VisualCode-AI-Template/SKILLS/dynatrace-iam/SKILL.md
-@/Users/Shared/GitHub/PROJECTS/VisualCode-AI-Template/SKILLS/dynatrace-account-management/SKILL.md
-@/Users/Shared/GitHub/PROJECTS/VisualCode-AI-Template/SKILLS/dynatrace-apis/SKILL.md
+@/Users/Shared/GitHub/CLAUDE/Claude-AI-Template/SKILLS/dynatrace-iam/SKILL.md
+@/Users/Shared/GitHub/CLAUDE/Claude-AI-Template/SKILLS/dynatrace-account-management/SKILL.md
+@/Users/Shared/GitHub/CLAUDE/Claude-AI-Template/SKILLS/dynatrace-apis/SKILL.md
 
 ## Rules
 
