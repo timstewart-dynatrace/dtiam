@@ -1918,6 +1918,52 @@ dtiam analyze effective-group DevOps --level environment --level-id env123
 | 0    | Success                                             |
 | 1    | Error (resource not found, permission denied, etc.) |
 
+## doctor
+
+Diagnose configuration, credentials, and API connectivity.
+
+```bash
+dtiam doctor [OPTIONS]
+```
+
+| Option      | Description                                   |
+| ----------- | --------------------------------------------- |
+| `--offline` | Skip the checks that make network calls       |
+| `--context` | Check a specific context                      |
+| `--output`  | Output format                                 |
+
+Checks performed, cheapest first:
+
+1. dtiam version
+2. Configuration file exists and parses
+3. A current context is selected
+4. Account UUID is resolvable
+5. Credentials are configured (OAuth2 or bearer token)
+6. OAuth scope set in use, naming any default scope an override omits
+7. A token can be obtained from the SSO endpoint *(network)*
+8. The account API answers an authenticated request *(network)*
+
+Later checks are **skipped** rather than failed when an earlier one makes them
+meaningless, so the output distinguishes "could not test" from "failed".
+
+Exits non-zero if any check fails, which makes it usable as a CI readiness gate.
+
+```bash
+# Full diagnosis
+dtiam doctor
+
+# Local checks only
+dtiam doctor --offline
+
+# Machine-readable, for CI
+dtiam doctor --plain
+```
+
+Statuses: `ok`, `warn` (works but worth knowing — e.g. a static bearer token that
+cannot refresh), `fail`, `skip`.
+
+---
+
 ## See Also
 
 - [Quick Start Guide](QUICK_START.md)

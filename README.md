@@ -21,17 +21,36 @@ dtiam bulk add-users-to-group -f users.csv    # Bulk operations
 ## Install
 
 ```bash
-# From source
-git clone https://github.com/timstewart-dynatrace/GO-dtiam.git
-cd GO-dtiam && make build
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/jtimothystewart/dtiam/main/install.sh | sh
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/jtimothystewart/dtiam/main/install.ps1 | iex
+```
+
+Both scripts detect your platform, verify the release checksum, and install to a
+directory on your PATH. Pin a version with `DTIAM_VERSION`, or choose the
+location with `DTIAM_INSTALL_DIR`.
+
+From source:
+
+```bash
+git clone https://github.com/timstewart-dynatrace/dtiam.git
+cd dtiam && make build     # -> bin/dtiam
 
 # Or install to $GOPATH/bin
 make install
 ```
 
-Binary downloads available on the [releases page](https://github.com/timstewart-dynatrace/GO-dtiam/releases).
+Binary downloads are on the [releases page](https://github.com/jtimothystewart/dtiam/releases).
 
-**Requires:** Go 1.22+ (building from source), Dynatrace account with API access.
+**Requires:** Go 1.23+ (building from source), a Dynatrace account with API access.
+
+Verify your setup before doing anything else:
+
+```bash
+dtiam doctor
+```
 
 ## Authenticate
 

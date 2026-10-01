@@ -59,12 +59,41 @@ the documented scope escape hatch was dead code. Now wired through
 direct permission grants into one effective-access view. Logged in DECISIONS.md
 as the obvious follow-up.
 
-### Step 4 — dtctl format alignment (2.3.0)
-- [ ] Split oversized verb files into `verb_resource.go` (analyze 954, export 900, bulk 872)
-- [ ] Commit `.golangci.yml`
-- [ ] Add `dtiam doctor`
-- [ ] Governance files: AGENTS.md, CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, NOTICE
-- [ ] install.sh / install.ps1
+### Step 4 — dtctl format alignment (2.3.0) — DONE
+- [x] Split oversized verb files into `verb_resource.go` (70 files; largest
+      dropped from 954 to 309 lines). Verified behavior-preserving by diffing
+      the complete `--help` tree: byte-identical.
+- [x] Committed `.golangci.yml` (was missing entirely; `make lint` ran on
+      defaults). Lint now clean at 0 issues after fixing 7 deprecated
+      `reflect.Ptr` uses.
+- [x] `dtiam doctor` — 8 checks, skip-vs-fail distinction, `--offline`,
+      non-zero exit for CI
+- [x] AGENTS.md, CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, NOTICE
+- [x] install.sh / install.ps1 with checksum verification
+
+**Found while building doctor:** running it against a live account exposed four
+more commands silently returning empty lists due to wrong response keys. See
+Step 4.5.
+
+### Step 4.5 — Live-validated response key fixes
+Running `dtiam doctor` against a real account made it possible to compare every
+list endpoint's actual response against what the handlers expect. The docs are
+not reliable for response shapes.
+
+| Command | Code expected | API actually returns | Paginated |
+|---------|---------------|----------------------|-----------|
+| `get environments` | `tenants` | `data` | no |
+| `get boundaries` | `boundaries` | `content` | yes (page-number) |
+| `account limits` | `items` | `results` | yes (page-number) |
+| `account subscriptions` | `items` | `data` | no |
+
+- [ ] Fix the four response keys above
+- [ ] Add page-number pagination to boundaries and limits
+- [ ] Fix `TokenColumns`: ID is `tokenId` not `id`, expiry is `expirationDate`
+      not `expiresIn`, scopes is `scope` not `scopes`
+- [ ] Fix `TokenHandler.IDField`: `tokenId`, so get/delete by ID resolve
+- [ ] Add `data` and `content` to the list-key fallback chain
+- [ ] Re-audit every list command against the live account after fixing
 
 ### Step 5 — Credential & UX parity (2.4.0)
 - [ ] OS keyring for client secrets (currently plaintext YAML)
@@ -75,4 +104,4 @@ as the obvious follow-up.
 
 ## Next Step
 
-Step 4 — dtctl format alignment.
+Step 4.5 — live-validated response key fixes.

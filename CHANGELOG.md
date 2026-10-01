@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-01
+
+### Added
+
+- `dtiam doctor` — diagnoses configuration, credentials, scopes, token
+  retrieval, and API connectivity. Checks run cheapest-first and later checks
+  report `skip` rather than `fail` when an earlier one makes them meaningless, so
+  the output distinguishes "could not test" from "broken". Exits non-zero on any
+  failure, so it works as a CI readiness gate. `--offline` skips the network
+  checks.
+- `.golangci.yml` — the linter config was never committed, so `make lint` ran
+  with defaults. Now pinned, with the exclusions annotated. Lint is clean.
+- `AGENTS.md` — agent-facing guidance: the `--plain` stream contract, the
+  surprises worth knowing (two coexisting permission models, two different user
+  APIs, partial audit results returning HTTP 200), and safety rules.
+- `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `NOTICE`.
+  SECURITY.md documents that credentials are stored in **plaintext** and that
+  `-v` dumps Authorization headers.
+- `install.sh` and `install.ps1` — platform detection, checksum verification,
+  and PATH guidance.
+
+### Fixed
+
+- Replaced the deprecated `reflect.Ptr` with `reflect.Pointer` in the struct
+  printer (7 occurrences), the only issues the newly-pinned linter reported.
+- Corrected the README install instructions, which pointed at a `GO-dtiam`
+  repository that does not exist.
+
 ### Changed
 
 - Split the oversized per-verb command files into dtctl-style
