@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-01
+
+### Added
+
+- Automatic pagination for paginated Account Management endpoints. `List` now
+  follows every page to completion, so callers always receive the full
+  collection. Two paging styles are supported, matching the documented API
+  behavior: cursor-based (`page-key`/`nextPageKey`, used by service users) and
+  1-based page numbers (`page`/`size` plus `total`, used by platform tokens).
+- `client.PaginationConfig` with presets `ServiceUserPagination()`,
+  `PlatformTokenPagination()`, and `OrganizationalLevelPagination()`.
+
+### Fixed
+
+- `dtiam get service-users` returned an empty list against the live API. The
+  service user endpoint responds with `{results, nextPageKey, totalCount}`, but
+  the handler read `items`. The existing tests mocked the `items` shape, so they
+  passed while the command was broken.
+- `dtiam get platform-tokens` had the same defect: the endpoint responds with
+  `{pageSize, pageNumber, total, results}` and the handler read `items`.
+- Both endpoints also silently truncated to a single page, since no paging
+  parameters were ever sent.
+
+### Changed
+
+- The list-key fallback chain now includes `results` alongside `items`, so
+  paginated response shapes resolve even on handlers without an explicit key.
+
 ## [2.0.3] - 2026-10-01
 
 ### Fixed

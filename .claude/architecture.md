@@ -114,15 +114,21 @@ CLI Command → common.CreateClient() → Auth (OAuth2/Bearer)
 
 Base URL: `https://api.dynatrace.com/iam/v1/accounts/{account_uuid}`
 
-| Resource | Path |
-|----------|------|
-| Groups | `/groups` |
-| Users | `/users` |
-| Service Users | `/service-users` |
-| Limits | `/limits` |
-| Policies | `/repo/{level_type}/{level_id}/policies` |
-| Bindings | `/repo/{level_type}/{level_id}/bindings` |
-| Boundaries | `/repo/account/{uuid}/boundaries` |
+| Resource | Path | Response shape | Paginated |
+|----------|------|----------------|-----------|
+| Groups | `/groups` | `{count, items}` | no |
+| Users | `/users` | `{count, items}` | no |
+| Service Users | `/service-users` | `{results, nextPageKey, totalCount}` | cursor |
+| Platform Tokens | `/platform-tokens` | `{pageSize, pageNumber, total, results}` | page number |
+| Limits | `/limits` | `{items}` | no |
+| Policies | `/repo/{level_type}/{level_id}/policies` | `{policies}` | no |
+| Bindings | `/repo/{level_type}/{level_id}/bindings` | `{policyBindings}` | no |
+| Boundaries | `/repo/account/{uuid}/boundaries` | `{boundaries}` | no |
+
+Pagination is declared per handler via `BaseHandler.Pagination`
+(`internal/client/pagination.go`). A nil value means the endpoint returns its
+whole collection in one response. `BaseHandler.List` follows all pages before
+returning, so command code never sees a partial result.
 
 **Environment API**: `https://api.dynatrace.com/env/v2/accounts/{uuid}/environments`
 

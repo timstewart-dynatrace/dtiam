@@ -19,9 +19,12 @@ func NewServiceUserHandler(c *client.Client) *ServiceUserHandler {
 			Client:    c,
 			Name:      "service-user",
 			Path:      "/service-users",
-			ListKey:   "items",
+			ListKey:   "results",
 			IDField:   "uid",
 			NameField: "name",
+			// The service user API paginates and returns {results, nextPageKey,
+			// totalCount} -- not the {count, items} shape used elsewhere.
+			Pagination: client.ServiceUserPagination(),
 		},
 	}
 }

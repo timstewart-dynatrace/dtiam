@@ -24,10 +24,20 @@ docs.dynatrace.com and the Dynatrace OpenAPI specs in
 - [x] Sync version to 2.0.3 across version.go, settings.json, CLAUDE.md, core.md
 - [x] Correct stale test-count claim in rules/testing.md
 
-### Step 2 — Pagination (2.1.0)
-- [ ] `page`/`size` support in client + BaseHandler, auto-follow all pages
-- [ ] Apply to users, groups, service users, platform tokens
-- [ ] Tests for multi-page, single-page, and empty responses
+### Step 2 — Pagination (2.1.0) — DONE
+- [x] `client.PaginationConfig` with cursor and page-number styles
+- [x] `BaseHandler.List` follows all pages; nil config = single request
+- [x] Applied to service users and platform tokens (the only paginated
+      Account Management endpoints; users/groups/policies return the full
+      collection with no paging parameters)
+- [x] Fixed wrong `ListKey` on both: they return `results`, not `items`,
+      so both commands returned empty lists against the live API
+- [x] 8 handler paging tests + 7 config tests
+
+**Correction to the original finding:** users and groups were listed as
+truncation risks. They are not -- those endpoints expose no paging parameters
+and return `{count, items}` whole. The real defect was narrower but worse:
+wrong response key on the two endpoints that do paginate.
 
 ### Step 3 — New API groups (2.2.0)
 - [ ] Audit logs — `GET /audit/v1/accounts/{uuid}`
@@ -54,4 +64,4 @@ docs.dynatrace.com and the Dynatrace OpenAPI specs in
 
 ## Next Step
 
-Step 2 — pagination.
+Step 3 — new API groups.
