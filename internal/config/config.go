@@ -181,6 +181,16 @@ func (c *Config) SetCredentialField(name, field, value string) bool {
 	return false
 }
 
+// CurrentCredentialName returns the name of the credential the current context
+// references, or "" when there is none. The name is the keyring lookup key.
+func (c *Config) CurrentCredentialName() string {
+	ctx := c.GetCurrentContext()
+	if ctx == nil {
+		return ""
+	}
+	return ctx.CredentialsRef
+}
+
 // GetEffectiveAPIURL returns the API base URL, checking env > credential > default.
 func GetEffectiveAPIURL(cred *Credential, defaultURL string) string {
 	if envURL := os.Getenv(EnvAPIURL); envURL != "" {

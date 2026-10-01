@@ -40,4 +40,6 @@ func init() {
 	Cmd.AddCommand(setCredentialsCmd)
 	Cmd.AddCommand(deleteCredentialsCmd)
 	Cmd.AddCommand(getCredentialsCmd)
+	Cmd.AddCommand(migrateSecretsCmd)
+	Cmd.AddCommand(keyringStatusCmd)
 }

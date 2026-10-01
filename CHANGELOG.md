@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-01
+
+### Added
+
+- Client secrets are now stored in the **OS keyring** when one is available.
+  `dtiam config set-credentials` writes the secret to the keyring (service name
+  `dtiam`) and records only a reference in the config file. Existing plaintext
+  configs keep working unchanged — the stored value is resolved either way, so
+  there is no forced migration.
+- `dtiam config migrate-secrets` moves existing plaintext secrets into the
+  keyring. Idempotent, and supports `--dry-run`.
+- `dtiam config keyring-status` shows, per credential, whether its secret lives
+  in the keyring or the config file — so you can confirm no plaintext remains.
+- `--require-keyring` on `set-credentials` fails rather than ever writing a
+  plaintext secret; `--no-keyring` forces file storage. `DTIAM_DISABLE_KEYRING`
+  opts out entirely, which also avoids a keyring probe on headless hosts.
+- `dtiam doctor` gained a **secret storage** check that reports plaintext secrets
+  and names the command that fixes them.
+- `dtiam config delete-credentials` now removes the keyring entry too, rather
+  than leaving an orphaned secret behind, and supports `--dry-run`.
+
+### Changed
+
+- `config delete-credentials` and `set-credentials` route their output through
+  the printer instead of `fmt.Printf`, so `--plain` and `-o json` behave.
+
+### Security
+
+- Plaintext credential storage is now a fallback rather than the only option.
+  Where a secret is stored is always reported, never silent. See SECURITY.md.
+
 ## [2.4.0] - 2026-10-01
 
 ### Fixed

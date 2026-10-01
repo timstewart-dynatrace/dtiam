@@ -123,6 +123,7 @@ func RunChecks(ctx context.Context, offline bool) []CheckResult {
 
 	results = append(results, accountCheck(accountUUID))
 	results = append(results, credentialsCheck(clientID, clientSecret, bearerToken, useOAuth))
+	results = append(results, secretStorageCheck(cfg))
 	results = append(results, scopesCheck(cfg, useOAuth))
 
 	if accountUUID == "" || (useOAuth && (clientID == "" || clientSecret == "")) ||
@@ -307,6 +308,54 @@ func scopesCheck(cfg *config.Config, useOAuth bool) CheckResult {
 	}
 }
 
+// secretStorageCheck reports where client secrets are stored.
+//
+// Plaintext storage is a warning rather than a failure: it works, and is the only
+// option on a headless host. But it is worth surfacing every run, because a
+// plaintext secret in a dotfile is easy to forget and easy to leak.
+func secretStorageCheck(cfg *config.Config) CheckResult {
+	plaintext := 0
+	inKeyring := 0
+	for _, named := range cfg.Credentials {
+		switch {
+		case named.Credential.ClientSecret == "":
+		case config.IsKeyringReference(named.Credential.ClientSecret):
+			inKeyring++
+		default:
+			plaintext++
+		}
+	}
+
+	switch {
+	case plaintext == 0 && inKeyring == 0:
+		return CheckResult{
+			Name:   "secret storage",
+			Status: StatusSkip,
+			Detail: "no stored credentials (using environment variables)",
+		}
+	case plaintext == 0:
+		return CheckResult{
+			Name:   "secret storage",
+			Status: StatusOK,
+			Detail: fmt.Sprintf("%d secret(s) in the OS keyring", inKeyring),
+		}
+	case !config.KeyringAvailable():
+		return CheckResult{
+			Name:   "secret storage",
+			Status: StatusWarn,
+			Detail: fmt.Sprintf("%d secret(s) in plaintext; no OS keyring available on this system", plaintext),
+		}
+	default:
+		return CheckResult{
+			Name:   "secret storage",
+			Status: StatusWarn,
+			Detail: fmt.Sprintf(
+				"%d secret(s) in plaintext but a keyring is available; run 'dtiam config migrate-secrets'",
+				plaintext),
+		}
+	}
+}
+
 // tokenCheck verifies a token can actually be obtained.
 func tokenCheck(ctx context.Context, clientID, clientSecret, accountUUID, bearerToken string, useOAuth bool) CheckResult {
 	if !useOAuth {
@@ -383,6 +432,7 @@ func skipRemaining(offline bool, reason string) []CheckResult {
 		{Name: "current context", Status: StatusSkip, Detail: "skipped: " + reason},
 		{Name: "account UUID", Status: StatusSkip, Detail: "skipped: " + reason},
 		{Name: "credentials", Status: StatusSkip, Detail: "skipped: " + reason},
+		{Name: "secret storage", Status: StatusSkip, Detail: "skipped: " + reason},
 		{Name: "OAuth scopes", Status: StatusSkip, Detail: "skipped: " + reason},
 	}
 	return append(results, skipChecks(offline, reason)...)

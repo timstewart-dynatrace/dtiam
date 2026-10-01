@@ -181,6 +181,22 @@ credentials:
 | `DTIAM_OUTPUT` | Default output format |
 | `DTIAM_VERBOSE` | Enable verbose mode |
 
+### Credential storage
+
+Client secrets go to the **OS keyring** when one is available; the config file
+then holds only a reference. dtiam tells you where the secret went.
+
+```bash
+dtiam config keyring-status        # where is each secret?
+dtiam config migrate-secrets       # move plaintext secrets into the keyring
+```
+
+On systems without a keyring (headless Linux, containers, CI) the secret falls
+back to plaintext in the config file and a warning says so; `dtiam doctor`
+reports it on every run. Pass `--require-keyring` to `set-credentials` to fail
+rather than write a plaintext secret, or set `DTIAM_DISABLE_KEYRING=1` to opt out
+of the keyring entirely.
+
 ## Required OAuth2 Scopes
 
 All of the scopes below are requested by default (see `auth.DefaultScopeList`).

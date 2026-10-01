@@ -173,6 +173,19 @@ func GetEffectiveCredentials(config *Config) (clientID, clientSecret, accountUUI
 			if cred != nil && clientID == "" && clientSecret == "" {
 				clientID = cred.ClientID
 				clientSecret = cred.ClientSecret
+				// The stored value may be a keyring marker rather than the
+				// secret. Resolve it here so every caller gets a usable secret
+				// without needing to know where it lives. A keyring read failure
+				// leaves clientSecret empty, which surfaces as the normal
+				// "credentials not configured" error downstream and is also
+				// reported precisely by 'dtiam doctor'.
+				if IsKeyringReference(clientSecret) {
+					if resolved, err := NewSecretStore().GetSecret(config.CurrentCredentialName(), clientSecret); err == nil {
+						clientSecret = resolved
+					} else {
+						clientSecret = ""
+					}
+				}
 				useOAuth = true
 			}
 		}

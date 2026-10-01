@@ -150,3 +150,12 @@
 **Why:** `newTestLimitsHandler` constructed its own `BaseHandler` with `ListKey: "items"` and `IDField: "name"` — a configuration the production code never used. The tests therefore validated the fixture against itself and could not fail when `NewLimitsHandler` carried the wrong keys. This is the same failure as the fabricated fixtures: the test agreed with itself and told us nothing about the shipped code.
 **Trade-offs:** Tests are now coupled to constructor signatures, so a constructor change touches them. That coupling is the feature — it is what makes a misconfigured constructor fail.
 **Revisit if:** A constructor starts requiring expensive setup that tests cannot reasonably provide.
+
+---
+
+## 2026-10-01 — Keyring With a Reported Plaintext Fallback
+**Chosen:** Store client secrets in the OS keyring via `zalando/go-keyring`, writing a `keyring:dtiam` marker to the config file in place of the secret. Fall back to plaintext when no keyring exists, and always report which happened.
+**Alternatives:** Require a keyring and fail without one; keep plaintext only; encrypt the config file with a passphrase.
+**Why:** Plaintext secrets in a dotfile were the project's clearest security weakness, but requiring a keyring would break dtiam on exactly the hosts it is most used from — headless Linux boxes, containers, CI runners — none of which run a keyring daemon. A silent fallback would be worse than plaintext-only, since the user would believe their secret was protected. So the fallback exists but is never quiet: `set-credentials` names the destination, `doctor` warns every run, and `keyring-status` shows the state per credential. `--require-keyring` is there for anyone who wants the strict behavior. Passphrase encryption was rejected because it would prompt on every invocation, which breaks the non-interactive use `--plain` exists to serve.
+**Trade-offs:** Three new indirect dependencies, and a `keyring:dtiam` marker that a third-party tool reading the config file would not understand. The marker is deliberately not a valid Dynatrace secret shape, so such a tool fails loudly rather than authenticating with nonsense.
+**Revisit if:** A keyring backend proves unreliable enough that the probe cost or false negatives become a problem — `DTIAM_DISABLE_KEYRING` is the escape hatch in the meantime.
