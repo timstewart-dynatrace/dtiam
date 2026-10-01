@@ -123,3 +123,30 @@
 **Why:** Five files had passed 500 lines and `analyze.go` held 954 lines across 7 unrelated subcommands, so any change meant scrolling past six others and every concurrent edit touched the same file. dtctl's `verb_resource.go` convention solves exactly this and is already proven at 135 files. Adopting dtctl's *flat* layout as well would have meant collapsing 15 packages into one and renaming every symbol to avoid collisions — a much larger change for no benefit, since the package-per-verb split already prevents the name clashes that force dtctl to prefix everything.
 **Trade-offs:** More files to navigate, and `init()` registration is now spread across them. Verified safe by diffing the complete `--help` tree for every command and subcommand before and after: byte-identical.
 **Revisit if:** dtiam grows enough commands that package-per-verb starts producing its own collisions.
+
+---
+
+## 2026-10-01 — Live Account Is Authoritative for Response Shapes, Not Documentation
+**Chosen:** Verify every list endpoint's response against a live account, treat what it returns as authoritative, and pin each observed shape in `response_shapes_test.go`.
+**Alternatives:** Trust docs.dynatrace.com; trust the OpenAPI specs; keep the defensive multi-key fallback and move on.
+**Why:** Six commands were silently returning empty lists — `get environments`, `get boundaries`, `account limits`, `account subscriptions`, `service-user list`, `get tokens`. The documentation states `items` for endpoints that actually return `data`, `results`, or `content`, and does not mention that boundaries and limits paginate. The failure mode is the problem: an unmatched key yields an empty slice, not an error, so every one of these looked like "this account has none of those" rather than "this code is broken." `account check-capacity` was the worst case — it reported every limit as not found and computed 0/0, which reads as a real capacity answer. A fallback chain alone would have papered over it without recording what is actually true.
+**Trade-offs:** The pinned shapes are a snapshot of one account on one date, and a future API change will break these tests rather than silently degrading — which is the point, but it does mean the tests need updating when the API legitimately changes.
+**Revisit if:** Dynatrace publishes OpenAPI specs for the Account Management API that match observed behavior, at which point generated types would beat hand-pinned fixtures.
+
+---
+
+## 2026-10-01 — One Place for List-Key Resolution
+**Chosen:** Delete the `List`/`extractList` overrides on `EnvironmentHandler`, `LimitsHandler`, and `SubscriptionHandler`; resolve list keys only in `BaseHandler`.
+**Alternatives:** Fix each override's key list in place; add the missing keys to every override.
+**Why:** Each override re-implemented key resolution with its own hardcoded guess, so setting `ListKey` on the embedded `BaseHandler` had no effect at all — the fix looked applied and changed nothing. Three independent copies meant three places to be wrong and no single place to be right. Removing them deleted roughly 100 lines and made the shared fallback chain actually reachable. The only behavior worth keeping from the overrides was wrapping a single-resource response, which now lives in `BaseHandler` keyed off the handler's own `IDField`/`NameField` rather than a hardcoded `"name"` or `"uuid"`.
+**Trade-offs:** `BaseHandler.extractList` now carries a longer fallback chain, which could in principle match an unintended key on a future endpoint. Guarded by asserting each handler's explicit `ListKey` in tests, so resolution never depends on the fallback.
+**Revisit if:** An endpoint appears whose envelope uses one of these keys for something that is not the collection.
+
+---
+
+## 2026-10-01 — Test Helpers Must Use Production Constructors
+**Chosen:** Build handlers in tests via `NewXHandler(client)` and override only the URL, rather than hand-rolling a `BaseHandler` literal.
+**Alternatives:** Keep the hand-rolled literals; inject a test-only config struct.
+**Why:** `newTestLimitsHandler` constructed its own `BaseHandler` with `ListKey: "items"` and `IDField: "name"` — a configuration the production code never used. The tests therefore validated the fixture against itself and could not fail when `NewLimitsHandler` carried the wrong keys. This is the same failure as the fabricated fixtures: the test agreed with itself and told us nothing about the shipped code.
+**Trade-offs:** Tests are now coupled to constructor signatures, so a constructor change touches them. That coupling is the feature — it is what makes a misconfigured constructor fail.
+**Revisit if:** A constructor starts requiring expensive setup that tests cannot reasonably provide.

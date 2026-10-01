@@ -114,16 +114,37 @@ CLI Command → common.CreateClient() → Auth (OAuth2/Bearer)
 
 Base URL: `https://api.dynatrace.com/iam/v1/accounts/{account_uuid}`
 
-| Resource | Path | Response shape | Paginated |
-|----------|------|----------------|-----------|
-| Groups | `/groups` | `{count, items}` | no |
-| Users | `/users` | `{count, items}` | no |
-| Service Users | `/service-users` | `{results, nextPageKey, totalCount}` | cursor |
-| Platform Tokens | `/platform-tokens` | `{pageSize, pageNumber, total, results}` | page number |
-| Limits | `/limits` | `{items}` | no |
-| Policies | `/repo/{level_type}/{level_id}/policies` | `{policies}` | no |
-| Bindings | `/repo/{level_type}/{level_id}/bindings` | `{policyBindings}` | no |
-| Boundaries | `/repo/account/{uuid}/boundaries` | `{boundaries}` | no |
+All shapes below were verified against a live account on 2026-10-01. **The
+published documentation does not match the API for several of these** — it states
+`items` for endpoints that return `data`, `results`, or `content`. Verify against
+a real account before trusting a documented shape; an unmatched key yields an
+empty list, not an error.
+
+| Resource | Path | Response shape | Paginated | ID field |
+|----------|------|----------------|-----------|----------|
+| Groups | `/groups` | `{count, items}` | no | `uuid` |
+| Users | `/users` | `{count, items}` | no | `uid` |
+| Service Users | `/service-users` | `{results, nextPageKey, totalCount}` | cursor | `uid` |
+| Platform Tokens | `/platform-tokens` | `{pageSize, pageNumber, total, results}` | page number | `tokenId` |
+| Limits | `/limits` | `{pageSize, pageNumber, total, results}` | page number | `limitType` |
+| Policies | `/repo/{level_type}/{level_id}/policies` | `{policies}` | no | `uuid` |
+| Bindings | `/repo/{level_type}/{level_id}/bindings` | `{policyBindings}` | no | `policyUuid` |
+| Boundaries | `/repo/account/{uuid}/boundaries` | `{pageSize, pageNumber, totalCount, content}` | page number | `uuid` |
+| Environments | `/env/v2/accounts/{uuid}/environments` | `{data}` | no | `id` |
+| Subscriptions | `/sub/v2/accounts/{uuid}/subscriptions` | `{data}` | no | `uuid` |
+| Audit logs | `/audit/v1/accounts/{uuid}` | `{audits, warnings}` | no | `eventId` |
+| Reference data | `/ref/v1/account/permissions` | bare array | no | `id` |
+
+Field-name traps confirmed live: limits use `limitType`/`currentValue`/`limitValue`
+(not `name`/`current`/`max`); platform tokens use `tokenId`/`expirationDate`/`scope`
+(not `id`/`expiresIn`/`scopes`); environments use `active`/`url` (not `state`/`trial`).
+The audit API's default projection returns only timestamp, eventType, user,
+resource, resourceName, eventProvider and eventId — anything else needs
+`--add-fields`.
+
+Key resolution lives solely in `BaseHandler.extractList`/`extractPage`. Handlers
+must not override them: three handlers used to, each with its own hardcoded key
+list, which is how six commands came to return empty results.
 
 Pagination is declared per handler via `BaseHandler.Pagination`
 (`internal/client/pagination.go`). A nil value means the endpoint returns its

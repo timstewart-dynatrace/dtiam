@@ -18,11 +18,13 @@ type TokenHandler struct {
 func NewTokenHandler(c *client.Client) *TokenHandler {
 	return &TokenHandler{
 		BaseHandler: BaseHandler{
-			Client:    c,
-			Name:      "platform-token",
-			Path:      "/platform-tokens",
-			ListKey:   "results",
-			IDField:   "id",
+			Client:  c,
+			Name:    "platform-token",
+			Path:    "/platform-tokens",
+			ListKey: "results",
+			// The API field is tokenId; "id" does not exist in the response, so
+			// get/delete by ID could never resolve. Verified live.
+			IDField:   "tokenId",
 			NameField: "name",
 			// The platform token API paginates and returns
 			// {pageSize, pageNumber, total, results}.

@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-01
+
+### Fixed
+
+Validated every list endpoint against a live account. **Six commands were
+silently returning empty results** because each handler read a response key the
+API does not send. An unmatched key yields an empty slice rather than an error,
+so these failed quietly and the test fixtures — written from documentation that
+does not match the API — passed.
+
+| Command | Read | API actually returns |
+|---------|------|----------------------|
+| `get environments` | `tenants` | `data` |
+| `get boundaries` | `boundaries` | `content` (a page envelope) |
+| `account limits` | `items` | `results` (a page envelope) |
+| `account subscriptions` | `items` | `data` |
+| `service-user list` | `items` | `results` |
+| `get tokens` | `items` | `results` |
+
+Root cause: `EnvironmentHandler`, `LimitsHandler`, and `SubscriptionHandler` each
+shadowed `BaseHandler.List` and `extractList` with their own hardcoded key lists,
+so the embedded `ListKey` was never consulted. Those overrides are now deleted
+and key resolution lives in one place.
+
+Also fixed, same root cause:
+
+- `get boundaries` and `account limits` are paginated (the docs do not say so),
+  and returned only the first page.
+- `account check-capacity` reported **every limit as "not found"**, and computed
+  0/0 for capacity. The limit's identity field is `limitType`, not `name`, and
+  its values are `currentValue`/`limitValue`, not `current`/`max`. A capacity
+  check that silently answers "no capacity" is worse than an error, since it
+  reads as a real answer.
+- `get tokens` showed a blank ID column and could not resolve a token by ID:
+  the field is `tokenId`, not `id`. Expiry is `expirationDate`, not `expiresIn`;
+  scopes is `scope`, not `scopes`.
+- `get environments` showed blank STATE/TRIAL columns; the fields are `active`
+  and `url`.
+- `account limits --summary` renamed fields to `name`/`current`/`max` when
+  building its output, so every column rendered blank.
+- `get audit-logs` listed `eventOutcome` as a default column, but the API's
+  default projection does not include it; it now sits in the wide set with the
+  other `--add-fields` values.
+- `account limits --summary` wrote status lines to stdout with `fmt.Printf`,
+  which `command-standards.md` forbids; they now go to stderr.
+
+### Added
+
+- `internal/resources/response_shapes_test.go` — pins the live response shape and
+  declared `ListKey`/`IDField`/pagination for every list endpoint, so this bug
+  class cannot silently return.
+- Single-resource responses are recognized by the handler's own identity fields
+  and wrapped, in both the paginated and unpaginated paths.
+
+### Changed
+
+- `client.BoundaryPagination()` and `client.AccountLimitPagination()`.
+- Test helpers now build handlers through their real constructors instead of
+  hand-rolling a `BaseHandler`, which is what allowed a wrong `ListKey` in
+  production code to pass its own tests.
+
 ## [2.3.0] - 2026-10-01
 
 ### Added

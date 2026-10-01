@@ -32,8 +32,10 @@ func TestBoundaryColumns(t *testing.T) {
 }
 
 func TestEnvironmentColumns(t *testing.T) {
+	// Headers follow the live response fields (active, url). STATE and TRIAL
+	// matched nothing in the API response and always rendered blank.
 	cols := EnvironmentColumns()
-	assertColumnHeaders(t, cols, []string{"ID", "NAME", "STATE", "TRIAL"})
+	assertColumnHeaders(t, cols, []string{"ID", "NAME", "ACTIVE", "URL"})
 }
 
 func TestServiceUserColumns(t *testing.T) {
@@ -42,8 +44,10 @@ func TestServiceUserColumns(t *testing.T) {
 }
 
 func TestLimitColumns(t *testing.T) {
+	// Keys follow the live response: limitType, currentValue, limitValue.
 	cols := LimitColumns()
-	assertColumnHeaders(t, cols, []string{"NAME", "CURRENT", "MAX", "USAGE %"})
+	assertColumnHeaders(t, cols, []string{"LIMIT", "CURRENT", "MAX", "USAGE %"})
+	assertColumnKeys(t, cols, []string{"limitType", "currentValue", "limitValue", "usage_percent"})
 }
 
 func TestSubscriptionColumns(t *testing.T) {
@@ -52,8 +56,13 @@ func TestSubscriptionColumns(t *testing.T) {
 }
 
 func TestTokenColumns(t *testing.T) {
+	// The live response carries tokenId, expirationDate and scope (singular);
+	// the previous id/expiresIn/scopes keys matched nothing.
 	cols := TokenColumns()
-	assertColumnHeaders(t, cols, []string{"ID", "NAME", "EXPIRES", "SCOPES", "CREATED"})
+	assertColumnKeys(t, cols, []string{
+		"tokenId", "name", "status", "expirationDate",
+		"owner", "createdBy", "createdAt", "scope",
+	})
 }
 
 func TestAppColumns(t *testing.T) {

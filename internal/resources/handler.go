@@ -259,9 +259,12 @@ func (h *BaseHandler) extractList(body []byte) ([]map[string]any, error) {
 		return items, nil
 	}
 
-	// Try common list keys. "results" is the shape used by the paginated
-	// endpoints (service users, platform tokens); "items" by the rest.
-	keys := []string{h.ListKey, "items", "results", h.Name + "s", h.Name}
+	// Try common list keys. The Account Management API is not consistent about
+	// this: "items" (groups, users), "results" (service users, platform tokens,
+	// limits), "data" (environments, subscriptions), and "content" (boundaries)
+	// all appear. Verified against a live account -- the documentation states
+	// "items" for several endpoints that do not use it.
+	keys := []string{h.ListKey, "items", "results", "data", "content", h.Name + "s", h.Name}
 	for _, key := range keys {
 		if key == "" {
 			continue
@@ -271,8 +274,29 @@ func (h *BaseHandler) extractList(body []byte) ([]map[string]any, error) {
 		}
 	}
 
+	// Some endpoints return a single resource rather than a collection when
+	// exactly one matches. Recognize that by the handler's own identity fields
+	// and wrap it, instead of reporting an empty list.
+	if h.looksLikeSingleResource(response) {
+		return []map[string]any{response}, nil
+	}
+
 	// Return empty slice if no items found
 	return []map[string]any{}, nil
+}
+
+// looksLikeSingleResource reports whether a response body is one resource rather
+// than a collection envelope, judged by the handler's own ID and name fields.
+func (h *BaseHandler) looksLikeSingleResource(response map[string]any) bool {
+	for _, field := range []string{h.IDField, h.NameField} {
+		if field == "" {
+			continue
+		}
+		if _, ok := response[field]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // extractPage extracts one page of items plus the paging metadata needed to
@@ -295,7 +319,7 @@ func (h *BaseHandler) extractPage(body []byte) (items []map[string]any, nextPage
 	if p != nil && p.ItemsKey != "" {
 		keys = append(keys, p.ItemsKey)
 	}
-	keys = append(keys, h.ListKey, "items", "results", h.Name+"s", h.Name)
+	keys = append(keys, h.ListKey, "items", "results", "data", "content", h.Name+"s", h.Name)
 
 	for _, key := range keys {
 		if key == "" {
@@ -310,6 +334,11 @@ func (h *BaseHandler) extractPage(body []byte) (items []map[string]any, nextPage
 			return nil, "", 0, err
 		}
 		break
+	}
+
+	// A single-resource response is a complete, one-element page.
+	if len(items) == 0 && h.looksLikeSingleResource(response) {
+		items = []map[string]any{response}
 	}
 
 	if p != nil {

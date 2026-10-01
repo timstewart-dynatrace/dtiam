@@ -19,12 +19,17 @@ func NewBoundaryHandler(c *client.Client) *BoundaryHandler {
 	path := fmt.Sprintf("%s/account/%s/boundaries", client.RepoBasePath, c.AccountUUID())
 	return &BoundaryHandler{
 		BaseHandler: BaseHandler{
-			Client:    c,
-			Name:      "boundary",
-			Path:      path,
-			ListKey:   "boundaries",
+			Client: c,
+			Name:   "boundary",
+			Path:   path,
+			// The API responds with a Spring-style page:
+			// {pageSize, pageNumber, totalCount, content}. Verified live.
+			ListKey:   "content",
 			IDField:   "uuid",
 			NameField: "name",
+			// Boundaries are paginated despite the documentation not saying so;
+			// without this only the first page was returned.
+			Pagination: client.BoundaryPagination(),
 		},
 	}
 }

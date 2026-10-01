@@ -20,24 +20,16 @@ func NewEnvironmentHandler(c *client.Client) *EnvironmentHandler {
 	baseURL := fmt.Sprintf("%s/%s/environments", client.EnvBaseURL, c.AccountUUID())
 	return &EnvironmentHandler{
 		BaseHandler: BaseHandler{
-			Client:    c,
-			Name:      "environment",
-			Path:      baseURL,
-			ListKey:   "tenants",
+			Client: c,
+			Name:   "environment",
+			Path:   baseURL,
+			// The API responds with {data: [...]}, not {tenants: [...]}.
+			// Verified against a live account.
+			ListKey:   "data",
 			IDField:   "id",
 			NameField: "name",
 		},
 	}
-}
-
-// List lists environments.
-func (h *EnvironmentHandler) List(ctx context.Context, params map[string]string) ([]map[string]any, error) {
-	body, err := h.Client.Get(ctx, h.Path, params)
-	if err != nil {
-		return nil, h.handleError("list", err)
-	}
-
-	return h.extractList(body)
 }
 
 // Get gets an environment by ID.
@@ -72,25 +64,4 @@ func (h *EnvironmentHandler) GetByName(ctx context.Context, name string) (map[st
 	}
 
 	return nil, nil
-}
-
-// extractList overrides the base to handle environment-specific response formats.
-func (h *EnvironmentHandler) extractList(body []byte) ([]map[string]any, error) {
-	var response map[string]any
-	if err := json.Unmarshal(body, &response); err != nil {
-		var items []map[string]any
-		if err := json.Unmarshal(body, &items); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		return items, nil
-	}
-
-	// Try common list keys for environments
-	for _, key := range []string{"tenants", "environments", "items"} {
-		if items, ok := response[key]; ok {
-			return toMapSlice(items)
-		}
-	}
-
-	return []map[string]any{}, nil
 }

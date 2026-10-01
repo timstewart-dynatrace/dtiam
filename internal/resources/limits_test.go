@@ -7,27 +7,30 @@ import (
 	"testing"
 )
 
+// newTestLimitsHandler builds the handler through its real constructor.
+//
+// It used to hand-roll a BaseHandler with its own ListKey and IDField, which
+// meant the tests exercised a configuration the production code never used --
+// so a wrong ListKey in NewLimitsHandler could not fail here.
 func newTestLimitsHandler(t *testing.T, mux *http.ServeMux) *LimitsHandler {
 	t.Helper()
-	c := newTestClient(t, mux)
-	return &LimitsHandler{
-		BaseHandler: BaseHandler{
-			Client:    c,
-			Name:      "limit",
-			Path:      "/limits",
-			ListKey:   "items",
-			IDField:   "name",
-			NameField: "name",
-		},
-	}
+	return NewLimitsHandler(newTestClient(t, mux))
 }
 
+// limitsResponse mirrors the live shape of GET /iam/v1/accounts/{uuid}/limits:
+// a page envelope keyed "results", with each entry identified by limitType and
+// carrying currentValue/limitValue. The earlier fixture used items/name/current/
+// max, none of which the API returns -- so these tests passed while the command
+// rendered an empty table and check-capacity reported every limit as missing.
 func limitsResponse() map[string]any {
 	return map[string]any{
-		"items": []any{
-			map[string]any{"name": "user-count", "current": float64(50), "max": float64(100)},
-			map[string]any{"name": "group-count", "current": float64(95), "max": float64(100)},
-			map[string]any{"name": "policy-count", "current": float64(100), "max": float64(100)},
+		"pageSize":   1000,
+		"pageNumber": 1,
+		"total":      3,
+		"results": []any{
+			map[string]any{"limitType": "REGULAR_USER", "currentValue": float64(50), "limitValue": float64(100)},
+			map[string]any{"limitType": "MAX_GROUPS_PER_ACCOUNT", "currentValue": float64(95), "limitValue": float64(100)},
+			map[string]any{"limitType": "MAX_POLICIES", "currentValue": float64(100), "limitValue": float64(100)},
 		},
 	}
 }
@@ -89,7 +92,8 @@ func TestLimitsHandler_List_ArrayResponse(t *testing.T) {
 func TestLimitsHandler_List_SingleItemResponse(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{"name": "user-count", "current": float64(10)})
+		// Some responses carry one limit directly rather than a page envelope.
+		_ = json.NewEncoder(w).Encode(map[string]any{"limitType": "REGULAR_USER", "currentValue": float64(10)})
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -123,19 +127,19 @@ func TestLimitsHandler_Get_Success(t *testing.T) {
 	})
 
 	h := newTestLimitsHandler(t, mux)
-	item, err := h.Get(context.Background(), "user-count")
+	item, err := h.Get(context.Background(), "REGULAR_USER")
 	if err != nil {
 		t.Fatalf("Get() error: %v", err)
 	}
-	if item["name"] != "user-count" {
-		t.Errorf("Get() name = %v, want user-count", item["name"])
+	if item["limitType"] != "REGULAR_USER" {
+		t.Errorf("Get() limitType = %v, want REGULAR_USER", item["limitType"])
 	}
 }
 
 func TestLimitsHandler_Get_NotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"results": []any{}, "total": 0})
 	})
 
 	h := newTestLimitsHandler(t, mux)
@@ -174,7 +178,7 @@ func TestLimitsHandler_CheckCapacity_HasCapacity(t *testing.T) {
 	})
 
 	h := newTestLimitsHandler(t, mux)
-	result, err := h.CheckCapacity(context.Background(), "user-count", 10)
+	result, err := h.CheckCapacity(context.Background(), "REGULAR_USER", 10)
 	if err != nil {
 		t.Fatalf("CheckCapacity() error: %v", err)
 	}
@@ -193,7 +197,7 @@ func TestLimitsHandler_CheckCapacity_NoCapacity(t *testing.T) {
 	})
 
 	h := newTestLimitsHandler(t, mux)
-	result, err := h.CheckCapacity(context.Background(), "policy-count", 1)
+	result, err := h.CheckCapacity(context.Background(), "MAX_POLICIES", 1)
 	if err != nil {
 		t.Fatalf("CheckCapacity() error: %v", err)
 	}
@@ -205,7 +209,7 @@ func TestLimitsHandler_CheckCapacity_NoCapacity(t *testing.T) {
 func TestLimitsHandler_CheckCapacity_LimitNotFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/limits", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"results": []any{}, "total": 0})
 	})
 
 	h := newTestLimitsHandler(t, mux)
