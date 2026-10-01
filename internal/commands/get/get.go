@@ -26,4 +26,11 @@ func init() {
 	Cmd.AddCommand(availablePermissionsCmd)
 	Cmd.AddCommand(envUsersCmd)
 	Cmd.AddCommand(envGroupsCmd)
+
+	// --watch is offered on the collections worth monitoring during a change:
+	// group membership, user provisioning, and policy bindings. It is not offered
+	// on reference data or environments, which do not change on a human timescale.
+	for _, c := range []*cobra.Command{groupsCmd, usersCmd, policiesCmd, bindingsCmd} {
+		addWatchFlags(c)
+	}
 }

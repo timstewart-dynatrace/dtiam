@@ -116,14 +116,18 @@ not reliable for response shapes.** Six commands were silently returning empty.
 - [x] `delete-credentials` cleans up the keyring entry
 - [x] SECURITY.md rewritten; plaintext is now a documented fallback, not the default
 
-### Step 5b — Remaining dtctl UX parity (deferred)
-- [ ] `diff` — preview what `apply` would change
-- [ ] `watch` — `get --watch`
-- [ ] Agent auto-detection (dtctl's `aidetect`) to imply `--plain`
+### Step 5b — dtctl UX parity (2.6.0) — DONE
+- [x] `diff` — previews what `apply` would change; exits 1 on drift as a CI gate
+- [x] `--watch` / `-w` on get groups/users/policies/bindings
+- [x] Agent auto-detection implying `--plain`, with opt-out and `-v` explanation
+- [x] `cli.ErrSilentExit` for a non-zero exit that is a result, not a failure
+- [x] `internal/diff` and `internal/watch` as standalone, testable packages
+- [x] Live-verified: diff detects field drift and creates; watch renders once and
+      does not re-render on unchanged polls; clean SIGINT shutdown
 
 ### Step 6 — internal/ -> pkg/ (3.0.0, BREAKING)
 - [ ] Promote reusable packages to `pkg/` so dtiam is importable like dtctl
 
 ## Next Step
 
-Step 5b (diff/watch/agent-detection), then Step 6 (internal/ -> pkg/).
+Step 6 — internal/ -> pkg/ (3.0.0, breaking).

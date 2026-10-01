@@ -61,6 +61,12 @@ var usersCmd = &cobra.Command{
 			return printer.PrintSingle(user, output.UserColumns())
 		}
 
+		if watchRequested(cmd) {
+			return runWatch(cmd, func(ctx context.Context) ([]map[string]any, error) {
+				return handler.List(ctx, nil)
+			}, output.UserColumns())
+		}
+
 		// List all users
 		users, err := handler.List(ctx, nil)
 		if err != nil {

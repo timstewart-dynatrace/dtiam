@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-10-01
+
+### Added
+
+- `dtiam diff -f FILE` — shows what `apply` would change, without changing
+  anything. Fetches each live resource and compares field by field. Only fields
+  present in the file are compared, since the API returns server-managed fields
+  (`uuid`, `createdAt`, `owner`) that a spec never mentions. Lists compare
+  order-insensitively, and `5` from YAML compares equal to `5.0` from the API —
+  otherwise every numeric and list field would look modified on every run.
+  Exits 1 on drift so it can gate a pipeline; `--exit-zero` disables that.
+- **Agent auto-detection.** Running under a coding agent (Claude Code, Cursor,
+  Copilot, Aider and others) now implies `--plain`, because an agent has no
+  terminal to answer a confirmation prompt at and no use for ANSI colors. An
+  explicit `--plain=false` still wins, and `DTIAM_NO_AGENT_DETECT=1` opts out.
+  `-v` explains which variable triggered it. A specific agent is reported in
+  preference to the generic `AI_AGENT` fallback.
+- `--watch` / `-w` on `get groups`, `get users`, `get policies`, and
+  `get bindings`, with `--watch-interval`. Reprints only when the result actually
+  changes: the fingerprint sorts items first, so the API's unstable list order is
+  not mistaken for a change. A failed poll is reported and the watch continues,
+  rather than a transient API error ending a session someone left running.
+  Refused with `--plain`, where the output would be an unparseable JSON stream.
+- `cli.ErrSilentExit` — lets a command exit non-zero without an `Error:` line,
+  for cases like `diff` where the non-zero exit is a result rather than a failure.
+
+### Changed
+
+- `internal/diff` and `internal/watch` are standalone packages, so the comparison
+  and polling logic is testable without a command or a network.
+
 ## [2.5.0] - 2026-10-01
 
 ### Added

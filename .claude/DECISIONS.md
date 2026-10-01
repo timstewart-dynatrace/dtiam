@@ -159,3 +159,30 @@
 **Why:** Plaintext secrets in a dotfile were the project's clearest security weakness, but requiring a keyring would break dtiam on exactly the hosts it is most used from — headless Linux boxes, containers, CI runners — none of which run a keyring daemon. A silent fallback would be worse than plaintext-only, since the user would believe their secret was protected. So the fallback exists but is never quiet: `set-credentials` names the destination, `doctor` warns every run, and `keyring-status` shows the state per credential. `--require-keyring` is there for anyone who wants the strict behavior. Passphrase encryption was rejected because it would prompt on every invocation, which breaks the non-interactive use `--plain` exists to serve.
 **Trade-offs:** Three new indirect dependencies, and a `keyring:dtiam` marker that a third-party tool reading the config file would not understand. The marker is deliberately not a valid Dynatrace secret shape, so such a tool fails loudly rather than authenticating with nonsense.
 **Revisit if:** A keyring backend proves unreliable enough that the probe cost or false negatives become a problem — `DTIAM_DISABLE_KEYRING` is the escape hatch in the meantime.
+
+---
+
+## 2026-10-01 — Agent Detection Implies --plain
+**Chosen:** Detect coding-agent environment variables and enable `--plain` automatically unless `--plain` was passed explicitly or `DTIAM_NO_AGENT_DETECT` is set.
+**Alternatives:** Require agents to pass `--plain`; detect only a TTY; detect CI as well as agents.
+**Why:** Under an agent the interactive defaults are not merely unhelpful, they are wrong: ANSI colors become literal escape sequences in a transcript, and a confirmation prompt blocks forever because there is no stdin to answer it. Requiring `--plain` means every agent integration has one more thing to get right, and the failure is a hang rather than an error. A TTY check alone would also catch ordinary pipes (`dtiam get groups | grep`), where a human is still reading the output and the table is what they want. CI is detected separately and deliberately does *not* imply `--plain`, since CI output is usually read by a human in a log later, so the table is still the better format there.
+**Trade-offs:** Output format now depends on the environment, which can surprise someone who did not expect it. Mitigated by `-v` naming the triggering variable, `--plain=false` overriding, and the opt-out env var.
+**Revisit if:** A tool exports one of these variables in a context where a human is genuinely reading colored output.
+
+---
+
+## 2026-10-01 — Diff Compares Formatted Values, Not Go Values
+**Chosen:** Compare spec and live fields by their formatted string representation, sorting list elements, rather than with `reflect.DeepEqual`.
+**Alternatives:** `reflect.DeepEqual`; normalize both sides into typed structs first; compare marshalled JSON.
+**Why:** The same logical value arrives with different Go types depending on source — a YAML file decodes `5` as `int`, the API returns it as `float64` — so `DeepEqual` would call them different and every numeric field would appear modified on every run. List order has the same problem: the API returns members, scopes and zones in an order the caller does not control, so an order-sensitive comparison reports changes that do not exist. A diff that cries wolf on every field is worse than no diff, because it trains the user to ignore it. Typed structs would fix the numeric case but require a schema per resource kind, which the generic `map[string]any` handler design does not have.
+**Trade-offs:** Two values with different types but identical formatting compare equal — `"5"` and `5`, for instance. For IAM specs that is the desired behavior, since the API is loose about which it returns, but it would be wrong for a type-sensitive domain.
+**Revisit if:** dtiam gains typed resource models, which would make structural comparison both possible and more precise.
+
+---
+
+## 2026-10-01 — Watch Fingerprints Sorted Encodings
+**Chosen:** Detect change by hashing each item's JSON encoding, sorting the encodings, and comparing the hash — with no ID field required.
+**Alternatives:** Compare lengths; sort by a configured ID field; diff item by item and report what changed.
+**Why:** Length alone misses edits and simultaneous add/remove. Sorting by an ID field would need each watched resource to declare one, and the field differs per resource (`uuid`, `uid`, `tokenId`, `limitType`) — exactly the inconsistency that caused the response-key bugs. Sorting the encodings sidesteps the question entirely and is immune to both item order and field order, since marshalling a Go map already sorts keys. Reporting *what* changed would be nicer, but a reprint is what someone watching a migration actually wants, and the per-item diff machinery already exists in `internal/diff` if that becomes worth building.
+**Trade-offs:** The watch says "something changed" rather than "member X was added". Acceptable for the use case; the full collection is reprinted so the change is visible.
+**Revisit if:** Users want change-only output, at which point `internal/diff` can be applied between consecutive polls.
