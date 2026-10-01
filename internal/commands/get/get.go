@@ -454,7 +454,7 @@ var tokensCmd = &cobra.Command{
 }
 
 var (
-	appsEnvironmentFlag   string
+	appsEnvironmentFlag    string
 	schemasEnvironmentFlag string
 )
 

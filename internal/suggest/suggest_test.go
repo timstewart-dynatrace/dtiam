@@ -63,7 +63,7 @@ func TestFindClosest(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       string
-		maxDistance  int
+		maxDistance int
 		expected    string
 	}{
 		{"exact match excluded", "groups", 3, ""},
@@ -91,12 +91,12 @@ func TestFindClosestN(t *testing.T) {
 	candidates := []string{"get", "set", "let", "bet", "pet", "delete"}
 
 	tests := []struct {
-		name       string
-		input      string
-		maxDist    int
-		n          int
-		wantLen    int
-		wantFirst  string
+		name      string
+		input     string
+		maxDist   int
+		n         int
+		wantLen   int
+		wantFirst string
 	}{
 		{"multiple close matches", "met", 2, 3, 3, "get"},
 		{"limit to 1", "met", 2, 1, 1, "get"},

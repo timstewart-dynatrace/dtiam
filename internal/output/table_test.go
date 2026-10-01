@@ -100,10 +100,10 @@ func TestTableFormatter_FormatSingle_Nil(t *testing.T) {
 
 func TestExtractValue(t *testing.T) {
 	tests := []struct {
-		name   string
-		data   map[string]any
-		col    Column
-		want   string
+		name string
+		data map[string]any
+		col  Column
+		want string
 	}{
 		{
 			name: "simple key",

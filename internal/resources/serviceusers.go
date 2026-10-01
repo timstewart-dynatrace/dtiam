@@ -179,4 +179,3 @@ func (h *ServiceUserHandler) RemoveFromGroup(ctx context.Context, userID, groupU
 	_, err = h.Update(ctx, userID, nil, nil, newGroups)
 	return err
 }
-

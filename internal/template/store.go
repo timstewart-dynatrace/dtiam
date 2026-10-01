@@ -11,10 +11,10 @@ import (
 
 // TemplateInfo describes a template.
 type TemplateInfo struct {
-	Name    string
-	Source  string // "builtin" or "custom"
-	Path    string
-	Vars    []string
+	Name   string
+	Source string // "builtin" or "custom"
+	Path   string
+	Vars   []string
 }
 
 // Store manages custom templates on the filesystem.

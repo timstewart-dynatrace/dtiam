@@ -35,12 +35,12 @@ type Policy struct {
 
 // Binding represents a Dynatrace IAM policy binding.
 type Binding struct {
-	GroupUUID  string `json:"groupUuid" table:"GROUP_UUID"`
-	PolicyUUID string `json:"policyUuid" table:"POLICY_UUID"`
-	LevelType  string `json:"levelType" table:"LEVEL_TYPE"`
-	LevelID    string `json:"levelId" table:"LEVEL_ID"`
-	Boundaries []any  `json:"boundaries" table:"-"`
-	BoundaryCount int `json:"-" table:"BOUNDARIES"`
+	GroupUUID     string `json:"groupUuid" table:"GROUP_UUID"`
+	PolicyUUID    string `json:"policyUuid" table:"POLICY_UUID"`
+	LevelType     string `json:"levelType" table:"LEVEL_TYPE"`
+	LevelID       string `json:"levelId" table:"LEVEL_ID"`
+	Boundaries    []any  `json:"boundaries" table:"-"`
+	BoundaryCount int    `json:"-" table:"BOUNDARIES"`
 }
 
 // Boundary represents a Dynatrace IAM environment boundary.
@@ -106,8 +106,8 @@ type App struct {
 
 // Schema represents a Dynatrace Settings 2.0 schema.
 type Schema struct {
-	SchemaID    string `json:"schemaId" table:"SCHEMA ID"`
-	DisplayName string `json:"displayName" table:"DISPLAY NAME"`
+	SchemaID      string `json:"schemaId" table:"SCHEMA ID"`
+	DisplayName   string `json:"displayName" table:"DISPLAY NAME"`
 	LatestVersion string `json:"latestSchemaVersion" table:"VERSION,wide"`
 }
 
