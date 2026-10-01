@@ -57,6 +57,12 @@ var groupsCmd = &cobra.Command{
 			return printer.PrintSingle(group, output.GroupColumns())
 		}
 
+		if watchRequested(cmd) {
+			return runWatch(cmd, func(ctx context.Context) ([]map[string]any, error) {
+				return handler.List(ctx, nil)
+			}, output.GroupColumns())
+		}
+
 		// List all groups
 		groups, err := handler.List(ctx, nil)
 		if err != nil {

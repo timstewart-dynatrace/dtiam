@@ -77,6 +77,16 @@ var policiesCmd = &cobra.Command{
 
 		// List policies
 		allLevels, _ := cmd.Flags().GetBool("all-levels")
+
+		if watchRequested(cmd) {
+			return runWatch(cmd, func(ctx context.Context) ([]map[string]any, error) {
+				if allLevels {
+					return handler.ListAllLevels(ctx)
+				}
+				return handler.List(ctx, nil)
+			}, output.PolicyColumns())
+		}
+
 		var policies []map[string]any
 
 		if allLevels {

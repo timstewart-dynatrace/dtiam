@@ -46,6 +46,25 @@ var bindingsCmd = &cobra.Command{
 		groupID, _ := cmd.Flags().GetString("group")
 		policyID, _ := cmd.Flags().GetString("policy")
 
+		if watchRequested(cmd) {
+			// Capture the same filter the single-shot path uses, so watching a
+			// filtered view keeps the filter on every poll.
+			return runWatch(cmd, func(ctx context.Context) ([]map[string]any, error) {
+				switch {
+				case groupID != "":
+					return handler.GetForGroup(ctx, groupID)
+				case policyID != "":
+					binding, err := handler.GetForPolicy(ctx, policyID)
+					if err != nil {
+						return nil, err
+					}
+					return []map[string]any{binding}, nil
+				default:
+					return handler.List(ctx, nil)
+				}
+			}, output.BindingColumns())
+		}
+
 		var bindings []map[string]any
 
 		if groupID != "" {

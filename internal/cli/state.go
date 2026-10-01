@@ -19,6 +19,11 @@ type State struct {
 	Plain bool
 	// DryRun enables dry-run mode (preview without changes).
 	DryRun bool
+
+	// AgentName names the coding agent detected in the environment, or "" when
+	// none was. Set during PersistentPreRunE; used for the User-Agent header and
+	// to explain why --plain was enabled without being asked for.
+	AgentName string
 }
 
 // GlobalState is the global CLI state instance.
@@ -54,6 +59,11 @@ func (s *State) IsPlain() bool {
 // IsDryRun returns true if dry-run mode is enabled.
 func (s *State) IsDryRun() bool {
 	return s.DryRun
+}
+
+// IsAgent returns true when a coding agent was detected in the environment.
+func (s *State) IsAgent() bool {
+	return s.AgentName != ""
 }
 
 // EnvironmentURL returns the environment URL from the DTIAM_ENVIRONMENT_URL env var.

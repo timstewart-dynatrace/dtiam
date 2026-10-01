@@ -340,6 +340,32 @@ dtiam get schemas [IDENTIFIER] --environment ENV [OPTIONS]
 | `--name`        |       | Filter schemas by name pattern           |
 | `--output`      | `-o`  | Output format                            |
 
+### Watching a collection
+
+`get groups`, `get users`, `get policies`, and `get bindings` accept `--watch`
+(`-w`) to poll and reprint when the result changes.
+
+| Option             | Short | Description                              |
+| ------------------ | ----- | ---------------------------------------- |
+| `--watch`          | `-w`  | Poll and reprint on change (Ctrl-C stops) |
+| `--watch-interval` |       | Polling interval (default 10s, min 2s)   |
+
+Output is reprinted **only when the result actually changes**: the comparison
+sorts items first, so the API's unstable list order is not mistaken for a change.
+A failed poll is reported on stderr and the watch continues, so a transient API
+error does not end a session you left running.
+
+Not supported with `--plain` — the output would be an unparseable JSON stream.
+Poll the command on a timer instead.
+
+```bash
+# Watch group membership land during a migration
+dtiam get groups --watch
+
+# Slower polling
+dtiam get bindings --watch --watch-interval 60s
+```
+
 ### get audit-logs
 
 List account audit log entries: who changed what in the account. Requires the
@@ -1940,6 +1966,47 @@ dtiam config keyring-status [--output FORMAT]
 ```
 
 Use this to confirm no plaintext secrets remain after `config migrate-secrets`.
+
+---
+
+## diff
+
+Show what `apply` would change, without changing anything.
+
+```bash
+dtiam diff -f FILE [OPTIONS]
+```
+
+| Option        | Short | Description                                        |
+| ------------- | ----- | -------------------------------------------------- |
+| `--file`      | `-f`  | Resource definition file (required)                |
+| `--set`       |       | Template variable as `key=value` (repeatable)      |
+| `--exit-zero` |       | Exit 0 even when there are changes                 |
+| `--output`    | `-o`  | Output format                                      |
+
+Read-only. For each resource in the file it fetches the live resource and
+compares field by field.
+
+**What is and is not compared:**
+
+- Only fields present in the file. The API returns server-managed fields a spec
+  never mentions (`uuid`, `createdAt`, `owner`); reporting those would bury the
+  real changes.
+- Lists compare without regard to order, because the API returns members, scopes
+  and zones in an order the caller does not control.
+- `5` from a YAML file compares equal to `5.0` from the API — otherwise every
+  numeric field would look modified on every run.
+
+**Exit codes:** 1 when there are changes, 0 when up to date. That makes it a
+drift gate in CI. `--exit-zero` always exits 0.
+
+```bash
+# What would apply change?
+dtiam diff -f resources.yaml
+
+# Drift detection in CI
+dtiam diff -f desired-state.yaml --plain || echo "drift detected"
+```
 
 ---
 

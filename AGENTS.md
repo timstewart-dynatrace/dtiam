@@ -8,7 +8,16 @@ CLI for Dynatrace Identity and Access Management.
 
 ## Agent-friendly mode
 
-Always pass `--plain` when consuming dtiam output programmatically:
+**dtiam detects coding agents automatically.** When `CLAUDECODE`, `CURSOR_AGENT`,
+`AIDER`, `AI_AGENT` or similar is set, `--plain` is implied — you get JSON, no
+colors, and no confirmation prompts without asking for it. `-v` reports which
+variable triggered it.
+
+Pass `--plain` explicitly anyway when you care: it is harmless, and it makes the
+intent clear if the environment ever lacks the variable. `--plain=false` forces
+interactive behavior, and `DTIAM_NO_AGENT_DETECT=1` disables detection entirely.
+
+Explicitly passing `--plain` when consuming dtiam output programmatically:
 
 ```bash
 dtiam get groups --plain
@@ -95,6 +104,19 @@ mentioned because the version skew is real and surprising.
 **Not every endpoint paginates, and the ones that do disagree on how.** dtiam
 follows pagination to completion inside `List`, so you always receive the whole
 collection. Do not add your own paging.
+
+**Response keys are not what the documentation says.** Six commands once returned
+empty lists because the handlers read `items` where the API sends `data`,
+`results`, or `content`. The shapes are now pinned in
+`internal/resources/response_shapes_test.go` and tabulated in
+`.claude/architecture.md`. If you add an endpoint, verify its shape against a
+live account — an unmatched key yields an empty list, not an error.
+
+**`dtiam diff -f FILE` exits 1 on drift.** That is a result, not a failure, and no
+error line is printed. Use `--exit-zero` if you need exit 0 regardless.
+
+**`--watch` is refused with `--plain`.** The output would be an unparseable JSON
+stream. Poll the command on a timer instead.
 
 ## OAuth scopes
 
