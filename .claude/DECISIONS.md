@@ -60,3 +60,12 @@
 **Why:** 500+ line CLAUDE.md mixed workflow rules, code patterns, API docs, and architecture. Modular files align with PROJECT-TEMPLATES standard, improve maintainability, and allow rules to be updated independently.
 **Trade-offs:** More files to maintain; must keep root CLAUDE.md in sync as pointer
 **Revisit if:** Claude Code changes how it loads instructions and modular files become unnecessary
+
+---
+
+## 2026-10-01 — OAuth Scopes as an Annotated, Tested List
+**Chosen:** Replace the hardcoded `defaultScopes` string with an exported `auth.DefaultScopeList`, one scope per line annotated with the API group that needs it, plus a test mapping every API group to its required scope.
+**Alternatives:** Append the missing scopes to the existing string; request scopes lazily per command; let users set `DTIAM_SCOPES`.
+**Why:** Two commands (`account subscriptions`, `get platform-tokens`) were shipping broken — the token request omitted `account-uac-read` and `platform-token:tokens:manage`, so every call returned HTTP 403. The scope for platform tokens was even documented in `tokens.go` but never requested, which is exactly the drift an annotated list plus a test prevents. Lazy per-command scoping would mean a token cache per scope set and more SSO round trips for no benefit, since Dynatrace grants only the scopes the OAuth client actually has.
+**Trade-offs:** Requesting more scopes than a given command needs. Harmless — the SSO endpoint grants the intersection of requested and granted scopes, so an OAuth client without `account-uac-read` still gets a working token for everything else.
+**Revisit if:** Dynatrace starts rejecting token requests that ask for scopes the client lacks, rather than returning the intersection. That would force per-command scope sets.
