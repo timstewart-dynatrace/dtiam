@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Split the oversized per-verb command files into dtctl-style
+  `verb_resource.go` files. The largest file drops from 954 lines
+  (`analyze.go`, 7 subcommands) to 309, across 70 files.
+  Behavior-preserving: the full `--help` tree for every command and
+  subcommand is byte-identical before and after.
+
 ## [2.2.0] - 2026-10-01
 
 ### Added

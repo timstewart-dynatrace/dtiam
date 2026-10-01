@@ -114,3 +114,12 @@
 **Why:** These endpoints do not hang off the client's account-scoped base URL — reference data is not account-scoped at all, notifications sit at an unprefixed `/v1`, and subscription cost moved to `sub/v3` while the rest of the handler stays on v2. With the constants hardcoded, the first versions of these tests either reached for the live API or degenerated into shims that re-implemented the method under test, which proves nothing. An overridable field is the smallest change that makes the real code path testable.
 **Trade-offs:** Three more exported fields that callers could set to something wrong.
 **Revisit if:** The client grows a general notion of multiple service base URLs, which would make these fields redundant.
+
+---
+
+## 2026-10-01 — Adopt dtctl's verb_resource.go File Layout
+**Chosen:** Split each `internal/commands/<verb>/<verb>.go` into one file per resource (`get_groups.go`, `analyze_policy.go`, ...), keeping the existing package-per-verb structure.
+**Alternatives:** Leave the large files alone; move to dtctl's flat `package cmd` with every command in one directory.
+**Why:** Five files had passed 500 lines and `analyze.go` held 954 lines across 7 unrelated subcommands, so any change meant scrolling past six others and every concurrent edit touched the same file. dtctl's `verb_resource.go` convention solves exactly this and is already proven at 135 files. Adopting dtctl's *flat* layout as well would have meant collapsing 15 packages into one and renaming every symbol to avoid collisions — a much larger change for no benefit, since the package-per-verb split already prevents the name clashes that force dtctl to prefix everything.
+**Trade-offs:** More files to navigate, and `init()` registration is now spread across them. Verified safe by diffing the complete `--help` tree for every command and subcommand before and after: byte-identical.
+**Revisit if:** dtiam grows enough commands that package-per-verb starts producing its own collisions.
