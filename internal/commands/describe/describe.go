@@ -313,4 +313,3 @@ service user UID or name.`,
 		return printer.PrintDetail(user)
 	},
 }
-

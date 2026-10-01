@@ -43,10 +43,10 @@ func TestExportCmd_Help(t *testing.T) {
 
 func TestExportAllCmd_Flags(t *testing.T) {
 	flags := map[string]string{
-		"output":  "o",
-		"format":  "f",
-		"prefix":  "p",
-		"include": "i",
+		"output":   "o",
+		"format":   "f",
+		"prefix":   "p",
+		"include":  "i",
 		"detailed": "d",
 	}
 

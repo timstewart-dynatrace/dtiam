@@ -18,10 +18,36 @@ const (
 
 	// tokenExpirationBuffer is the time before expiration to consider token invalid.
 	tokenExpirationBuffer = 30 * time.Second
-
-	// defaultScopes are the default OAuth scopes requested.
-	defaultScopes = "account-idm-read account-idm-write iam-policies-management account-env-read iam:policies:write iam:policies:read iam:bindings:write iam:bindings:read iam:effective-permissions:read"
 )
+
+// DefaultScopeList is the set of OAuth scopes dtiam requests by default.
+// Each scope maps to the API groups dtiam calls. A missing scope causes the
+// corresponding endpoint to fail with HTTP 403, so this list must stay in sync
+// with the endpoints the resource handlers use.
+var DefaultScopeList = []string{
+	// Identity resources: users, groups, service users, account limits.
+	"account-idm-read",
+	"account-idm-write",
+	// Environment resources: environment list, reference data.
+	"account-env-read",
+	// Usage and consumption: DPS subscriptions, forecast, cost, notifications.
+	"account-uac-read",
+	// Account audit log resources.
+	"account-audit-logs-read",
+	// Platform token management.
+	"platform-token:tokens:manage",
+	// Policies, bindings, and boundaries.
+	"iam-policies-management",
+	"iam:policies:read",
+	"iam:policies:write",
+	"iam:bindings:read",
+	"iam:bindings:write",
+	// Server-side effective permission resolution.
+	"iam:effective-permissions:read",
+}
+
+// defaultScopes is the space-separated scope string sent to the token endpoint.
+var defaultScopes = strings.Join(DefaultScopeList, " ")
 
 // OAuthTokenManager manages OAuth2 tokens with automatic refresh.
 type OAuthTokenManager struct {

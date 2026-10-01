@@ -182,10 +182,10 @@ func TestClient_DeleteWithBody(t *testing.T) {
 
 func TestClient_ErrorResponse(t *testing.T) {
 	tests := []struct {
-		name       string
-		status     int
-		body       string
-		wantMsg    string
+		name    string
+		status  int
+		body    string
+		wantMsg string
 	}{
 		{
 			"404 with message",

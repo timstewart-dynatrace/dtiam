@@ -87,4 +87,4 @@ should retry three times before failing
 - All critical paths must have tests before feature is complete
 - Unhappy paths need at least as much coverage as happy paths
 - New code should not reduce overall test coverage
-- Current: 737 tests across 26 packages
+- Current: 30 test packages, all passing via `make test`

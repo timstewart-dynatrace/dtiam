@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-10-01
+
+### Fixed
+
+- OAuth2 token requests now include the `account-uac-read` scope, so
+  `dtiam account subscriptions` and `dtiam account forecast` no longer fail
+  with HTTP 403.
+- OAuth2 token requests now include the `platform-token:tokens:manage` scope,
+  so `dtiam get platform-tokens` and platform token create/delete no longer
+  fail with HTTP 403. The required scope was documented in the token handler
+  but never requested.
+- OAuth2 token requests now include the `account-audit-logs-read` scope, in
+  preparation for account audit log support.
+- Synchronized the version string across `pkg/version/version.go`,
+  `.claude/settings.json`, `.claude/CLAUDE.md`, and `.claude/rules/core.md`,
+  which had drifted to 2.0.0 while the release was 2.0.2.
+
+### Changed
+
+- `defaultScopes` is now derived from the exported `auth.DefaultScopeList`,
+  with each scope annotated with the API group that requires it. A regression
+  test asserts every API group dtiam calls has its scope requested.
+
 ## [2.0.2] - 2026-04-16
 
 ### Added

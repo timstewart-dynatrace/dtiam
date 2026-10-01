@@ -195,8 +195,8 @@ func TestExitCodeForError(t *testing.T) {
 
 func TestURLSuggestions(t *testing.T) {
 	tests := []struct {
-		status   int
-		wantLen  int
+		status  int
+		wantLen int
 	}{
 		{401, 3},
 		{403, 3},
