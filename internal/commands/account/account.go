@@ -10,8 +10,8 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/output"
-	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/pkg/output"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
 )
 
 // Cmd is the account command.

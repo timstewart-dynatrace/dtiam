@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/output"
-	"github.com/jtimothystewart/dtiam/internal/watch"
+	"github.com/jtimothystewart/dtiam/pkg/output"
+	"github.com/jtimothystewart/dtiam/pkg/watch"
 )
 
 // addWatchFlags registers the watch flags on a get subcommand.

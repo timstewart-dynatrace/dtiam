@@ -125,9 +125,40 @@ not reliable for response shapes.** Six commands were silently returning empty.
 - [x] Live-verified: diff detects field drift and creates; watch renders once and
       does not re-render on unchanged polls; clean SIGINT shutdown
 
-### Step 6 — internal/ -> pkg/ (3.0.0, BREAKING)
-- [ ] Promote reusable packages to `pkg/` so dtiam is importable like dtctl
+### Step 6 — internal/ -> pkg/ (3.0.0, BREAKING) — DONE
+- [x] Moved 13 packages to `pkg/`: auth, client, config, diagnostic, diff,
+      logging, output, prompt, resources, suggest, template, utils, watch
+- [x] Kept `internal/cli` and `internal/commands` internal -- they are cobra
+      wiring, and exposing them would invite dependence on command plumbing
+- [x] Verified behavior-preserving: the complete `--help` tree is byte-identical
+      before and after (4,110 lines diffed)
+- [x] Verified the point of the move: an external module importing pkg/auth,
+      pkg/client, pkg/config, pkg/diff, pkg/output, pkg/resources, pkg/version
+      and pkg/watch was built and run successfully
+- [x] All docs, rule files and the architecture tree updated
+- [x] README gained a library-usage section
 
-## Next Step
+## Outcome
 
-Step 6 — internal/ -> pkg/ (3.0.0, breaking).
+All six steps complete. Released 2.0.3 -> 3.0.0 across seven versions.
+
+**The headline finding was not what the request anticipated.** Every API dtiam
+called was still current -- nothing deprecated, nothing removed. But validating
+against a live account (possible once `doctor` existed) revealed **six commands
+silently returning empty lists** because the handlers read response keys the API
+does not send, plus `account check-capacity` reporting every limit as not found.
+The published documentation does not match the API for several endpoints, and the
+test fixtures had been written from that documentation -- so they passed while the
+commands were broken.
+
+Every response shape is now pinned in `pkg/resources/response_shapes_test.go`
+and tabulated in `.claude/architecture.md`.
+
+## Follow-ups not done
+
+- `analyze` does not merge policy bindings with direct permission grants into one
+  effective-access view. Logged in DECISIONS.md.
+- No live-account smoke test in CI; the shape fixtures are a snapshot of one
+  account on 2026-10-01 and will need updating when the API legitimately changes.
+- `dtctl`'s `exec`, `wait`, `safety` and `skills` packages have no dtiam
+  counterpart. None had a clear IAM use case.

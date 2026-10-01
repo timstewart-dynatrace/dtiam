@@ -229,6 +229,39 @@ so they are not requested by default:
 
 Override the requested set with `DTIAM_SCOPES` (space-separated, as OAuth2 requires).
 
+## Using dtiam as a Go library
+
+The reusable packages live under `pkg/`, so dtiam can be imported rather than
+shelled out to:
+
+```go
+import (
+    "context"
+
+    "github.com/jtimothystewart/dtiam/pkg/client"
+    "github.com/jtimothystewart/dtiam/pkg/resources"
+)
+
+c := client.New(client.Config{AccountUUID: uuid, TokenProvider: provider})
+defer c.Close()
+
+groups, err := resources.NewGroupHandler(c).List(context.Background(), nil)
+```
+
+| Package | Provides |
+|---------|----------|
+| `pkg/client` | HTTP client with retry, API URLs, pagination configs |
+| `pkg/auth` | `TokenProvider`, OAuth2 refresh, `DefaultScopeList` |
+| `pkg/config` | Config load/save, XDG paths, OS keyring |
+| `pkg/resources` | Resource handlers for every supported endpoint |
+| `pkg/output` | Printer and column definitions (table, JSON, YAML, CSV) |
+| `pkg/diff` | Spec-vs-live comparison |
+| `pkg/watch` | Change-detecting poller |
+| `pkg/template` | Template engine and store |
+
+`internal/cli` and `internal/commands` are intentionally **not** importable —
+they are cobra wiring, not API.
+
 ## Building
 
 ```bash

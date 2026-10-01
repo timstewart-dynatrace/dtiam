@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jtimothystewart/dtiam/internal/client"
-	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/pkg/client"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
 )
 
 // Permission represents a parsed permission from a policy statement.

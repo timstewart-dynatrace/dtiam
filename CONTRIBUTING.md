@@ -61,7 +61,7 @@ Every command must:
   `fmt.Printf` — otherwise `-o json`, `-o yaml`, and `--plain` silently break
 - Have `Use`, `Short`, `Long`, and `Example`
 - Support `--dry-run` if it mutates anything
-- Confirm via `internal/prompt` if it is destructive, with `--force` to skip
+- Confirm via `pkg/prompt` if it is destructive, with `--force` to skip
 - Send progress and status messages to **stderr**, data to **stdout**
 
 See `.claude/rules/command-standards.md` for the full checklist.
@@ -88,7 +88,7 @@ Table-driven, with names describing behavior:
 ```
 
 Tests must not make real network calls. Use `httptest` and the helpers in
-`internal/resources/testhelper_test.go`.
+`pkg/resources/testhelper_test.go`.
 
 ## Commit messages
 

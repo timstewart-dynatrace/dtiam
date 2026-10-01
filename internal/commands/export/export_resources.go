@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/resources"
-	"github.com/jtimothystewart/dtiam/internal/utils"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
+	"github.com/jtimothystewart/dtiam/pkg/utils"
 )
 
 func exportResourceToDir(resourceName, outputDir, format, prefix string, data []map[string]any) error {

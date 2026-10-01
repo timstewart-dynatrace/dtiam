@@ -13,13 +13,13 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/client"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	diffpkg "github.com/jtimothystewart/dtiam/internal/diff"
-	"github.com/jtimothystewart/dtiam/internal/output"
-	"github.com/jtimothystewart/dtiam/internal/resources"
-	tmpl "github.com/jtimothystewart/dtiam/internal/template"
-	"github.com/jtimothystewart/dtiam/internal/utils"
+	"github.com/jtimothystewart/dtiam/pkg/client"
+	diffpkg "github.com/jtimothystewart/dtiam/pkg/diff"
+	"github.com/jtimothystewart/dtiam/pkg/output"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
+	tmpl "github.com/jtimothystewart/dtiam/pkg/template"
+	"github.com/jtimothystewart/dtiam/pkg/utils"
 )
 
 // Cmd is the diff command.

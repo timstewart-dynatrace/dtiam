@@ -8,12 +8,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jtimothystewart/dtiam/internal/auth"
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/config"
-	"github.com/jtimothystewart/dtiam/internal/output"
-	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/pkg/auth"
+	"github.com/jtimothystewart/dtiam/pkg/config"
+	"github.com/jtimothystewart/dtiam/pkg/output"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
 	"github.com/jtimothystewart/dtiam/pkg/version"
 )
 

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/jtimothystewart/dtiam/internal/auth"
 	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/client"
-	"github.com/jtimothystewart/dtiam/internal/config"
+	"github.com/jtimothystewart/dtiam/pkg/auth"
+	"github.com/jtimothystewart/dtiam/pkg/client"
+	"github.com/jtimothystewart/dtiam/pkg/config"
 )
 
 // tokenProviderAdapter adapts auth.TokenProvider to client.TokenProvider

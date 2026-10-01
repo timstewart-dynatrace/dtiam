@@ -15,9 +15,9 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/resources"
-	tmpl "github.com/jtimothystewart/dtiam/internal/template"
-	"github.com/jtimothystewart/dtiam/internal/utils"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
+	tmpl "github.com/jtimothystewart/dtiam/pkg/template"
+	"github.com/jtimothystewart/dtiam/pkg/utils"
 )
 
 // Cmd is the apply command.

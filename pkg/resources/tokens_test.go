@@ -3,7 +3,7 @@ package resources
 import (
 	"testing"
 
-	"github.com/jtimothystewart/dtiam/internal/client"
+	"github.com/jtimothystewart/dtiam/pkg/client"
 )
 
 func TestNewTokenHandler(t *testing.T) {

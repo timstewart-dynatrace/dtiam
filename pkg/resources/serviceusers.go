@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/jtimothystewart/dtiam/internal/client"
+	"github.com/jtimothystewart/dtiam/pkg/client"
 )
 
 // ServiceUserHandler handles service user (OAuth client) resources.

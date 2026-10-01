@@ -12,8 +12,8 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/output"
-	"github.com/jtimothystewart/dtiam/internal/utils"
+	"github.com/jtimothystewart/dtiam/pkg/output"
+	"github.com/jtimothystewart/dtiam/pkg/utils"
 )
 
 var permissionsMatrixCmd = &cobra.Command{

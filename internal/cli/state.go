@@ -4,7 +4,7 @@ package cli
 import (
 	"os"
 
-	"github.com/jtimothystewart/dtiam/internal/output"
+	"github.com/jtimothystewart/dtiam/pkg/output"
 )
 
 // State holds the global CLI state.

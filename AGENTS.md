@@ -108,7 +108,7 @@ collection. Do not add your own paging.
 **Response keys are not what the documentation says.** Six commands once returned
 empty lists because the handlers read `items` where the API sends `data`,
 `results`, or `content`. The shapes are now pinned in
-`internal/resources/response_shapes_test.go` and tabulated in
+`pkg/resources/response_shapes_test.go` and tabulated in
 `.claude/architecture.md`. If you add an endpoint, verify its shape against a
 live account — an unmatched key yields an empty list, not an error.
 

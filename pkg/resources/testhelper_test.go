@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jtimothystewart/dtiam/internal/client"
+	"github.com/jtimothystewart/dtiam/pkg/client"
 )
 
 // mockTokenProvider implements client.TokenProvider for testing.

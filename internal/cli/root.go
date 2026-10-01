@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jtimothystewart/dtiam/internal/config"
-	"github.com/jtimothystewart/dtiam/internal/output"
+	"github.com/jtimothystewart/dtiam/pkg/config"
+	"github.com/jtimothystewart/dtiam/pkg/output"
 	"github.com/jtimothystewart/dtiam/pkg/version"
 )
 

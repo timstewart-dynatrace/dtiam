@@ -10,9 +10,9 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/prompt"
-	"github.com/jtimothystewart/dtiam/internal/resources"
-	"github.com/jtimothystewart/dtiam/internal/utils"
+	"github.com/jtimothystewart/dtiam/pkg/prompt"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
+	"github.com/jtimothystewart/dtiam/pkg/utils"
 )
 
 var addUsersToGroupCmd = &cobra.Command{
