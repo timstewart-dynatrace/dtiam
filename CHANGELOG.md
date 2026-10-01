@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-01
+
+### Added
+
+Six Dynatrace API groups that were documented but unused:
+
+- **Account audit logs** — `dtiam get audit-logs`. Who changed what in the
+  account, with `--start`/`--end`, `--event-type`, `--user`, a raw `--filter`
+  escape hatch, and `--scan-limit-gb`/`--result-limit-mb` to bound expensive
+  queries. The API returns partial results with warnings rather than an error, so
+  warnings are surfaced on stderr instead of being dropped.
+- **Reference data** — `dtiam get available-permissions`. The authoritative list
+  of grantable permission names, for validating a grant before attempting it.
+- **Permission management** — `dtiam group permissions`,
+  `group grant-permission`, `group revoke-permission`. These are role-style
+  grants that coexist with IAM policies; a group's effective access is the union
+  of its policy bindings and these direct grants, so `group bindings` alone
+  understates what a group can do.
+- **Account notifications** — `dtiam account notifications`, with type and
+  severity filters validated locally.
+- **Per-environment subscription usage and cost** —
+  `dtiam account environment-usage` and `account environment-cost`. The cost
+  endpoint lives on the v3 Subscription API while listing, usage and forecast
+  remain on v2; dtiam handles the version difference internally.
+- **Environment-level Platform IAM** — `dtiam get env-users`,
+  `get env-groups`. A different API from `get users`/`get groups`: served from
+  the environment rather than from `api.dynatrace.com`, reporting who is visible
+  at an organizational level.
+
+### Fixed
+
+- `DTIAM_SCOPES` and the per-credential `scopes` config field had no effect. The
+  value was parsed into the config struct but never passed to the OAuth token
+  manager, so the documented escape hatch for scope problems was dead code.
+
+### Changed
+
+- `ReferenceHandler`, `NotificationHandler`, and `SubscriptionHandler` expose
+  overridable base URLs. These endpoints sit outside the client's account-scoped
+  base URL, and without the override their tests could only have run against
+  the live API.
+
 ## [2.1.0] - 2026-10-01
 
 ### Added

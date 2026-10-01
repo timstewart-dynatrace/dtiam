@@ -30,6 +30,10 @@ func init() {
 	Cmd.AddCommand(tokensCmd)
 	Cmd.AddCommand(appsCmd)
 	Cmd.AddCommand(schemasCmd)
+	Cmd.AddCommand(auditLogsCmd)
+	Cmd.AddCommand(availablePermissionsCmd)
+	Cmd.AddCommand(envUsersCmd)
+	Cmd.AddCommand(envGroupsCmd)
 }
 
 var groupsCmd = &cobra.Command{

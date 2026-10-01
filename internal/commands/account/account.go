@@ -43,6 +43,9 @@ func init() {
 	Cmd.AddCommand(subscriptionsCmd)
 	Cmd.AddCommand(forecastCmd)
 	Cmd.AddCommand(capabilitiesCmd)
+	Cmd.AddCommand(notificationsCmd)
+	Cmd.AddCommand(environmentUsageCmd)
+	Cmd.AddCommand(environmentCostCmd)
 }
 
 var limitsCmd = &cobra.Command{

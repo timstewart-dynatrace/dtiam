@@ -39,14 +39,25 @@ truncation risks. They are not -- those endpoints expose no paging parameters
 and return `{count, items}` whole. The real defect was narrower but worse:
 wrong response key on the two endpoints that do paginate.
 
-### Step 3 — New API groups (2.2.0)
-- [ ] Audit logs — `GET /audit/v1/accounts/{uuid}`
-- [ ] Reference data — `GET /ref/v1/account/permissions`
-- [ ] Permission management — `{GET,POST,PUT,DELETE} /iam/v1/accounts/{u}/groups/{g}/permissions`
-- [ ] Notifications — `POST /v1/accounts/{uuid}/notifications`
-- [ ] DPS deeper: `subscriptions/{s}/environments/usage` (v2),
-      `subscriptions/{s}/environments/cost` (v3), cost-monitors, cost-allocation
-- [ ] Environment-level Platform IAM — `/platform/iam/v1/organizational-levels/...`
+### Step 3 — New API groups (2.2.0) — DONE
+- [x] Audit logs — `get audit-logs`, with warning surfacing for partial results
+- [x] Reference data — `get available-permissions`
+- [x] Permission management — `group permissions` / `grant-permission` / `revoke-permission`
+- [x] Notifications — `account notifications`
+- [x] DPS deeper — `account environment-usage` (v2), `account environment-cost` (v3)
+- [x] Environment-level Platform IAM — `get env-users`, `get env-groups`
+- [x] Columns, help text, examples, docs for all 9 new commands
+- [x] Tests: audit, group permissions, reference, notifications, org levels,
+      DPS env usage/cost, plus command-level helper tests
+
+**Extra bug found and fixed:** `DTIAM_SCOPES` and the per-credential `scopes`
+field were parsed into config but never passed to the OAuth token manager, so
+the documented scope escape hatch was dead code. Now wired through
+`config.GetEffectiveScopes` + `common.NewOAuthProviderWithScopes`.
+
+**Deliberately not done:** `analyze` still does not merge policy bindings with
+direct permission grants into one effective-access view. Logged in DECISIONS.md
+as the obvious follow-up.
 
 ### Step 4 — dtctl format alignment (2.3.0)
 - [ ] Split oversized verb files into `verb_resource.go` (analyze 954, export 900, bulk 872)
@@ -64,4 +75,4 @@ wrong response key on the two endpoints that do paginate.
 
 ## Next Step
 
-Step 3 — new API groups.
+Step 4 — dtctl format alignment.

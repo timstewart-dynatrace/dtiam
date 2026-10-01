@@ -203,6 +203,21 @@ func GetEffectiveEnvironmentURL(cred *Credential) string {
 	return ""
 }
 
+// GetEffectiveScopes returns the OAuth scope override, checking env > credential.
+//
+// An empty result means "use the built-in default set" (auth.DefaultScopeList).
+// The value is passed to the token endpoint verbatim, so it must be
+// space-separated as OAuth2 requires.
+func GetEffectiveScopes(cred *Credential) string {
+	if scopes := os.Getenv(EnvScopes); scopes != "" {
+		return scopes
+	}
+	if cred != nil && cred.Scopes != "" {
+		return cred.Scopes
+	}
+	return ""
+}
+
 // DeleteContext removes a context by name. Returns true if deleted.
 func (c *Config) DeleteContext(name string) bool {
 	for i := range c.Contexts {

@@ -87,3 +87,30 @@
 **Why:** `serviceusers.go` and `tokens.go` both read `items`, but those endpoints return `results`. The tests mocked `items`, so a full green suite coexisted with two commands that returned an empty list against the live API. Green tests over a fabricated fixture are worse than no tests: they actively argue the code is correct. The fallback chain still accepts `items` for safety, but the fixtures now encode the documented shape so the tests would catch a regression.
 **Trade-offs:** The fixtures are only as good as the documentation; neither was verified against a live account in this pass.
 **Revisit if:** A live-account smoke test contradicts the documented shapes. That test is the real fix and is not yet written.
+
+---
+
+## 2026-10-01 — Permission Management Exposed Alongside Policies, Not Merged Into Them
+**Chosen:** Surface the role-style permission grants as their own commands (`group permissions`, `grant-permission`, `revoke-permission`) rather than folding them into the existing policy/binding commands or the `analyze` output.
+**Alternatives:** Merge direct grants into `group bindings`; include them in `analyze group-permissions`; skip the API as legacy.
+**Why:** The two models are genuinely separate in the API and a group's effective access is their union, so hiding one inside the other would misrepresent both. Merging them into `group bindings` would conflate a binding (policy + boundary) with a grant (permission + scope), which have different shapes and different lifecycles. Skipping the API was tempting since it predates IAM policies, but the documentation still lists it as current as of September 2026, and a group carrying direct grants is invisible to every other dtiam command — exactly the blind spot an IAM tool must not have.
+**Trade-offs:** Users must know to check both. `analyze` still does not merge the two into a single effective-access view, which is the obvious follow-up.
+**Revisit if:** Dynatrace deprecates the permission management API, or `analyze` grows a unified effective-access view that should consume both.
+
+---
+
+## 2026-10-01 — Environment-Level IAM Kept Separate From Account-Level Commands
+**Chosen:** Expose the environment-served Platform IAM API as distinct `get env-users` / `get env-groups` commands rather than as flags on `get users` / `get groups`.
+**Alternatives:** An `--environment` flag on the existing commands that silently switches API; omit the API as dtctl's territory.
+**Why:** They answer different questions against different hosts with different scopes. `get users` lists the account's user records from `api.dynatrace.com` with `account-idm-read`; this API reports who is visible at an organizational level from `{env}.apps.dynatrace.com` with `iam:users:read`, a scope granted on the environment rather than the account. A flag that switched between them would mean the same command returning different fields, different pagination, and failing with a different permission error depending on one flag. Separate commands make the distinction visible in `--help`, where it belongs.
+**Trade-offs:** Two more commands, and some apparent duplication for users who do not care which API answers them.
+**Revisit if:** Dynatrace consolidates the two into one API surface.
+
+---
+
+## 2026-10-01 — Overridable Base URLs on Handlers Outside the Account Scope
+**Chosen:** Give `ReferenceHandler`, `NotificationHandler`, and `SubscriptionHandler` (for v3) exported, overridable base URL fields defaulting to the production constants.
+**Alternatives:** Hardcode the constants; inject a full URL at construction; test through an HTTP transport shim.
+**Why:** These endpoints do not hang off the client's account-scoped base URL — reference data is not account-scoped at all, notifications sit at an unprefixed `/v1`, and subscription cost moved to `sub/v3` while the rest of the handler stays on v2. With the constants hardcoded, the first versions of these tests either reached for the live API or degenerated into shims that re-implemented the method under test, which proves nothing. An overridable field is the smallest change that makes the real code path testable.
+**Trade-offs:** Three more exported fields that callers could set to something wrong.
+**Revisit if:** The client grows a general notion of multiple service base URLs, which would make these fields redundant.

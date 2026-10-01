@@ -13,6 +13,11 @@ import (
 type SubscriptionHandler struct {
 	BaseHandler
 	baseURL string
+
+	// V3BaseURL is the account-scoped root for Subscription API endpoints that
+	// live on v3. Overridable so tests can target a local server; the cost
+	// endpoint cannot inherit h.Path, which is pinned to v2.
+	V3BaseURL string
 }
 
 // NewSubscriptionHandler creates a new subscription handler.
@@ -28,7 +33,8 @@ func NewSubscriptionHandler(c *client.Client) *SubscriptionHandler {
 			IDField:   "uuid",
 			NameField: "name",
 		},
-		baseURL: baseURL,
+		baseURL:   baseURL,
+		V3BaseURL: fmt.Sprintf("%s/%s", client.SubV3BaseURL, c.AccountUUID()),
 	}
 }
 
@@ -206,4 +212,74 @@ func (h *SubscriptionHandler) extractList(body []byte) ([]map[string]any, error)
 	}
 
 	return []map[string]any{}, nil
+}
+
+// EnvironmentUsage returns per-environment usage for a subscription over a
+// window. Both bounds are required by the API, in "2021-05-01T15:11:00Z" form.
+//
+// This is distinct from GetUsage, which only reports the usage totals embedded
+// in the subscription object itself.
+func (h *SubscriptionHandler) EnvironmentUsage(
+	ctx context.Context, subscriptionUUID, startTime, endTime string,
+	environmentIDs, capabilityKeys []string,
+) (map[string]any, error) {
+	if subscriptionUUID == "" {
+		return nil, fmt.Errorf("subscription UUID is required")
+	}
+	if startTime == "" || endTime == "" {
+		return nil, fmt.Errorf("startTime and endTime are required for environment usage")
+	}
+
+	params := map[string]string{"startTime": startTime, "endTime": endTime}
+	if len(environmentIDs) > 0 {
+		params["environmentIds"] = joinNonEmpty(environmentIDs, ",")
+	}
+	if len(capabilityKeys) > 0 {
+		params["capabilityKeys"] = joinNonEmpty(capabilityKeys, ",")
+	}
+
+	path := fmt.Sprintf("%s/%s/environments/usage", h.Path, subscriptionUUID)
+	body, err := h.Client.Get(ctx, path, params)
+	if err != nil {
+		return nil, h.handleError("get environment usage", err)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse environment usage response: %w", err)
+	}
+	return result, nil
+}
+
+// EnvironmentCost returns per-environment cost for a subscription over a window.
+//
+// Note the version skew: this endpoint lives on sub/v3 while subscription
+// listing, usage and forecast remain on sub/v2, so the path is built from
+// SubV3BaseURL rather than from h.Path.
+func (h *SubscriptionHandler) EnvironmentCost(
+	ctx context.Context, subscriptionUUID, startTime, endTime string,
+) (map[string]any, error) {
+	if subscriptionUUID == "" {
+		return nil, fmt.Errorf("subscription UUID is required")
+	}
+	if startTime == "" || endTime == "" {
+		return nil, fmt.Errorf("startTime and endTime are required for environment cost")
+	}
+
+	v3Base := h.V3BaseURL
+	if v3Base == "" {
+		v3Base = fmt.Sprintf("%s/%s", client.SubV3BaseURL, h.Client.AccountUUID())
+	}
+	path := fmt.Sprintf("%s/subscriptions/%s/environments/cost", v3Base, subscriptionUUID)
+
+	body, err := h.Client.Get(ctx, path, map[string]string{"startTime": startTime, "endTime": endTime})
+	if err != nil {
+		return nil, h.handleError("get environment cost", err)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse environment cost response: %w", err)
+	}
+	return result, nil
 }

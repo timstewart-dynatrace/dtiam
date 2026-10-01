@@ -153,6 +153,100 @@ func CapabilityColumns() []Column {
 	}
 }
 
+// AuditColumns returns columns for account audit log entries.
+func AuditColumns() []Column {
+	return []Column{
+		{Key: "timestamp", Header: "TIMESTAMP"},
+		{Key: "eventType", Header: "EVENT"},
+		{Key: "user", Header: "USER"},
+		{Key: "resourceName", Header: "RESOURCE"},
+		{Key: "eventOutcome", Header: "OUTCOME"},
+		{Key: "resource", Header: "RESOURCE TYPE", WideOnly: true},
+		{Key: "resourceId", Header: "RESOURCE ID", WideOnly: true},
+		{Key: "eventProvider", Header: "PROVIDER", WideOnly: true},
+		{Key: "originAddress", Header: "ORIGIN IP", WideOnly: true},
+		{Key: "authenticationType", Header: "AUTH TYPE", WideOnly: true},
+		{Key: "eventReason", Header: "REASON", WideOnly: true},
+		{Key: "eventId", Header: "EVENT ID", WideOnly: true},
+	}
+}
+
+// ReferencePermissionColumns returns columns for the reference data permission
+// list: the permissions an account can grant.
+func ReferencePermissionColumns() []Column {
+	return []Column{
+		{Key: "id", Header: "ID"},
+		{Key: "description", Header: "DESCRIPTION"},
+	}
+}
+
+// GroupPermissionColumns returns columns for direct permission grants on a group.
+func GroupPermissionColumns() []Column {
+	return []Column{
+		{Key: "permissionName", Header: "PERMISSION"},
+		{Key: "scopeType", Header: "SCOPE TYPE"},
+		{Key: "scope", Header: "SCOPE"},
+		{Key: "createdAt", Header: "CREATED", WideOnly: true},
+		{Key: "updatedAt", Header: "UPDATED", WideOnly: true},
+	}
+}
+
+// NotificationColumns returns columns for account notifications.
+func NotificationColumns() []Column {
+	return []Column{
+		{Key: "dateTime", Header: "TIMESTAMP"},
+		{Key: "type", Header: "TYPE"},
+		{Key: "severity", Header: "SEVERITY"},
+		{Key: "message", Header: "MESSAGE"},
+		{Key: "subscriptionName", Header: "SUBSCRIPTION", WideOnly: true},
+		{Key: "id", Header: "ID", WideOnly: true},
+	}
+}
+
+// EnvironmentUsageColumns returns columns for per-environment subscription usage.
+func EnvironmentUsageColumns() []Column {
+	return []Column{
+		{Key: "environmentId", Header: "ENVIRONMENT"},
+		{Key: "capabilityKey", Header: "CAPABILITY"},
+		{Key: "usage", Header: "USAGE"},
+		{Key: "unit", Header: "UNIT"},
+		{Key: "environmentName", Header: "NAME", WideOnly: true},
+	}
+}
+
+// EnvironmentCostColumns returns columns for per-environment subscription cost.
+func EnvironmentCostColumns() []Column {
+	return []Column{
+		{Key: "environmentId", Header: "ENVIRONMENT"},
+		{Key: "capabilityKey", Header: "CAPABILITY"},
+		{Key: "cost", Header: "COST"},
+		{Key: "currency", Header: "CURRENCY"},
+		{Key: "environmentName", Header: "NAME", WideOnly: true},
+	}
+}
+
+// OrgLevelUserColumns returns columns for users from the environment-level
+// Platform IAM API, whose field names differ from the account-level user API.
+func OrgLevelUserColumns() []Column {
+	return []Column{
+		{Key: "uuid", Header: "UUID"},
+		{Key: "email", Header: "EMAIL"},
+		{Key: "name", Header: "NAME"},
+		{Key: "surname", Header: "SURNAME", WideOnly: true},
+	}
+}
+
+// OrgLevelGroupColumns returns columns for groups from the environment-level
+// Platform IAM API.
+func OrgLevelGroupColumns() []Column {
+	return []Column{
+		{Key: "uuid", Header: "UUID"},
+		{Key: "name", Header: "NAME"},
+		{Key: "description", Header: "DESCRIPTION", WideOnly: true},
+		{Key: "owner", Header: "OWNER", WideOnly: true},
+	}
+}
+
 // ContextColumns returns columns for context configuration.
 func ContextColumns() []Column {
 	return []Column{
