@@ -14,8 +14,10 @@ func TestNewTokenHandler(t *testing.T) {
 	if h.Path != "/platform-tokens" {
 		t.Errorf("Path = %q, want '/platform-tokens'", h.Path)
 	}
-	if h.IDField != "id" {
-		t.Errorf("IDField = %q, want 'id'", h.IDField)
+	// The response field is tokenId; "id" does not exist, so get/delete by ID
+	// could never resolve a token.
+	if h.IDField != "tokenId" {
+		t.Errorf("IDField = %q, want 'tokenId'", h.IDField)
 	}
 	// The platform tokens API returns {pageSize, pageNumber, total, results};
 	// reading "items" here yielded an empty list against the live API.

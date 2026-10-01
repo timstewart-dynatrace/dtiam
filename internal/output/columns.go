@@ -73,12 +73,15 @@ func BoundaryColumns() []Column {
 }
 
 // EnvironmentColumns returns columns for environment resources.
+//
+// Field names verified live: the response carries active and url. There are no
+// state or trial fields, so those columns always rendered blank.
 func EnvironmentColumns() []Column {
 	return []Column{
 		{Key: "id", Header: "ID"},
 		{Key: "name", Header: "NAME"},
-		{Key: "state", Header: "STATE"},
-		{Key: "trial", Header: "TRIAL", WideOnly: true},
+		{Key: "active", Header: "ACTIVE"},
+		{Key: "url", Header: "URL", WideOnly: true},
 	}
 }
 
@@ -92,12 +95,16 @@ func ServiceUserColumns() []Column {
 	}
 }
 
-// LimitColumns returns columns for limit resources.
+// LimitColumns returns columns for account limit resources.
+//
+// Field names verified live: limitType, currentValue, limitValue. The earlier
+// name/current/max keys matched nothing, so every column rendered blank.
+// usage_percent is computed by the handler, not returned by the API.
 func LimitColumns() []Column {
 	return []Column{
-		{Key: "name", Header: "NAME"},
-		{Key: "current", Header: "CURRENT"},
-		{Key: "max", Header: "MAX"},
+		{Key: "limitType", Header: "LIMIT"},
+		{Key: "currentValue", Header: "CURRENT"},
+		{Key: "limitValue", Header: "MAX"},
 		{Key: "usage_percent", Header: "USAGE %", Formatter: formatPercent},
 	}
 }
@@ -115,13 +122,20 @@ func SubscriptionColumns() []Column {
 }
 
 // TokenColumns returns columns for platform token resources.
+//
+// Field names verified against a live account: the response carries tokenId,
+// expirationDate, and scope (singular). The earlier id/expiresIn/scopes keys
+// matched nothing, so those columns always rendered blank.
 func TokenColumns() []Column {
 	return []Column{
-		{Key: "id", Header: "ID"},
+		{Key: "tokenId", Header: "TOKEN ID"},
 		{Key: "name", Header: "NAME"},
-		{Key: "expiresIn", Header: "EXPIRES"},
-		{Key: "scopes", Header: "SCOPES", WideOnly: true, Formatter: FormatList},
+		{Key: "status", Header: "STATUS"},
+		{Key: "expirationDate", Header: "EXPIRES"},
+		{Key: "owner", Header: "OWNER", WideOnly: true},
+		{Key: "createdBy", Header: "CREATED BY", WideOnly: true},
 		{Key: "createdAt", Header: "CREATED", WideOnly: true},
+		{Key: "scope", Header: "SCOPES", WideOnly: true, Formatter: FormatList},
 	}
 }
 
@@ -155,19 +169,24 @@ func CapabilityColumns() []Column {
 
 // AuditColumns returns columns for account audit log entries.
 func AuditColumns() []Column {
+	// The default projection returns only timestamp, eventType, user, resource,
+	// resourceName, eventProvider and eventId -- verified live. Everything else
+	// (eventOutcome, resourceId, originAddress, authenticationType, eventReason)
+	// requires --add-fields, so those stay in the wide set rather than
+	// rendering as blank columns by default.
 	return []Column{
 		{Key: "timestamp", Header: "TIMESTAMP"},
 		{Key: "eventType", Header: "EVENT"},
 		{Key: "user", Header: "USER"},
+		{Key: "resource", Header: "TYPE"},
 		{Key: "resourceName", Header: "RESOURCE"},
-		{Key: "eventOutcome", Header: "OUTCOME"},
-		{Key: "resource", Header: "RESOURCE TYPE", WideOnly: true},
-		{Key: "resourceId", Header: "RESOURCE ID", WideOnly: true},
 		{Key: "eventProvider", Header: "PROVIDER", WideOnly: true},
+		{Key: "eventId", Header: "EVENT ID", WideOnly: true},
+		{Key: "eventOutcome", Header: "OUTCOME", WideOnly: true},
+		{Key: "eventReason", Header: "REASON", WideOnly: true},
+		{Key: "resourceId", Header: "RESOURCE ID", WideOnly: true},
 		{Key: "originAddress", Header: "ORIGIN IP", WideOnly: true},
 		{Key: "authenticationType", Header: "AUTH TYPE", WideOnly: true},
-		{Key: "eventReason", Header: "REASON", WideOnly: true},
-		{Key: "eventId", Header: "EVENT ID", WideOnly: true},
 	}
 }
 

@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -18,24 +17,20 @@ type LimitsHandler struct {
 func NewLimitsHandler(c *client.Client) *LimitsHandler {
 	return &LimitsHandler{
 		BaseHandler: BaseHandler{
-			Client:    c,
-			Name:      "limit",
-			Path:      "/limits",
-			ListKey:   "items",
-			IDField:   "name",
-			NameField: "name",
+			Client: c,
+			Name:   "limit",
+			Path:   "/limits",
+			// The API responds with {pageSize, pageNumber, total, results}.
+			// Verified live; the documentation implies {items}.
+			ListKey: "results",
+			// The limit's identity field is limitType, e.g. "REGULAR_USER".
+			// There is no "name" field; looking one up by "name" always missed,
+			// so Get and check-capacity reported every limit as not found.
+			IDField:    "limitType",
+			NameField:  "limitType",
+			Pagination: client.AccountLimitPagination(),
 		},
 	}
-}
-
-// List lists account limits.
-func (h *LimitsHandler) List(ctx context.Context, params map[string]string) ([]map[string]any, error) {
-	body, err := h.Client.Get(ctx, h.Path, params)
-	if err != nil {
-		return nil, h.handleError("list", err)
-	}
-
-	return h.extractList(body)
 }
 
 // Get gets a limit by name.
@@ -46,7 +41,7 @@ func (h *LimitsHandler) Get(ctx context.Context, name string) (map[string]any, e
 	}
 
 	for _, item := range items {
-		if itemName, ok := item["name"].(string); ok {
+		if itemName, ok := item["limitType"].(string); ok {
 			if strings.EqualFold(itemName, name) {
 				return item, nil
 			}
@@ -67,8 +62,8 @@ func (h *LimitsHandler) GetSummary(ctx context.Context) (map[string]any, error) 
 	limits := make([]map[string]any, 0, len(items))
 
 	for _, item := range items {
-		current := h.getNumericValue(item, "current", "value")
-		max := h.getNumericValue(item, "max", "limit")
+		current := h.getNumericValue(item, "currentValue", "current", "value")
+		max := h.getNumericValue(item, "limitValue", "max", "limit")
 
 		var usagePercent float64
 		var status string
@@ -91,10 +86,13 @@ func (h *LimitsHandler) GetSummary(ctx context.Context) (map[string]any, error) 
 			status = "unknown"
 		}
 
+		// Emit the API's own field names so one column set works for both the
+		// raw list and this summary; previously the summary renamed them to
+		// name/current/max and every column rendered blank.
 		limits = append(limits, map[string]any{
-			"name":          item["name"],
-			"current":       current,
-			"max":           max,
+			"limitType":     item["limitType"],
+			"currentValue":  current,
+			"limitValue":    max,
 			"usage_percent": usagePercent,
 			"available":     available,
 			"status":        status,
@@ -125,8 +123,8 @@ func (h *LimitsHandler) CheckCapacity(ctx context.Context, limitName string, add
 		}, nil
 	}
 
-	current := h.getNumericValue(limit, "current", "value")
-	max := h.getNumericValue(limit, "max", "limit")
+	current := h.getNumericValue(limit, "currentValue", "current", "value")
+	max := h.getNumericValue(limit, "limitValue", "max", "limit")
 	available := max - current
 	hasCapacity := available >= additional
 
@@ -169,28 +167,3 @@ func (h *LimitsHandler) getNumericValue(m map[string]any, keys ...string) int {
 }
 
 // extractList handles limit-specific response formats.
-func (h *LimitsHandler) extractList(body []byte) ([]map[string]any, error) {
-	var response map[string]any
-	if err := json.Unmarshal(body, &response); err != nil {
-		// Try parsing as array
-		var items []map[string]any
-		if err := json.Unmarshal(body, &items); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		return items, nil
-	}
-
-	// Try common list keys
-	for _, key := range []string{"items", "limits"} {
-		if items, ok := response[key]; ok {
-			return toMapSlice(items)
-		}
-	}
-
-	// Single item response - wrap in array
-	if _, ok := response["name"]; ok {
-		return []map[string]any{response}, nil
-	}
-
-	return []map[string]any{}, nil
-}

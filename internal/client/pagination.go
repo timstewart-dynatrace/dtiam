@@ -161,3 +161,32 @@ func OrganizationalLevelPagination() *PaginationConfig {
 		TotalField:    "totalCount",
 	}
 }
+
+// BoundaryPagination returns the paging config for the boundaries endpoint:
+// GET /iam/v1/repo/account/{uuid}/boundaries, which responds with a
+// Spring-style page {pageSize, pageNumber, totalCount, content}.
+//
+// The documentation does not mention pagination for this endpoint; the shape was
+// confirmed against a live account.
+func BoundaryPagination() *PaginationConfig {
+	return &PaginationConfig{
+		Style:         PaginationPageNumber,
+		PageParam:     "page",
+		PageSizeParam: "size",
+		ItemsKey:      "content",
+		TotalField:    "totalCount",
+	}
+}
+
+// AccountLimitPagination returns the paging config for the account limits
+// endpoint: GET /iam/v1/accounts/{uuid}/limits, which responds with
+// {pageSize, pageNumber, total, results}.
+func AccountLimitPagination() *PaginationConfig {
+	return &PaginationConfig{
+		Style:         PaginationPageNumber,
+		PageParam:     "page",
+		PageSizeParam: "size",
+		ItemsKey:      "results",
+		TotalField:    "total",
+	}
+}

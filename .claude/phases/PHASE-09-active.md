@@ -75,25 +75,38 @@ as the obvious follow-up.
 more commands silently returning empty lists due to wrong response keys. See
 Step 4.5.
 
-### Step 4.5 — Live-validated response key fixes
+### Step 4.5 — Live-validated response key fixes (2.4.0) — DONE
+
 Running `dtiam doctor` against a real account made it possible to compare every
-list endpoint's actual response against what the handlers expect. The docs are
-not reliable for response shapes.
+list endpoint's actual response against what the handlers expect. **The docs are
+not reliable for response shapes.** Six commands were silently returning empty.
 
-| Command | Code expected | API actually returns | Paginated |
-|---------|---------------|----------------------|-----------|
-| `get environments` | `tenants` | `data` | no |
-| `get boundaries` | `boundaries` | `content` | yes (page-number) |
-| `account limits` | `items` | `results` | yes (page-number) |
-| `account subscriptions` | `items` | `data` | no |
+| Command | Read | API returns | Before | After |
+|---------|------|-------------|--------|-------|
+| `get environments` | `tenants` | `data` | 0 | 5 |
+| `get boundaries` | `boundaries` | `content` | 0 | 37 |
+| `account limits` | `items` | `results` | 0 | 8 |
+| `account subscriptions` | `items` | `data` | 0 | 10 |
+| `service-user list` | `items` | `results` | 0 | 22 |
+| `get tokens` | `items` | `results` | 0 | 105 |
 
-- [ ] Fix the four response keys above
-- [ ] Add page-number pagination to boundaries and limits
-- [ ] Fix `TokenColumns`: ID is `tokenId` not `id`, expiry is `expirationDate`
-      not `expiresIn`, scopes is `scope` not `scopes`
-- [ ] Fix `TokenHandler.IDField`: `tokenId`, so get/delete by ID resolve
-- [ ] Add `data` and `content` to the list-key fallback chain
-- [ ] Re-audit every list command against the live account after fixing
+- [x] Fixed all six response keys
+- [x] Added page-number pagination to boundaries and limits (undocumented)
+- [x] Deleted the three `List`/`extractList` overrides that made the `ListKey`
+      field dead — the root cause
+- [x] Fixed `account check-capacity`, which reported every limit as not found
+      and computed 0/0 capacity (`limitType`, `currentValue`, `limitValue`)
+- [x] Fixed `TokenColumns` (`tokenId`/`expirationDate`/`scope`) and
+      `TokenHandler.IDField`
+- [x] Fixed `EnvironmentColumns` (`active`/`url`) and `LimitColumns`
+- [x] Fixed `account limits --summary`, which renamed fields and printed status
+      to stdout
+- [x] Fixed `AuditColumns` to match the API's default projection
+- [x] Single-resource wrapping generalized to the handler's own ID/name fields
+- [x] `response_shapes_test.go` pins every live shape, ListKey, IDField and
+      pagination setting
+- [x] Test helpers now use production constructors
+- [x] Re-audited live: all 12 list commands return data; doctor 8/8 ok
 
 ### Step 5 — Credential & UX parity (2.4.0)
 - [ ] OS keyring for client secrets (currently plaintext YAML)
@@ -104,4 +117,4 @@ not reliable for response shapes.
 
 ## Next Step
 
-Step 4.5 — live-validated response key fixes.
+Step 5 — credential and UX parity (keyring, diff, watch).

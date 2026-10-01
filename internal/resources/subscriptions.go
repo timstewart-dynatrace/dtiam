@@ -26,26 +26,18 @@ func NewSubscriptionHandler(c *client.Client) *SubscriptionHandler {
 	baseURL := fmt.Sprintf("%s/%s", client.SubBaseURL, c.AccountUUID())
 	return &SubscriptionHandler{
 		BaseHandler: BaseHandler{
-			Client:    c,
-			Name:      "subscription",
-			Path:      baseURL + "/subscriptions",
-			ListKey:   "items",
+			Client: c,
+			Name:   "subscription",
+			Path:   baseURL + "/subscriptions",
+			// The API responds with {data: [...]}, not {items: [...]}.
+			// Verified against a live account.
+			ListKey:   "data",
 			IDField:   "uuid",
 			NameField: "name",
 		},
 		baseURL:   baseURL,
 		V3BaseURL: fmt.Sprintf("%s/%s", client.SubV3BaseURL, c.AccountUUID()),
 	}
-}
-
-// List lists subscriptions.
-func (h *SubscriptionHandler) List(ctx context.Context, params map[string]string) ([]map[string]any, error) {
-	body, err := h.Client.Get(ctx, h.Path, params)
-	if err != nil {
-		return nil, h.handleError("list", err)
-	}
-
-	return h.extractList(body)
 }
 
 // Get gets a subscription by UUID.
@@ -189,30 +181,6 @@ func (h *SubscriptionHandler) GetCapabilities(ctx context.Context, subscriptionU
 }
 
 // extractList handles subscription-specific response formats.
-func (h *SubscriptionHandler) extractList(body []byte) ([]map[string]any, error) {
-	var response map[string]any
-	if err := json.Unmarshal(body, &response); err != nil {
-		var items []map[string]any
-		if err := json.Unmarshal(body, &items); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		return items, nil
-	}
-
-	// Try common list keys
-	for _, key := range []string{"items", "subscriptions"} {
-		if items, ok := response[key]; ok {
-			return toMapSlice(items)
-		}
-	}
-
-	// Single item response - wrap in array
-	if _, ok := response["uuid"]; ok {
-		return []map[string]any{response}, nil
-	}
-
-	return []map[string]any{}, nil
-}
 
 // EnvironmentUsage returns per-environment usage for a subscription over a
 // window. Both bounds are required by the API, in "2021-05-01T15:11:00Z" form.
