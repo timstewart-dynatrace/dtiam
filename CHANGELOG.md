@@ -7,6 +7,292 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-01
+
+### Changed — BREAKING
+
+Thirteen packages moved from `internal/` to `pkg/`, making dtiam usable as a Go
+library rather than only a binary:
+
+```
+internal/{auth,client,config,diagnostic,diff,logging,output,
+          prompt,resources,suggest,template,utils,watch}
+  ->  pkg/{...}
+```
+
+`internal/cli` and `internal/commands` **stay internal** — they are the cobra
+wiring, and exposing them would invite callers to depend on command plumbing
+rather than on the API client and resource handlers. The move was possible
+because none of the thirteen referenced either one.
+
+**Impact:** only code importing these paths. The CLI is unaffected: the complete
+`--help` tree for every command and subcommand is byte-identical before and after
+(4,110 lines diffed). An external module importing `pkg/auth`, `pkg/client`,
+`pkg/config`, `pkg/diff`, `pkg/output`, `pkg/resources`, `pkg/version` and
+`pkg/watch` was built and run to confirm the packages resolve from outside the
+module.
+
+**Migration:** replace `internal/` with `pkg/` in your imports.
+
+```go
+// before
+import "github.com/jtimothystewart/dtiam/internal/resources"
+// after
+import "github.com/jtimothystewart/dtiam/pkg/resources"
+```
+
+## [2.6.0] - 2026-10-01
+
+### Added
+
+- `dtiam diff -f FILE` — shows what `apply` would change, without changing
+  anything. Fetches each live resource and compares field by field. Only fields
+  present in the file are compared, since the API returns server-managed fields
+  (`uuid`, `createdAt`, `owner`) that a spec never mentions. Lists compare
+  order-insensitively, and `5` from YAML compares equal to `5.0` from the API —
+  otherwise every numeric and list field would look modified on every run.
+  Exits 1 on drift so it can gate a pipeline; `--exit-zero` disables that.
+- **Agent auto-detection.** Running under a coding agent (Claude Code, Cursor,
+  Copilot, Aider and others) now implies `--plain`, because an agent has no
+  terminal to answer a confirmation prompt at and no use for ANSI colors. An
+  explicit `--plain=false` still wins, and `DTIAM_NO_AGENT_DETECT=1` opts out.
+  `-v` explains which variable triggered it. A specific agent is reported in
+  preference to the generic `AI_AGENT` fallback.
+- `--watch` / `-w` on `get groups`, `get users`, `get policies`, and
+  `get bindings`, with `--watch-interval`. Reprints only when the result actually
+  changes: the fingerprint sorts items first, so the API's unstable list order is
+  not mistaken for a change. A failed poll is reported and the watch continues,
+  rather than a transient API error ending a session someone left running.
+  Refused with `--plain`, where the output would be an unparseable JSON stream.
+- `cli.ErrSilentExit` — lets a command exit non-zero without an `Error:` line,
+  for cases like `diff` where the non-zero exit is a result rather than a failure.
+
+### Changed
+
+- `internal/diff` and `internal/watch` are standalone packages, so the comparison
+  and polling logic is testable without a command or a network.
+
+## [2.5.0] - 2026-10-01
+
+### Added
+
+- Client secrets are now stored in the **OS keyring** when one is available.
+  `dtiam config set-credentials` writes the secret to the keyring (service name
+  `dtiam`) and records only a reference in the config file. Existing plaintext
+  configs keep working unchanged — the stored value is resolved either way, so
+  there is no forced migration.
+- `dtiam config migrate-secrets` moves existing plaintext secrets into the
+  keyring. Idempotent, and supports `--dry-run`.
+- `dtiam config keyring-status` shows, per credential, whether its secret lives
+  in the keyring or the config file — so you can confirm no plaintext remains.
+- `--require-keyring` on `set-credentials` fails rather than ever writing a
+  plaintext secret; `--no-keyring` forces file storage. `DTIAM_DISABLE_KEYRING`
+  opts out entirely, which also avoids a keyring probe on headless hosts.
+- `dtiam doctor` gained a **secret storage** check that reports plaintext secrets
+  and names the command that fixes them.
+- `dtiam config delete-credentials` now removes the keyring entry too, rather
+  than leaving an orphaned secret behind, and supports `--dry-run`.
+
+### Changed
+
+- `config delete-credentials` and `set-credentials` route their output through
+  the printer instead of `fmt.Printf`, so `--plain` and `-o json` behave.
+
+### Security
+
+- Plaintext credential storage is now a fallback rather than the only option.
+  Where a secret is stored is always reported, never silent. See SECURITY.md.
+
+## [2.4.0] - 2026-10-01
+
+### Fixed
+
+Validated every list endpoint against a live account. **Six commands were
+silently returning empty results** because each handler read a response key the
+API does not send. An unmatched key yields an empty slice rather than an error,
+so these failed quietly and the test fixtures — written from documentation that
+does not match the API — passed.
+
+| Command | Read | API actually returns |
+|---------|------|----------------------|
+| `get environments` | `tenants` | `data` |
+| `get boundaries` | `boundaries` | `content` (a page envelope) |
+| `account limits` | `items` | `results` (a page envelope) |
+| `account subscriptions` | `items` | `data` |
+| `service-user list` | `items` | `results` |
+| `get tokens` | `items` | `results` |
+
+Root cause: `EnvironmentHandler`, `LimitsHandler`, and `SubscriptionHandler` each
+shadowed `BaseHandler.List` and `extractList` with their own hardcoded key lists,
+so the embedded `ListKey` was never consulted. Those overrides are now deleted
+and key resolution lives in one place.
+
+Also fixed, same root cause:
+
+- `get boundaries` and `account limits` are paginated (the docs do not say so),
+  and returned only the first page.
+- `account check-capacity` reported **every limit as "not found"**, and computed
+  0/0 for capacity. The limit's identity field is `limitType`, not `name`, and
+  its values are `currentValue`/`limitValue`, not `current`/`max`. A capacity
+  check that silently answers "no capacity" is worse than an error, since it
+  reads as a real answer.
+- `get tokens` showed a blank ID column and could not resolve a token by ID:
+  the field is `tokenId`, not `id`. Expiry is `expirationDate`, not `expiresIn`;
+  scopes is `scope`, not `scopes`.
+- `get environments` showed blank STATE/TRIAL columns; the fields are `active`
+  and `url`.
+- `account limits --summary` renamed fields to `name`/`current`/`max` when
+  building its output, so every column rendered blank.
+- `get audit-logs` listed `eventOutcome` as a default column, but the API's
+  default projection does not include it; it now sits in the wide set with the
+  other `--add-fields` values.
+- `account limits --summary` wrote status lines to stdout with `fmt.Printf`,
+  which `command-standards.md` forbids; they now go to stderr.
+
+### Added
+
+- `internal/resources/response_shapes_test.go` — pins the live response shape and
+  declared `ListKey`/`IDField`/pagination for every list endpoint, so this bug
+  class cannot silently return.
+- Single-resource responses are recognized by the handler's own identity fields
+  and wrapped, in both the paginated and unpaginated paths.
+
+### Changed
+
+- `client.BoundaryPagination()` and `client.AccountLimitPagination()`.
+- Test helpers now build handlers through their real constructors instead of
+  hand-rolling a `BaseHandler`, which is what allowed a wrong `ListKey` in
+  production code to pass its own tests.
+
+## [2.3.0] - 2026-10-01
+
+### Added
+
+- `dtiam doctor` — diagnoses configuration, credentials, scopes, token
+  retrieval, and API connectivity. Checks run cheapest-first and later checks
+  report `skip` rather than `fail` when an earlier one makes them meaningless, so
+  the output distinguishes "could not test" from "broken". Exits non-zero on any
+  failure, so it works as a CI readiness gate. `--offline` skips the network
+  checks.
+- `.golangci.yml` — the linter config was never committed, so `make lint` ran
+  with defaults. Now pinned, with the exclusions annotated. Lint is clean.
+- `AGENTS.md` — agent-facing guidance: the `--plain` stream contract, the
+  surprises worth knowing (two coexisting permission models, two different user
+  APIs, partial audit results returning HTTP 200), and safety rules.
+- `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `NOTICE`.
+  SECURITY.md documents that credentials are stored in **plaintext** and that
+  `-v` dumps Authorization headers.
+- `install.sh` and `install.ps1` — platform detection, checksum verification,
+  and PATH guidance.
+
+### Fixed
+
+- Replaced the deprecated `reflect.Ptr` with `reflect.Pointer` in the struct
+  printer (7 occurrences), the only issues the newly-pinned linter reported.
+- Corrected the README install instructions, which pointed at a `GO-dtiam`
+  repository that does not exist.
+
+### Changed
+
+- Split the oversized per-verb command files into dtctl-style
+  `verb_resource.go` files. The largest file drops from 954 lines
+  (`analyze.go`, 7 subcommands) to 309, across 70 files.
+  Behavior-preserving: the full `--help` tree for every command and
+  subcommand is byte-identical before and after.
+
+## [2.2.0] - 2026-10-01
+
+### Added
+
+Six Dynatrace API groups that were documented but unused:
+
+- **Account audit logs** — `dtiam get audit-logs`. Who changed what in the
+  account, with `--start`/`--end`, `--event-type`, `--user`, a raw `--filter`
+  escape hatch, and `--scan-limit-gb`/`--result-limit-mb` to bound expensive
+  queries. The API returns partial results with warnings rather than an error, so
+  warnings are surfaced on stderr instead of being dropped.
+- **Reference data** — `dtiam get available-permissions`. The authoritative list
+  of grantable permission names, for validating a grant before attempting it.
+- **Permission management** — `dtiam group permissions`,
+  `group grant-permission`, `group revoke-permission`. These are role-style
+  grants that coexist with IAM policies; a group's effective access is the union
+  of its policy bindings and these direct grants, so `group bindings` alone
+  understates what a group can do.
+- **Account notifications** — `dtiam account notifications`, with type and
+  severity filters validated locally.
+- **Per-environment subscription usage and cost** —
+  `dtiam account environment-usage` and `account environment-cost`. The cost
+  endpoint lives on the v3 Subscription API while listing, usage and forecast
+  remain on v2; dtiam handles the version difference internally.
+- **Environment-level Platform IAM** — `dtiam get env-users`,
+  `get env-groups`. A different API from `get users`/`get groups`: served from
+  the environment rather than from `api.dynatrace.com`, reporting who is visible
+  at an organizational level.
+
+### Fixed
+
+- `DTIAM_SCOPES` and the per-credential `scopes` config field had no effect. The
+  value was parsed into the config struct but never passed to the OAuth token
+  manager, so the documented escape hatch for scope problems was dead code.
+
+### Changed
+
+- `ReferenceHandler`, `NotificationHandler`, and `SubscriptionHandler` expose
+  overridable base URLs. These endpoints sit outside the client's account-scoped
+  base URL, and without the override their tests could only have run against
+  the live API.
+
+## [2.1.0] - 2026-10-01
+
+### Added
+
+- Automatic pagination for paginated Account Management endpoints. `List` now
+  follows every page to completion, so callers always receive the full
+  collection. Two paging styles are supported, matching the documented API
+  behavior: cursor-based (`page-key`/`nextPageKey`, used by service users) and
+  1-based page numbers (`page`/`size` plus `total`, used by platform tokens).
+- `client.PaginationConfig` with presets `ServiceUserPagination()`,
+  `PlatformTokenPagination()`, and `OrganizationalLevelPagination()`.
+
+### Fixed
+
+- `dtiam get service-users` returned an empty list against the live API. The
+  service user endpoint responds with `{results, nextPageKey, totalCount}`, but
+  the handler read `items`. The existing tests mocked the `items` shape, so they
+  passed while the command was broken.
+- `dtiam get platform-tokens` had the same defect: the endpoint responds with
+  `{pageSize, pageNumber, total, results}` and the handler read `items`.
+- Both endpoints also silently truncated to a single page, since no paging
+  parameters were ever sent.
+
+### Changed
+
+- The list-key fallback chain now includes `results` alongside `items`, so
+  paginated response shapes resolve even on handlers without an explicit key.
+
+## [2.0.3] - 2026-10-01
+
+### Fixed
+
+- OAuth2 token requests now include the `account-uac-read` scope, so
+  `dtiam account subscriptions` and `dtiam account forecast` no longer fail
+  with HTTP 403.
+- OAuth2 token requests now include the `platform-token:tokens:manage` scope,
+  so `dtiam get platform-tokens` and platform token create/delete no longer
+  fail with HTTP 403. The required scope was documented in the token handler
+  but never requested.
+- OAuth2 token requests now include the `account-audit-logs-read` scope, in
+  preparation for account audit log support.
+- Synchronized the version string across `pkg/version/version.go`,
+  `.claude/settings.json`, `.claude/CLAUDE.md`, and `.claude/rules/core.md`,
+  which had drifted to 2.0.0 while the release was 2.0.2.
+
+### Changed
+
+- `defaultScopes` is now derived from the exported `auth.DefaultScopeList`,
+  with each scope annotated with the API group that requires it. A regression
+  test asserts every API group dtiam calls has its scope requested.
+
 ## [2.0.2] - 2026-04-16
 
 ### Added

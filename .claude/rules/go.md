@@ -13,6 +13,17 @@
 - All exported types and functions must have comments
 - Use meaningful variable names
 
+## 1a. Package Layout [MUST]
+
+| Location | Holds | Importable |
+|----------|-------|------------|
+| `pkg/` | API client, auth, config, resource handlers, output, diff, watch, template, utils | yes |
+| `internal/cli`, `internal/commands` | cobra wiring: root command, global state, all commands | no |
+
+New reusable logic goes in `pkg/`. New commands go in `internal/commands/`.
+A `pkg/` package MUST NOT import `internal/cli` or `internal/commands` — that
+would make it unusable by external callers in practice and invert the dependency.
+
 ## 2. Import Ordering [MUST]
 
 ```go
@@ -91,7 +102,7 @@ cli.AddCommand(newfeature.Cmd)
 
 ### Adding a New Resource Handler
 
-1. Create handler in `internal/resources/<name>.go`:
+1. Create handler in `pkg/resources/<name>.go`:
 ```go
 type NewResourceHandler struct {
     BaseHandler
@@ -111,7 +122,7 @@ func NewNewResourceHandler(c *client.Client) *NewResourceHandler {
 }
 ```
 
-2. Add columns in `internal/output/columns.go`:
+2. Add columns in `pkg/output/columns.go`:
 ```go
 func NewResourceColumns() []Column {
     return []Column{

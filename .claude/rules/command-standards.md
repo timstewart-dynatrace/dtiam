@@ -22,7 +22,7 @@ dtiam [global-flags] <verb> [<resource>] [<identifier>] [local-flags]
 
 ## 2. Global Flags [MUST]
 
-Every command inherits these from `cli/root.go`:
+Every command inherits these from `internal/cli/root.go`:
 
 | Flag | Short | Type | Default | Purpose |
 |------|-------|------|---------|---------|
@@ -105,7 +105,7 @@ RunE: func(cmd *cobra.Command, args []string) error {
 Destructive = delete, remove, replace, bulk modify, anything that cannot be undone.
 
 ```go
-import "github.com/jtimothystewart/dtiam/internal/prompt"
+import "github.com/jtimothystewart/dtiam/pkg/prompt"
 
 // Standard pattern:
 if cli.GlobalState.IsDryRun() {
@@ -120,7 +120,7 @@ if !prompt.ConfirmDelete(resourceType, identifier, force || cli.GlobalState.IsPl
 ```
 
 **Rules:**
-- Use `internal/prompt` package (never inline `bufio.NewReader` or `fmt.Scanln`)
+- Use `pkg/prompt` package (never inline `bufio.NewReader` or `fmt.Scanln`)
 - `--force` flag (lowercase `-f`) skips confirmation
 - `--plain` mode skips confirmation (AI agents don't have stdin)
 - `--dry-run` takes precedence: print what would happen, then return nil

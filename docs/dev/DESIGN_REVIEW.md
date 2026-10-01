@@ -77,7 +77,7 @@ The `AccountClient` approach (separate client for `api.dynatrace.com`) matches d
 
 **Assessment: Agree, with note.**
 
-The proposed `pkg/resources/iam/account/` package mirrors dtiam's `internal/resources/` handlers. The handler interface (`List`, `Get`, `Create`, `Update`, `Delete`) is identical in spirit.
+The proposed `pkg/resources/iam/account/` package mirrors dtiam's `pkg/resources/` handlers. The handler interface (`List`, `Get`, `Create`, `Update`, `Delete`) is identical in spirit.
 
 **Note:** dtiam's `BaseHandler` provides generic CRUD that concrete handlers embed and override. The design doesn't mention whether dtctl's handlers use a similar base pattern or implement each method independently. If dtctl doesn't have a base handler pattern, the dtiam approach is worth considering — it eliminated significant code duplication.
 
@@ -91,7 +91,7 @@ The permission matrix mapping IAM operations to safety levels is well-thought-ou
 
 **Assessment: Excellent.**
 
-The error messages with recovery suggestions match dtiam's diagnostic error pattern (`internal/diagnostic/error.go`). dtiam provides exit codes and suggestions; dtctl's proposed errors are even more detailed with multi-option recovery paths. This is an improvement over dtiam.
+The error messages with recovery suggestions match dtiam's diagnostic error pattern (`pkg/diagnostic/error.go`). dtiam provides exit codes and suggestions; dtctl's proposed errors are even more detailed with multi-option recovery paths. This is an improvement over dtiam.
 
 #### Decision 11: Migration from dtiam
 

@@ -14,14 +14,28 @@
 
 ## 2. Required OAuth Scopes
 
+Defined in `auth.DefaultScopeList` (`internal/auth/oauth.go`). All of these are
+requested by default; override with `DTIAM_SCOPES`.
+
 | Scope | Required For |
 |-------|-------------|
-| `account-idm-read` | List/get groups, users, service users |
+| `account-idm-read` | List/get groups, users, service users, account limits |
 | `account-idm-write` | Create/delete groups, users, service users |
+| `account-env-read` | List environments, reference data |
+| `account-uac-read` | DPS subscriptions, forecast, cost, notifications |
+| `account-audit-logs-read` | Account audit logs |
+| `platform-token:tokens:manage` | Platform token list/create/delete |
 | `iam-policies-management` | Policies, bindings, boundaries |
-| `account-env-read` | List environments |
-| `iam:effective-permissions:read` | Effective permissions API |
-| `app-engine:apps:run` | App Engine Registry API |
+| `iam:policies:read` / `iam:policies:write` | Get / create+delete policies |
+| `iam:bindings:read` / `iam:bindings:write` | Get / attach+detach bindings |
+| `iam:effective-permissions:read` | `analyze effective-user` / `effective-group` |
+
+Not requested by default (needs a separate environment token or OAuth client):
+
+| Scope | Required For |
+|-------|-------------|
+| `app-engine:apps:run` | App Engine Registry API (`get apps`) |
+| `settings.read` | Settings 2.0 schemas (`get schemas`) |
 
 ## 3. Debug Tools
 

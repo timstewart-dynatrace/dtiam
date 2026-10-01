@@ -4,100 +4,98 @@
 
 ```
 dtiam/
-├── cmd/dtiam/main.go                 # Entry point
-├── internal/
+├── cmd/dtiam/main.go                 # Entry point, command registration
+├── internal/                         # CLI wiring -- not importable
 │   ├── cli/
-│   │   ├── root.go                   # Root command, global flags
-│   │   └── state.go                  # Global state (context, output, verbose)
-│   ├── commands/
-│   │   ├── common/                   # Shared command utilities
-│   │   ├── config/                   # Config management commands
-│   │   ├── get/                      # List/retrieve resources
-│   │   ├── describe/                 # Detailed resource views
-│   │   ├── create/                   # Create resources
-│   │   ├── delete/                   # Delete resources
-│   │   ├── user/                     # User lifecycle commands
-│   │   ├── serviceuser/              # OAuth client management
-│   │   ├── group/                    # Advanced group ops
-│   │   ├── boundary/                 # Boundary attach/detach
-│   │   ├── account/                  # Limits, subscriptions, capabilities
-│   │   ├── cache/                    # Cache management
-│   │   ├── bulk/                     # Bulk operations from files
-│   │   ├── export/                   # Export resources for backup
-│   │   └── analyze/                  # Permission analysis commands
-│   ├── config/
-│   │   ├── config.go                 # Config structs
-│   │   └── loader.go                 # Config load/save, XDG paths
+│   │   ├── root.go                   # Root command, global flags, ErrSilentExit
+│   │   ├── state.go                  # Global state (context, output, verbose, agent)
+│   │   └── agentdetect.go            # Coding-agent / CI detection
+│   └── commands/                     # One package per verb, verb_resource.go files
+│       ├── common/                   # Shared command utilities (CreateClient)
+│       ├── config/                   # Config, credentials, keyring commands
+│       ├── get/                      # List/retrieve, incl. --watch
+│       ├── describe/ create/ delete/ # Single-resource operations
+│       ├── user/ serviceuser/ group/ # Identity lifecycle
+│       ├── boundary/ account/        # Boundaries; limits, subscriptions, usage
+│       ├── bulk/ export/ apply/      # File-driven operations
+│       ├── diff/                     # Preview what apply would change
+│       ├── analyze/                  # Permission analysis
+│       ├── doctor/                   # Diagnostic health checks
+│       ├── template/ cache/          # Templates; cache management
+│       └── ...
+├── pkg/                              # Importable library
+│   ├── auth/
+│   │   ├── auth.go                   # TokenProvider interface
+│   │   ├── oauth.go                  # OAuth2 token manager, DefaultScopeList
+│   │   └── bearer.go                 # Static bearer token
 │   ├── client/
 │   │   ├── client.go                 # HTTP client with retry
 │   │   ├── errors.go                 # APIError type
-│   │   └── urls.go                   # Centralized API URL constants
-│   ├── auth/
-│   │   ├── auth.go                   # TokenProvider interface
-│   │   ├── oauth.go                  # OAuth2 token manager
-│   │   └── bearer.go                 # Static bearer token
+│   │   ├── urls.go                   # Centralized API URL constants
+│   │   └── pagination.go             # Per-endpoint paging configs
+│   ├── config/
+│   │   ├── config.go                 # Config structs, effective-value helpers
+│   │   ├── loader.go                 # Config load/save, XDG paths
+│   │   └── keyring.go                # OS keyring secret storage
 │   ├── resources/
 │   │   ├── handler.go                # Handler interfaces + BaseHandler
 │   │   ├── types.go                  # Typed response structs with table tags
-│   │   ├── groups.go                 # GroupHandler
-│   │   ├── users.go                  # UserHandler
-│   │   ├── policies.go               # PolicyHandler
-│   │   ├── bindings.go               # BindingHandler
-│   │   ├── boundaries.go             # BoundaryHandler
-│   │   ├── environments.go           # EnvironmentHandler
-│   │   ├── serviceusers.go           # ServiceUserHandler
-│   │   ├── limits.go                 # LimitsHandler
-│   │   ├── subscriptions.go          # SubscriptionHandler
-│   │   ├── tokens.go                 # TokenHandler (platform tokens)
-│   │   ├── apps.go                   # AppHandler (App Engine Registry)
-│   │   └── schemas.go                # SchemaHandler (Settings API)
-│   ├── output/
-│   │   ├── format.go                 # Format enum
-│   │   ├── printer.go                # Unified Printer
-│   │   ├── structprinter.go          # Struct-tag based printer
-│   │   ├── table.go                  # Table formatter
-│   │   └── columns.go                # Column definitions
-│   ├── prompt/
-│   │   └── confirm.go                # Confirmation prompts (Confirm, ConfirmDelete)
-│   ├── diagnostic/
-│   │   └── error.go                  # Enhanced errors with exit codes and suggestions
-│   ├── logging/
-│   │   └── logger.go                 # Structured logging with logrus
-│   ├── suggest/
-│   │   └── suggest.go                # Levenshtein command/flag suggestions
-│   └── utils/
-│       ├── permissions.go            # Permissions calculator, matrix, effective API
-│       └── safemap.go                # Safe type assertion helpers
-├── pkg/version/version.go            # Version info
+│   │   ├── groups.go users.go        # Core identity handlers
+│   │   ├── policies.go bindings.go boundaries.go
+│   │   ├── environments.go serviceusers.go limits.go subscriptions.go
+│   │   ├── tokens.go apps.go schemas.go
+│   │   ├── audit.go                  # Account audit logs
+│   │   ├── reference.go              # Reference data (grantable permissions)
+│   │   ├── grouppermissions.go       # Role-style permission grants
+│   │   ├── notifications.go          # Account notifications
+│   │   └── orglevels.go              # Environment-level Platform IAM
+│   ├── output/                       # Printer, formats, columns, tables
+│   ├── diff/                         # Spec-vs-live comparison
+│   ├── watch/                        # Change-detecting poller
+│   ├── prompt/                       # Confirmation prompts
+│   ├── diagnostic/                   # Errors with exit codes and suggestions
+│   ├── logging/                      # Structured logging (logrus)
+│   ├── suggest/                      # Levenshtein command/flag suggestions
+│   ├── template/                     # Template engine, store, built-ins
+│   ├── utils/                        # Permissions calculator, safe map helpers
+│   └── version/version.go            # Version info
 ├── go.mod
 ├── Makefile
+├── .golangci.yml
 └── .goreleaser.yaml
 ```
 
+**Why this split:** `pkg/` holds everything a caller could reasonably want to
+reuse — the API client, resource handlers, auth, config, output, and the diff and
+watch logic. `internal/cli` and `internal/commands` stay internal because they are
+cobra wiring; exposing them would invite callers to depend on command plumbing
+rather than on the client and handlers. The split was clean because none of the
+`pkg/` packages referenced either one.
+
 ## Key Components
 
-### CLI Layer (`internal/cli/`)
+### CLI Layer (`internal/cli/`) — internal
 - Root command with global flags (`--context`, `--output`, `--verbose`, `--plain`, `--dry-run`)
 - GlobalState singleton accessed by all commands
 - Printer factory method on GlobalState
 
-### Command Layer (`internal/commands/`)
+### Command Layer (`internal/commands/`) — internal
 - Verb-noun pattern: `get groups`, `create group`, `delete policy`
 - Each verb is a package with a single exported `Cmd`
 - Commands use `common.CreateClient()` for API access
 - All follow `command-standards.md`
 
-### Resource Layer (`internal/resources/`)
+### Resource Layer (`pkg/resources/`)
 - `BaseHandler` provides generic CRUD via HTTP methods
 - Concrete handlers embed BaseHandler and override as needed
 - Handler interface: `List()`, `Get()`, `Create()`, `Update()`, `Delete()`
 
-### Output Layer (`internal/output/`)
+### Output Layer (`pkg/output/`)
 - Unified Printer supports table, wide, JSON, YAML, CSV
 - `--plain` mode forces JSON for machine consumption
 - Column definitions per resource type
 
-### Auth Layer (`internal/auth/`)
+### Auth Layer (`pkg/auth/`)
 - `TokenProvider` interface with OAuth2 and Bearer implementations
 - OAuth2 auto-refreshes expired tokens
 - Bearer is static (no refresh)
@@ -114,15 +112,42 @@ CLI Command → common.CreateClient() → Auth (OAuth2/Bearer)
 
 Base URL: `https://api.dynatrace.com/iam/v1/accounts/{account_uuid}`
 
-| Resource | Path |
-|----------|------|
-| Groups | `/groups` |
-| Users | `/users` |
-| Service Users | `/service-users` |
-| Limits | `/limits` |
-| Policies | `/repo/{level_type}/{level_id}/policies` |
-| Bindings | `/repo/{level_type}/{level_id}/bindings` |
-| Boundaries | `/repo/account/{uuid}/boundaries` |
+All shapes below were verified against a live account on 2026-10-01. **The
+published documentation does not match the API for several of these** — it states
+`items` for endpoints that return `data`, `results`, or `content`. Verify against
+a real account before trusting a documented shape; an unmatched key yields an
+empty list, not an error.
+
+| Resource | Path | Response shape | Paginated | ID field |
+|----------|------|----------------|-----------|----------|
+| Groups | `/groups` | `{count, items}` | no | `uuid` |
+| Users | `/users` | `{count, items}` | no | `uid` |
+| Service Users | `/service-users` | `{results, nextPageKey, totalCount}` | cursor | `uid` |
+| Platform Tokens | `/platform-tokens` | `{pageSize, pageNumber, total, results}` | page number | `tokenId` |
+| Limits | `/limits` | `{pageSize, pageNumber, total, results}` | page number | `limitType` |
+| Policies | `/repo/{level_type}/{level_id}/policies` | `{policies}` | no | `uuid` |
+| Bindings | `/repo/{level_type}/{level_id}/bindings` | `{policyBindings}` | no | `policyUuid` |
+| Boundaries | `/repo/account/{uuid}/boundaries` | `{pageSize, pageNumber, totalCount, content}` | page number | `uuid` |
+| Environments | `/env/v2/accounts/{uuid}/environments` | `{data}` | no | `id` |
+| Subscriptions | `/sub/v2/accounts/{uuid}/subscriptions` | `{data}` | no | `uuid` |
+| Audit logs | `/audit/v1/accounts/{uuid}` | `{audits, warnings}` | no | `eventId` |
+| Reference data | `/ref/v1/account/permissions` | bare array | no | `id` |
+
+Field-name traps confirmed live: limits use `limitType`/`currentValue`/`limitValue`
+(not `name`/`current`/`max`); platform tokens use `tokenId`/`expirationDate`/`scope`
+(not `id`/`expiresIn`/`scopes`); environments use `active`/`url` (not `state`/`trial`).
+The audit API's default projection returns only timestamp, eventType, user,
+resource, resourceName, eventProvider and eventId — anything else needs
+`--add-fields`.
+
+Key resolution lives solely in `BaseHandler.extractList`/`extractPage`. Handlers
+must not override them: three handlers used to, each with its own hardcoded key
+list, which is how six commands came to return empty results.
+
+Pagination is declared per handler via `BaseHandler.Pagination`
+(`pkg/client/pagination.go`). A nil value means the endpoint returns its
+whole collection in one response. `BaseHandler.List` follows all pages before
+returning, so command code never sees a partial result.
 
 **Environment API**: `https://api.dynatrace.com/env/v2/accounts/{uuid}/environments`
 
@@ -133,6 +158,29 @@ Base URL: `https://api.dynatrace.com/iam/v1/accounts/{account_uuid}`
 
 **App Engine Registry API**:
 `https://{environment-id}.apps.dynatrace.com/platform/app-engine/registry/v1/apps`
+
+**Audit API**: `https://api.dynatrace.com/audit/v1/accounts/{uuid}`
+(response `{audits, warnings}`; warnings signal a partial result)
+
+**Reference Data API**: `https://api.dynatrace.com/ref/v1/account/permissions`
+(bare JSON array, not account-scoped)
+
+**Notifications API**: `https://api.dynatrace.com/v1/accounts/{uuid}/notifications`
+(POST with the filter in the body; note the unprefixed `/v1` path)
+
+**Permission Management API**:
+`https://api.dynatrace.com/iam/v1/accounts/{uuid}/groups/{group}/permissions`
+(GET/POST/PUT/DELETE; role-style grants that coexist with IAM policies)
+
+**Subscription API v3**:
+`https://api.dynatrace.com/sub/v3/accounts/{uuid}/subscriptions/{sub}/environments/cost`
+(cost moved to v3; listing, usage and forecast remain on v2)
+
+**Environment-level Platform IAM API**:
+`https://{environment-id}.apps.dynatrace.com/platform/iam/v1/organizational-levels/{level_type}/{level_id}/{users,groups,service-users}`
+(served from the environment, not api.dynatrace.com; needs `iam:users:read`
+granted on the environment. Organizational level types are `account` and
+`environment` only -- `global` is not valid here.)
 
 Level types: `account`, `environment`, `global`
 

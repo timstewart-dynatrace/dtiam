@@ -21,17 +21,36 @@ dtiam bulk add-users-to-group -f users.csv    # Bulk operations
 ## Install
 
 ```bash
-# From source
-git clone https://github.com/timstewart-dynatrace/GO-dtiam.git
-cd GO-dtiam && make build
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/jtimothystewart/dtiam/main/install.sh | sh
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/jtimothystewart/dtiam/main/install.ps1 | iex
+```
+
+Both scripts detect your platform, verify the release checksum, and install to a
+directory on your PATH. Pin a version with `DTIAM_VERSION`, or choose the
+location with `DTIAM_INSTALL_DIR`.
+
+From source:
+
+```bash
+git clone https://github.com/timstewart-dynatrace/dtiam.git
+cd dtiam && make build     # -> bin/dtiam
 
 # Or install to $GOPATH/bin
 make install
 ```
 
-Binary downloads available on the [releases page](https://github.com/timstewart-dynatrace/GO-dtiam/releases).
+Binary downloads are on the [releases page](https://github.com/jtimothystewart/dtiam/releases).
 
-**Requires:** Go 1.22+ (building from source), Dynatrace account with API access.
+**Requires:** Go 1.23+ (building from source), a Dynatrace account with API access.
+
+Verify your setup before doing anything else:
+
+```bash
+dtiam doctor
+```
 
 ## Authenticate
 
@@ -87,10 +106,15 @@ Outcome: universal read visibility, writes isolated to the group's assigned mana
 | Boundaries | get, describe, create, delete, attach, detach, list-attached |
 | Environments | get, describe |
 | Limits | account limits, account check-capacity |
-| Subscriptions | account subscriptions, account forecast |
+| Subscriptions | account subscriptions, account forecast, account environment-usage, account environment-cost |
 | Platform Tokens | get, create, delete |
+| Group Permissions | group permissions, group grant-permission, group revoke-permission |
+| Audit Logs | get audit-logs |
+| Notifications | account notifications |
+| Reference Data | get available-permissions |
 | Apps | get (requires --environment) |
 | Schemas | get, search (requires --environment) |
+| Environment-level IAM | get env-users, get env-groups (requires --environment) |
 
 ### Templates & Declarative Apply
 
@@ -157,19 +181,86 @@ credentials:
 | `DTIAM_OUTPUT` | Default output format |
 | `DTIAM_VERBOSE` | Enable verbose mode |
 
+### Credential storage
+
+Client secrets go to the **OS keyring** when one is available; the config file
+then holds only a reference. dtiam tells you where the secret went.
+
+```bash
+dtiam config keyring-status        # where is each secret?
+dtiam config migrate-secrets       # move plaintext secrets into the keyring
+```
+
+On systems without a keyring (headless Linux, containers, CI) the secret falls
+back to plaintext in the config file and a warning says so; `dtiam doctor`
+reports it on every run. Pass `--require-keyring` to `set-credentials` to fail
+rather than write a plaintext secret, or set `DTIAM_DISABLE_KEYRING=1` to opt out
+of the keyring entirely.
+
 ## Required OAuth2 Scopes
+
+All of the scopes below are requested by default (see `auth.DefaultScopeList`).
+Dynatrace grants the intersection of requested and granted scopes, so an OAuth
+client that lacks one still gets a working token for everything else.
 
 | Scope | Operations |
 |-------|------------|
-| `account-idm-read` | List/get groups, users, service users, limits |
-| `account-idm-write` | Create/delete groups, users, service users |
-| `account-env-read` | List environments |
+| `account-idm-read` | List/get groups, users, service users, limits, group permissions |
+| `account-idm-write` | Create/delete groups, users, service users; grant/revoke permissions |
+| `account-env-read` | List environments, reference data (`get available-permissions`) |
+| `account-uac-read` | Subscriptions, forecast, environment usage/cost, notifications |
+| `account-audit-logs-read` | Account audit logs (`get audit-logs`) |
+| `platform-token:tokens:manage` | Platform token list/create/delete |
 | `iam-policies-management` | Full policy, binding, and boundary management |
 | `iam:effective-permissions:read` | Effective permissions analysis |
 
-**Read-only:** `account-idm-read`, `account-env-read`, `iam:policies:read`, `iam:bindings:read`, `iam:boundaries:read`
+**Read-only:** `account-idm-read`, `account-env-read`, `account-uac-read`, `account-audit-logs-read`, `iam:policies:read`, `iam:bindings:read`
 
-**Full management:** `account-idm-read`, `account-idm-write`, `account-env-read`, `iam-policies-management`
+**Full management:** add `account-idm-write`, `iam-policies-management`, `platform-token:tokens:manage`
+
+Two commands need scopes granted on the **environment** rather than the account,
+so they are not requested by default:
+
+| Scope | Operations |
+|-------|------------|
+| `iam:users:read` | `get env-users`, `get env-groups` |
+| `app-engine:apps:run` | `get apps` |
+| `settings.read` | `get schemas` |
+
+Override the requested set with `DTIAM_SCOPES` (space-separated, as OAuth2 requires).
+
+## Using dtiam as a Go library
+
+The reusable packages live under `pkg/`, so dtiam can be imported rather than
+shelled out to:
+
+```go
+import (
+    "context"
+
+    "github.com/jtimothystewart/dtiam/pkg/client"
+    "github.com/jtimothystewart/dtiam/pkg/resources"
+)
+
+c := client.New(client.Config{AccountUUID: uuid, TokenProvider: provider})
+defer c.Close()
+
+groups, err := resources.NewGroupHandler(c).List(context.Background(), nil)
+```
+
+| Package | Provides |
+|---------|----------|
+| `pkg/client` | HTTP client with retry, API URLs, pagination configs |
+| `pkg/auth` | `TokenProvider`, OAuth2 refresh, `DefaultScopeList` |
+| `pkg/config` | Config load/save, XDG paths, OS keyring |
+| `pkg/resources` | Resource handlers for every supported endpoint |
+| `pkg/output` | Printer and column definitions (table, JSON, YAML, CSV) |
+| `pkg/diff` | Spec-vs-live comparison |
+| `pkg/watch` | Change-detecting poller |
+| `pkg/template` | Template engine and store |
+
+`internal/cli` and `internal/commands` are intentionally **not** importable —
+they are cobra wiring, not API.
 
 ## Building
 

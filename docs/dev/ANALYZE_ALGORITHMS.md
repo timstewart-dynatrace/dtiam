@@ -2,7 +2,7 @@
 
 This document describes the client-side computation logic used by dtiam's `analyze` subcommands. These algorithms are the primary porting target for `dtctl iam analyze` — the logic must be reimplemented in dtctl's patterns, but the algorithms are identical.
 
-**Source:** `internal/utils/permissions.go` (652 lines)
+**Source:** `pkg/utils/permissions.go` (652 lines)
 
 ---
 

@@ -1,0 +1,65 @@
+version: '2'
+
+run:
+  timeout: 5m
+  go: '1.23'
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      # Keeps dtiam imports in their own group, per .claude/rules/go.md.
+      local-prefixes:
+        - github.com/jtimothystewart/dtiam
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        - "-QF*"    # Quickfix suggestions are stylistic, not bugs.
+        - "-ST1003" # ID naming would fight the JSON field names the API dictates.
+        - "-S1016"  # Struct conversion shorthand is not always clearer here.
+
+    errcheck:
+      exclude-functions:
+        # Cobra flag registration fails only on a programming error at init time.
+        - "(*github.com/spf13/cobra.Command).MarkFlagRequired"
+        # HTTP response writers: nothing useful to do with the error in a handler.
+        - "(net/http.ResponseWriter).Write"
+        # JSON encoder, used by the test mock servers.
+        - "(*encoding/json.Encoder).Encode"
+
+  exclusions:
+    presets:
+      - comments           # ST1000, ST1020, ST1021, ST1022
+      - std-error-handling # Close, Flush, print/printf, Setenv, stdout/stderr
+
+    rules:
+      # Test code: deferred cleanup and mock servers legitimately ignore errors.
+      - path: _test\.go
+        linters:
+          - errcheck
+      # Progress and status output goes to stderr; a failed write is not actionable.
+      - linters:
+          - errcheck
+        text: "fmt\\.Fprint"
+      - linters:
+          - errcheck
+        text: "w\\.Write|w\\.Close"
+      - linters:
+          - errcheck
+        text: "MarkFlagRequired"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

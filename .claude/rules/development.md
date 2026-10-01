@@ -93,9 +93,9 @@ credentials:
 git checkout -b feature/add-apps-resource
 
 # 2. Implement
-# - internal/resources/apps.go (handler)
+# - pkg/resources/apps.go (handler)
 # - internal/commands/get/get.go (command)
-# - internal/output/columns.go (columns)
+# - pkg/output/columns.go (columns)
 
 # 3. Test
 make build && ./bin/dtiam get apps --help

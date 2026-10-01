@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
 )
 
 // skipIfNoCredentials skips the test if API credentials are not configured.

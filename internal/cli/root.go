@@ -1,13 +1,14 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
-	"github.com/jtimothystewart/dtiam/internal/config"
-	"github.com/jtimothystewart/dtiam/internal/output"
+	"github.com/jtimothystewart/dtiam/pkg/config"
+	"github.com/jtimothystewart/dtiam/pkg/output"
 	"github.com/jtimothystewart/dtiam/pkg/version"
 )
 
@@ -38,6 +39,22 @@ or supported by Dynatrace.`,
 		GlobalState.Verbose = verboseFlag
 		GlobalState.Plain = plainFlag
 		GlobalState.DryRun = dryRunFlag
+
+		// Imply --plain when running under a coding agent. An agent has no
+		// terminal to answer a confirmation prompt at and no use for ANSI
+		// colors, so the interactive defaults are actively wrong there. An
+		// explicit --plain=false still wins, and DTIAM_NO_AGENT_DETECT opts out.
+		if !cmd.Flags().Changed("plain") {
+			if agent := DetectAgent(); agent.Detected {
+				GlobalState.Plain = true
+				GlobalState.AgentName = agent.Name
+				if verboseFlag {
+					fmt.Fprintf(os.Stderr,
+						"Detected %s via %s; enabling --plain. Set %s=1 to disable.\n",
+						agent.Name, agent.Source, EnvDisableAgentDetection)
+				}
+			}
+		}
 
 		if outputFlag != "" {
 			format, err := output.ParseFormat(outputFlag)
@@ -86,9 +103,20 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+// ErrSilentExit makes a command exit non-zero without printing an error line.
+//
+// It exists for commands whose non-zero exit is a result rather than a failure --
+// "dtiam diff" signalling drift, for example. Those commands have already printed
+// the information the user needs, so an "Error:" line on top of it would be
+// misleading.
+var ErrSilentExit = errors.New("silent exit")
+
 // Execute runs the root command.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
+		if errors.Is(err, ErrSilentExit) {
+			os.Exit(1)
+		}
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}

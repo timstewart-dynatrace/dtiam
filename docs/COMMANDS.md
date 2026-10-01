@@ -340,6 +340,124 @@ dtiam get schemas [IDENTIFIER] --environment ENV [OPTIONS]
 | `--name`        |       | Filter schemas by name pattern           |
 | `--output`      | `-o`  | Output format                            |
 
+### Watching a collection
+
+`get groups`, `get users`, `get policies`, and `get bindings` accept `--watch`
+(`-w`) to poll and reprint when the result changes.
+
+| Option             | Short | Description                              |
+| ------------------ | ----- | ---------------------------------------- |
+| `--watch`          | `-w`  | Poll and reprint on change (Ctrl-C stops) |
+| `--watch-interval` |       | Polling interval (default 10s, min 2s)   |
+
+Output is reprinted **only when the result actually changes**: the comparison
+sorts items first, so the API's unstable list order is not mistaken for a change.
+A failed poll is reported on stderr and the watch continues, so a transient API
+error does not end a session you left running.
+
+Not supported with `--plain` — the output would be an unparseable JSON stream.
+Poll the command on a timer instead.
+
+```bash
+# Watch group membership land during a migration
+dtiam get groups --watch
+
+# Slower polling
+dtiam get bindings --watch --watch-interval 60s
+```
+
+### get audit-logs
+
+List account audit log entries: who changed what in the account. Requires the
+`account-audit-logs-read` scope.
+
+The API enforces server-side scan and result-size limits. When a limit is hit it
+returns a partial result with a warning rather than an error; dtiam prints those
+warnings to stderr so a truncated audit trail is never shown as complete.
+
+```bash
+dtiam get audit-logs [OPTIONS]
+```
+
+| Argument/Option    | Short | Description                                                  |
+| ------------------ | ----- | ------------------------------------------------------------ |
+| `--start`          |       | Start of window (ISO-8601, epoch ms, or relative `now-24h`)   |
+| `--end`            |       | End of window                                                |
+| `--event-type`     |       | Filter by event type, e.g. `CREATE`, `UPDATE`, `DELETE`       |
+| `--user`           |       | Filter by the user who performed the action                  |
+| `--filter`         |       | Raw filter expression (overrides `--event-type` and `--user`) |
+| `--limit`          |       | Maximum entries to return                                    |
+| `--scan-limit-gb`  |       | Server-side scan limit in gigabytes                          |
+| `--result-limit-mb`|       | Maximum result size in megabytes                             |
+| `--add-fields`     |       | Additional audit fields to include                           |
+| `--output`         | `-o`  | Output format                                                |
+
+```bash
+# Last 24 hours
+dtiam get audit-logs --start now-24h
+
+# Deletions only, most recent 50
+dtiam get audit-logs --start now-7d --event-type DELETE --limit 50
+
+# Everything one user did
+dtiam get audit-logs --start now-7d --user alice@example.com
+```
+
+### get available-permissions
+
+List every permission the account can grant. This is reference data describing
+what the account *accepts*, not what is currently assigned — use
+`dtiam group permissions GROUP` for that. Requires the `account-env-read` scope.
+
+```bash
+dtiam get available-permissions [OPTIONS]
+```
+
+| Argument/Option | Short | Description                                            |
+| --------------- | ----- | ------------------------------------------------------ |
+| `--name`        |       | Filter by ID or description (case-insensitive) |
+| `--output`      | `-o`  | Output format                                          |
+
+### get env-users
+
+Search users through the environment-level Platform IAM API.
+
+This is a **different API** from `get users`. That command lists the account's
+user records; this one reports which users are actually visible and assigned at
+an environment, served from `https://{env}.apps.dynatrace.com/platform/iam/v1`
+rather than from `api.dynatrace.com`. Requires the `iam:users:read` scope, which
+is granted on the environment rather than on the account.
+
+The API will not enumerate all users — a search term or UUID is required.
+
+```bash
+dtiam get env-users [OPTIONS]
+```
+
+| Argument/Option | Short | Description                                             |
+| --------------- | ----- | ------------------------------------------------------- |
+| `--environment` |       | Environment ID or URL (defaults to `DTIAM_ENVIRONMENT_URL`) |
+| `--search`      |       | Partial email or name to search for                     |
+| `--uuid`        |       | User UUID to look up                                    |
+| `--level`       |       | Organizational level: `account` or `environment`        |
+| `--output`      | `-o`  | Output format                                           |
+
+### get env-groups
+
+List groups through the environment-level Platform IAM API. Same API and scope
+as `get env-users`.
+
+```bash
+dtiam get env-groups [OPTIONS]
+```
+
+| Argument/Option | Short | Description                                             |
+| --------------- | ----- | ------------------------------------------------------- |
+| `--environment` |       | Environment ID or URL (defaults to `DTIAM_ENVIRONMENT_URL`) |
+| `--search`      |       | Partial group name to search for                        |
+| `--level`       |       | Organizational level: `account` or `environment`        |
+| `--output`      | `-o`  | Output format                                           |
+
 ---
 
 ## describe
@@ -911,6 +1029,85 @@ dtiam group setup --name "New Team" --policies-file policies.yaml
 dtiam group setup --name "New Team" --policies-file policies.yaml --dry-run
 ```
 
+### group permissions
+
+List the permissions granted **directly** to a group.
+
+These are role-style grants that predate IAM policies and still coexist with
+them. A group's effective access is the union of its policy bindings and these
+direct grants, so reviewing only `group bindings` understates what a group can
+actually do. Requires the `account-idm-read` scope.
+
+```bash
+dtiam group permissions IDENTIFIER [OPTIONS]
+```
+
+| Argument/Option | Short | Description                 |
+| --------------- | ----- | --------------------------- |
+| `IDENTIFIER`    |       | Group name or UUID (required) |
+| `--output`      | `-o`  | Output format               |
+
+### group grant-permission
+
+Grant a direct permission to a group. Requires the `account-idm-write` scope.
+
+```bash
+dtiam group grant-permission IDENTIFIER --permission NAME --scope SCOPE [OPTIONS]
+```
+
+| Argument/Option | Description                                                      |
+| --------------- | ---------------------------------------------------------------- |
+| `IDENTIFIER`    | Group name or UUID (required)                                    |
+| `--permission`  | Permission name (required) — see `get available-permissions`      |
+| `--scope`       | Scope value (required)                                           |
+| `--scope-type`  | `account`, `tenant`, or `management-zone` (default `tenant`)      |
+| `--replace`     | Replace **all** existing grants instead of adding — destructive   |
+| `--dry-run`     | Preview without applying                                         |
+
+Scope values by scope type:
+
+| `--scope-type`    | `--scope` value                        |
+| ----------------- | -------------------------------------- |
+| `account`         | The account UUID                       |
+| `tenant`          | The environment ID                     |
+| `management-zone` | `{environment-id}:{management-zone-id}` |
+
+**Examples:**
+
+```bash
+# Environment viewer access
+dtiam group grant-permission "Dev Team" --permission tenant-viewer --scope abc12345
+
+# Account-level user management
+dtiam group grant-permission "Admins" \
+  --permission account-user-management --scope $DTIAM_ACCOUNT_UUID --scope-type account
+
+# Scoped to one management zone
+dtiam group grant-permission "Dev Team" \
+  --permission tenant-viewer --scope "abc12345:-1234567890" --scope-type management-zone
+```
+
+### group revoke-permission
+
+Revoke a direct permission grant from a group. The grant is identified by the
+combination of permission name, scope, and scope type, because a grant has no
+identifier of its own — all three must match exactly.
+
+Requires confirmation unless `--force` or `--plain` is set.
+
+```bash
+dtiam group revoke-permission IDENTIFIER --permission NAME --scope SCOPE [OPTIONS]
+```
+
+| Argument/Option | Short | Description                                                 |
+| --------------- | ----- | ----------------------------------------------------------- |
+| `IDENTIFIER`    |       | Group name or UUID (required)                               |
+| `--permission`  |       | Permission name (required)                                  |
+| `--scope`       |       | Scope the permission was granted on (required)              |
+| `--scope-type`  |       | `account`, `tenant`, or `management-zone` (default `tenant`) |
+| `--force`       | `-f`  | Skip confirmation                                           |
+| `--dry-run`     |       | Preview without applying                                    |
+
 ---
 
 ## boundary
@@ -1088,6 +1285,79 @@ dtiam account capabilities
 dtiam account capabilities "Enterprise Plan"
 dtiam account capabilities -o json
 ```
+
+### account notifications
+
+List account notifications: budget, cost, forecast, and bring-your-own-key
+events. Requires the `account-uac-read` scope.
+
+Filter values are validated locally, so a mistyped type or severity fails with a
+clear message instead of silently matching nothing.
+
+```bash
+dtiam account notifications [OPTIONS]
+```
+
+| Option       | Description                                                             |
+| ------------ | ----------------------------------------------------------------------- |
+| `--start`    | Start of window (ISO-8601)                                              |
+| `--end`      | End of window (ISO-8601)                                                |
+| `--type`     | `FORECAST`, `BUDGET`, `COST`, `BYOK_REVOKED`, `BYOK_ACTIVATED`           |
+| `--severity` | `SEVERE`, `WARN`, `INFO`                                                |
+| `--output`   | Output format                                                           |
+
+```bash
+dtiam account notifications --severity SEVERE
+dtiam account notifications --type BUDGET,COST \
+  --start 2026-09-01T00:00:00Z --end 2026-10-01T00:00:00Z
+```
+
+### account environment-usage
+
+Show subscription usage broken down by monitoring environment.
+
+This is distinct from `account subscriptions`, which reports only the usage
+totals embedded in the subscription record. This command calls the dedicated
+per-environment usage endpoint, so it can attribute consumption to individual
+environments. Requires the `account-uac-read` scope.
+
+```bash
+dtiam account environment-usage [SUBSCRIPTION] --start TIME --end TIME [OPTIONS]
+```
+
+| Argument/Option | Description                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| `SUBSCRIPTION`  | Subscription UUID or name (optional if the account has only one)    |
+| `--start`       | Start of window, e.g. `2026-09-01T00:00:00Z` (required)             |
+| `--end`         | End of window (required)                                           |
+| `--environment` | Restrict to these environment IDs                                  |
+| `--capability`  | Restrict to these capability keys                                  |
+| `--output`      | Output format                                                      |
+
+```bash
+dtiam account environment-usage --start 2026-09-01T00:00:00Z --end 2026-10-01T00:00:00Z
+dtiam account environment-usage --start 2026-09-01T00:00:00Z --end 2026-10-01T00:00:00Z \
+  --environment abc12345 --capability full_stack_monitoring
+```
+
+### account environment-cost
+
+Show subscription cost broken down by monitoring environment.
+
+> **Note:** this endpoint lives on the **v3** Subscription API while subscription
+> listing, usage, and forecast remain on v2. dtiam handles the version difference
+> internally.
+
+```bash
+dtiam account environment-cost [SUBSCRIPTION] --start TIME --end TIME [OPTIONS]
+```
+
+| Argument/Option | Description                                                     |
+| --------------- | --------------------------------------------------------------- |
+| `SUBSCRIPTION`  | Subscription UUID or name (optional if the account has only one) |
+| `--start`       | Start of window (required)                                      |
+| `--end`         | End of window (required)                                        |
+| `--output`      | Output format                                                   |
 
 ---
 
@@ -1673,6 +1943,118 @@ dtiam analyze effective-group DevOps --level environment --level-id env123
 | ---- | --------------------------------------------------- |
 | 0    | Success                                             |
 | 1    | Error (resource not found, permission denied, etc.) |
+
+### config migrate-secrets
+
+Move plaintext client secrets from the config file into the OS keyring.
+
+```bash
+dtiam config migrate-secrets [--dry-run]
+```
+
+Idempotent — credentials already referencing the keyring are skipped. If the
+keyring is unavailable the command fails without changing anything, and a
+credential that cannot be migrated keeps its plaintext secret, so the config is
+never left in a broken state.
+
+### config keyring-status
+
+Show whether the OS keyring is in use and where each credential's secret lives.
+
+```bash
+dtiam config keyring-status [--output FORMAT]
+```
+
+Use this to confirm no plaintext secrets remain after `config migrate-secrets`.
+
+---
+
+## diff
+
+Show what `apply` would change, without changing anything.
+
+```bash
+dtiam diff -f FILE [OPTIONS]
+```
+
+| Option        | Short | Description                                        |
+| ------------- | ----- | -------------------------------------------------- |
+| `--file`      | `-f`  | Resource definition file (required)                |
+| `--set`       |       | Template variable as `key=value` (repeatable)      |
+| `--exit-zero` |       | Exit 0 even when there are changes                 |
+| `--output`    | `-o`  | Output format                                      |
+
+Read-only. For each resource in the file it fetches the live resource and
+compares field by field.
+
+**What is and is not compared:**
+
+- Only fields present in the file. The API returns server-managed fields a spec
+  never mentions (`uuid`, `createdAt`, `owner`); reporting those would bury the
+  real changes.
+- Lists compare without regard to order, because the API returns members, scopes
+  and zones in an order the caller does not control.
+- `5` from a YAML file compares equal to `5.0` from the API — otherwise every
+  numeric field would look modified on every run.
+
+**Exit codes:** 1 when there are changes, 0 when up to date. That makes it a
+drift gate in CI. `--exit-zero` always exits 0.
+
+```bash
+# What would apply change?
+dtiam diff -f resources.yaml
+
+# Drift detection in CI
+dtiam diff -f desired-state.yaml --plain || echo "drift detected"
+```
+
+---
+
+## doctor
+
+Diagnose configuration, credentials, and API connectivity.
+
+```bash
+dtiam doctor [OPTIONS]
+```
+
+| Option      | Description                                   |
+| ----------- | --------------------------------------------- |
+| `--offline` | Skip the checks that make network calls       |
+| `--context` | Check a specific context                      |
+| `--output`  | Output format                                 |
+
+Checks performed, cheapest first:
+
+1. dtiam version
+2. Configuration file exists and parses
+3. A current context is selected
+4. Account UUID is resolvable
+5. Credentials are configured (OAuth2 or bearer token)
+6. OAuth scope set in use, naming any default scope an override omits
+7. A token can be obtained from the SSO endpoint *(network)*
+8. The account API answers an authenticated request *(network)*
+
+Later checks are **skipped** rather than failed when an earlier one makes them
+meaningless, so the output distinguishes "could not test" from "failed".
+
+Exits non-zero if any check fails, which makes it usable as a CI readiness gate.
+
+```bash
+# Full diagnosis
+dtiam doctor
+
+# Local checks only
+dtiam doctor --offline
+
+# Machine-readable, for CI
+dtiam doctor --plain
+```
+
+Statuses: `ok`, `warn` (works but worth knowing — e.g. a static bearer token that
+cannot refresh), `fail`, `skip`.
+
+---
 
 ## See Also
 

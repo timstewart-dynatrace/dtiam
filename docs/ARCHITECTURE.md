@@ -14,8 +14,8 @@ dtiam is a kubectl-inspired CLI for managing Dynatrace Identity and Access Manag
 | Layer | Responsibility | Key packages |
 |-------|----------------|--------------|
 | CLI Layer | Cobra root, subcommands, global flags (`-c`, `-o`, `-v`, `--plain`, `--dry-run`) | `internal/cli`, `internal/commands/*` |
-| Resource Handlers | Typed CRUD over `BaseHandler` for groups, users, policies, bindings, boundaries, etc. | `internal/resources` |
-| HTTP Client + Auth | resty transport, retry (429/5xx), OAuth2 token refresh, bearer token | `internal/client`, `internal/auth` |
+| Resource Handlers | Typed CRUD over `BaseHandler` for groups, users, policies, bindings, boundaries, etc. | `pkg/resources` |
+| HTTP Client + Auth | resty transport, retry (429/5xx), OAuth2 token refresh, bearer token | `pkg/client`, `pkg/auth` |
 | Account Management API | `/iam/v1/accounts/{uuid}` — groups, users, service users, subscriptions, tokens | — |
 | Policy Repository API | `/iam/v1/repo/{level}/{id}` — policies, bindings, boundaries (account/env/global) | — |
 | Environment Config API | `{tenant}/api/v2/settings` — apps, schemas (uses Api-Token, separate auth) | — |
@@ -187,7 +187,7 @@ func (s *State) NewPrinter() *output.Printer {
 }
 ```
 
-### Configuration System (`internal/config/`)
+### Configuration System (`pkg/config/`)
 
 Configuration follows the kubectl config pattern:
 
@@ -225,7 +225,7 @@ type Credential struct {
 | `DTIAM_ACCOUNT_UUID` | Account UUID |
 | `DTIAM_BEARER_TOKEN` | Static bearer token |
 
-### HTTP Client (`internal/client/`)
+### HTTP Client (`pkg/client/`)
 
 The client provides:
 - OAuth2 authentication with automatic token refresh
@@ -274,7 +274,7 @@ func (c *Client) Do(method, path string, body interface{}) (*http.Response, erro
 - Max delay: 30.0 seconds
 - Exponential base: 2.0
 
-### Resource Handlers (`internal/resources/`)
+### Resource Handlers (`pkg/resources/`)
 
 Resource handlers follow a consistent pattern with interfaces:
 
@@ -314,7 +314,7 @@ type BaseHandler struct {
 
 Each resource handler implements additional operations specific to that resource type.
 
-### Output Formatting (`internal/output/`)
+### Output Formatting (`pkg/output/`)
 
 The output system uses a strategy pattern:
 
@@ -488,7 +488,7 @@ install:
 
 ### Adding a New Resource
 
-1. Create handler in `internal/resources/`:
+1. Create handler in `pkg/resources/`:
 ```go
 type NewResourceHandler struct {
     *BaseHandler
@@ -510,7 +510,7 @@ func (h *NewResourceHandler) List(ctx context.Context, params map[string]string)
 }
 ```
 
-2. Add column definitions in `internal/output/columns.go`:
+2. Add column definitions in `pkg/output/columns.go`:
 ```go
 func NewResourceColumns() []Column {
     return []Column{
@@ -545,14 +545,14 @@ getcmd.Cmd.AddCommand(getNewResourceCmd)
 
 ### Adding a New Output Format
 
-1. Add to Format enum in `internal/output/format.go`:
+1. Add to Format enum in `pkg/output/format.go`:
 ```go
 const (
     FormatXML Format = iota + 10
 )
 ```
 
-2. Implement formatting in `internal/output/printer.go`:
+2. Implement formatting in `pkg/output/printer.go`:
 ```go
 func (p *Printer) printXML(data []map[string]any) error {
     // Convert data to XML

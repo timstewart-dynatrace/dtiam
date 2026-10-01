@@ -4,13 +4,14 @@ package account
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/internal/output"
-	"github.com/jtimothystewart/dtiam/internal/resources"
+	"github.com/jtimothystewart/dtiam/pkg/output"
+	"github.com/jtimothystewart/dtiam/pkg/resources"
 )
 
 // Cmd is the account command.
@@ -43,6 +44,9 @@ func init() {
 	Cmd.AddCommand(subscriptionsCmd)
 	Cmd.AddCommand(forecastCmd)
 	Cmd.AddCommand(capabilitiesCmd)
+	Cmd.AddCommand(notificationsCmd)
+	Cmd.AddCommand(environmentUsageCmd)
+	Cmd.AddCommand(environmentCostCmd)
 }
 
 var limitsCmd = &cobra.Command{
@@ -84,10 +88,12 @@ and highlight limits that are near or at capacity.`,
 				return fmt.Errorf("failed to get limits")
 			}
 
-			fmt.Printf("Total limits: %v\n", result["total_limits"])
-			fmt.Printf("Near capacity: %v\n", result["limits_near_capacity"])
-			fmt.Printf("At capacity: %v\n", result["limits_at_capacity"])
-			fmt.Println()
+			// Status lines go to stderr so stdout stays parseable; see
+			// .claude/rules/command-standards.md.
+			fmt.Fprintf(os.Stderr, "Total limits: %v\n", result["total_limits"])
+			fmt.Fprintf(os.Stderr, "Near capacity: %v\n", result["limits_near_capacity"])
+			fmt.Fprintf(os.Stderr, "At capacity: %v\n", result["limits_at_capacity"])
+			fmt.Fprintln(os.Stderr)
 
 			return printer.Print(limits, output.LimitColumns())
 		}
