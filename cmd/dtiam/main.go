@@ -13,6 +13,7 @@ import (
 	"github.com/jtimothystewart/dtiam/internal/commands/create"
 	deletecmd "github.com/jtimothystewart/dtiam/internal/commands/delete"
 	"github.com/jtimothystewart/dtiam/internal/commands/describe"
+	"github.com/jtimothystewart/dtiam/internal/commands/doctor"
 	"github.com/jtimothystewart/dtiam/internal/commands/export"
 	"github.com/jtimothystewart/dtiam/internal/commands/get"
 	"github.com/jtimothystewart/dtiam/internal/commands/group"
@@ -39,6 +40,7 @@ func main() {
 	cli.AddCommand(analyze.Cmd)
 	cli.AddCommand(templatecmd.Cmd)
 	cli.AddCommand(applycmd.Cmd)
+	cli.AddCommand(doctor.Cmd)
 
 	// Execute
 	cli.Execute()

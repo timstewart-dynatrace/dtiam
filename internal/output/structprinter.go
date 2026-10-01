@@ -16,7 +16,7 @@ type tableFieldInfo struct {
 
 // hasAnyTableTag checks if any field (including embedded structs) has a table tag.
 func hasAnyTableTag(t reflect.Type) bool {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct {
@@ -42,7 +42,7 @@ func hasAnyTableTag(t reflect.Type) bool {
 // Fields with `table:"-"` are always excluded.
 func getTableFields(t reflect.Type, wide bool) []tableFieldInfo {
 	// Unwrap pointer
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct {
@@ -105,7 +105,7 @@ func getTableFields(t reflect.Type, wide bool) []tableFieldInfo {
 // getFieldByPath navigates nested struct fields via index path.
 func getFieldByPath(v reflect.Value, indices []int) reflect.Value {
 	for _, idx := range indices {
-		if v.Kind() == reflect.Ptr {
+		if v.Kind() == reflect.Pointer {
 			if v.IsNil() {
 				return reflect.Value{}
 			}
@@ -123,7 +123,7 @@ func formatStructValue(v reflect.Value) string {
 	}
 
 	// Handle pointers
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return ""
 		}
@@ -205,7 +205,7 @@ func (p *Printer) StructPrintList(data any) error {
 
 	// Reflect into the slice
 	rv := reflect.ValueOf(data)
-	if rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Pointer {
 		rv = rv.Elem()
 	}
 	if rv.Kind() != reflect.Slice {
@@ -221,7 +221,7 @@ func (p *Printer) StructPrintList(data any) error {
 	if first.Kind() == reflect.Interface {
 		first = first.Elem()
 	}
-	if first.Kind() == reflect.Ptr {
+	if first.Kind() == reflect.Pointer {
 		first = first.Elem()
 	}
 	if first.Kind() != reflect.Struct {
@@ -246,7 +246,7 @@ func (p *Printer) StructPrintList(data any) error {
 		if elem.Kind() == reflect.Interface {
 			elem = elem.Elem()
 		}
-		if elem.Kind() == reflect.Ptr {
+		if elem.Kind() == reflect.Pointer {
 			elem = elem.Elem()
 		}
 		row := make(map[string]any, len(fields))
