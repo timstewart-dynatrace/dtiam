@@ -249,3 +249,30 @@
 **Why:** The tap repo never existed, so the step could only fail a release. The installers already cover macOS, Linux and Windows with checksum verification, and `go install` now works. One naming scheme (`dtiam_{version}_{os}_{arch}.tar.gz`, tar.gz everywhere since install.ps1 uses Windows' built-in tar) lets GoReleaser output and hand-built assets be interchangeable.
 **Trade-offs:** No `brew install dtiam`.
 **Revisit if:** Users ask for Homebrew -- create the tap and restore the section.
+
+---
+
+## 2026-10-02 — Each Paged API Gets Its Own Paging Rule
+**Chosen:** Notifications v2 sends `page-key` alone on later pages; Subscription v3 resends the full query with `page-key` and uses page size 50. Each is implemented next to its handler rather than through `client.PaginationConfig`.
+**Alternatives:** Extend `PaginationConfig` with a "resend query" flag and a per-API max page size.
+**Why:** Both rules were verified live and they are opposite: notifications reject filters alongside a cursor (400), the subscription API rejects a cursor without the window (400). The v3 endpoints also return a usage/cost envelope rather than a list of resources, so they never fit `BaseHandler.List`. Two small explicit loops are easier to check against the observed behavior than one configurable one.
+**Trade-offs:** Paging logic lives in three places (BaseHandler, notifications, subscriptions).
+**Revisit if:** A fourth paged API with either rule appears -- then generalize.
+
+---
+
+## 2026-10-02 — Environment Token in the Keyring Under Its Own Key
+**Chosen:** Store `environment-token` in the OS keyring under `{credential}/environment-token`, with the same marker, fallback and reporting rules as the client secret.
+**Alternatives:** Plaintext in the config file; one keyring entry holding both secrets as JSON.
+**Why:** It is a credential with environment access, so plaintext would reopen the exposure the 2.5.0 keyring work closed. A separate key keeps the existing client-secret entries untouched -- no migration of anything already stored.
+**Trade-offs:** Two keyring entries per credential; `delete-credentials` and `migrate-secrets` must know both keys.
+**Revisit if:** More per-credential secrets are added; then a key-per-field helper should replace the two hardcoded ones.
+
+---
+
+## 2026-10-02 — Default to the Single ACTIVE Subscription
+**Chosen:** `environment-usage` / `environment-cost` with no argument use the only subscription, or else the only ACTIVE one, and ask otherwise.
+**Alternatives:** Always require the UUID; aggregate across all subscriptions.
+**Why:** The verified account holds ten subscriptions (expired, active, pending terms), so "only subscription" never applied and the commands always demanded a UUID. Exactly one is ACTIVE in the normal case, and it is the one anyone asking "what is my usage" means. Aggregating across terms would mix billing periods.
+**Trade-offs:** An account with overlapping ACTIVE subscriptions still has to name one.
+**Revisit if:** Users need historical usage by default.

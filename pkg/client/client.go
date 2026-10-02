@@ -180,6 +180,17 @@ func (c *Client) Get(ctx context.Context, path string, params map[string]string)
 	return c.handleResponse(resp)
 }
 
+// GetWithQuery performs a GET request with query parameters that may repeat,
+// such as types=BUDGET&types=COST on the v2 notifications API, which rejects
+// the comma-separated form with HTTP 400.
+func (c *Client) GetWithQuery(ctx context.Context, path string, query url.Values) ([]byte, error) {
+	resp, err := c.resty.R().SetContext(ctx).SetQueryParamsFromValues(query).Get(c.buildURL(path))
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	return c.handleResponse(resp)
+}
+
 // Post performs a POST request.
 func (c *Client) Post(ctx context.Context, path string, body any) ([]byte, error) {
 	url := c.buildURL(path)

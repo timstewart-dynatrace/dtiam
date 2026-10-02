@@ -37,9 +37,15 @@ const (
 	// account APIs this one is not scoped by account UUID.
 	RefBaseURL = "https://api.dynatrace.com/ref/v1/account"
 
-	// NotificationsBaseURL is the base URL for the account notifications API.
-	// Note the unusual unprefixed /v1 path; this is not under /iam or /sub.
-	NotificationsBaseURL = "https://api.dynatrace.com/v1/accounts"
+	// NotificationsBaseURL is the base URL for the v1 account notifications API.
+	//
+	// Deprecated: POST /v1/accounts/{uuid}/notifications was deprecated on
+	// 2026-06-15 and is removed on 2027-01-11. Use NotificationsV2BaseURL.
+	NotificationsBaseURL = DefaultAPIHost + "/v1/accounts"
+
+	// NotificationsV2BaseURL is the base URL for the account notifications API.
+	// Note the unusual unprefixed /v2 path; this is not under /iam or /sub.
+	NotificationsV2BaseURL = DefaultAPIHost + "/v2/accounts"
 
 	// SSOTokenURL is the Dynatrace SSO token endpoint.
 	SSOTokenURL = "https://sso.dynatrace.com/sso/oauth2/token"

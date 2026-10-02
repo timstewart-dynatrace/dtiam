@@ -88,7 +88,10 @@ func createClient(envScopes []string) (*client.Client, error) {
 	var tokenProvider client.TokenProvider
 	envToken := ""
 	if envScopes != nil {
-		envToken = config.GetEffectiveEnvironmentToken(cred)
+		envToken, err = config.ResolveEnvironmentToken(cfg)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	switch {

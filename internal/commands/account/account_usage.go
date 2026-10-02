@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -54,7 +55,10 @@ per-environment usage endpoint, so it can attribute consumption to individual
 environments.
 
 The subscription may be given by UUID or name. With no argument, the account's
-only subscription is used; if there are several, the UUID is required.
+only ACTIVE subscription is used; if there is none or more than one, specify it.
+
+One row is printed per environment, capability and period. dtiam follows the
+API's pages (v3 returns at most 50 records per page).
 
 Requires the account-uac-read OAuth scope.`,
 	Example: `  # Usage per environment for last month
@@ -95,7 +99,7 @@ Requires the account-uac-read OAuth scope.`,
 			return err
 		}
 
-		return printUsageOrCost(printer, result, output.EnvironmentUsageColumns())
+		return printUsageOrCost(printer, result, "usage", output.EnvironmentUsageColumns())
 	},
 }
 
@@ -106,9 +110,10 @@ var environmentCostCmd = &cobra.Command{
 	Long: `Show Dynatrace Platform Subscription cost broken down by monitoring
 environment over a time window.
 
-Note this endpoint lives on the v3 Subscription API while subscription listing,
-usage, and forecast remain on v2. dtiam handles the version difference
-internally.
+Per-environment cost and usage both use the v3 Subscription API; subscription
+listing and forecast remain on v2. dtiam handles the version difference
+internally and follows every page. With no argument, the account's only ACTIVE
+subscription is used.
 
 Requires the account-uac-read OAuth scope.`,
 	Example: `  # Cost per environment for last month
@@ -143,14 +148,16 @@ Requires the account-uac-read OAuth scope.`,
 			return err
 		}
 
-		return printUsageOrCost(printer, result, output.EnvironmentCostColumns())
+		return printUsageOrCost(printer, result, "cost", output.EnvironmentCostColumns())
 	},
 }
 
 // resolveSubscriptionUUID resolves an optional subscription argument to a UUID.
 //
-// With no argument it falls back to the account's single subscription, and
-// reports the ambiguity rather than guessing when there is more than one.
+// With no argument it picks the account's single ACTIVE subscription. Accounts
+// carry expired and pending subscriptions alongside the current one (ten on the
+// account this was verified against), so "the only subscription" almost never
+// applied and the commands refused to run without an explicit UUID.
 func resolveSubscriptionUUID(
 	ctx context.Context, handler *resources.SubscriptionHandler, args []string,
 ) (string, error) {
@@ -173,48 +180,45 @@ func resolveSubscriptionUUID(
 	if err != nil {
 		return "", err
 	}
-	switch len(subs) {
-	case 0:
+	return pickDefaultSubscription(subs)
+}
+
+// pickDefaultSubscription chooses the subscription to use when none is named:
+// the only subscription, or else the only ACTIVE one.
+func pickDefaultSubscription(subs []map[string]any) (string, error) {
+	if len(subs) == 0 {
 		return "", fmt.Errorf("no subscriptions found for this account")
+	}
+
+	candidates := subs
+	if len(subs) > 1 {
+		candidates = nil
+		for _, sub := range subs {
+			if status, _ := sub["status"].(string); strings.EqualFold(status, "ACTIVE") {
+				candidates = append(candidates, sub)
+			}
+		}
+	}
+
+	switch len(candidates) {
 	case 1:
-		uuid, _ := subs[0]["uuid"].(string)
+		uuid, _ := candidates[0]["uuid"].(string)
 		if uuid == "" {
-			return "", fmt.Errorf("the account's subscription has no UUID")
+			return "", fmt.Errorf("the subscription has no UUID")
 		}
 		return uuid, nil
+	case 0:
+		return "", fmt.Errorf(
+			"this account has %d subscriptions and none is ACTIVE; specify which one (see 'dtiam account subscriptions')",
+			len(subs))
 	default:
 		return "", fmt.Errorf(
-			"this account has %d subscriptions; specify which one (see 'dtiam account subscriptions')",
-			len(subs))
+			"this account has %d ACTIVE subscriptions; specify which one (see 'dtiam account subscriptions')",
+			len(candidates))
 	}
 }
 
-// printUsageOrCost renders the data array as a table when present, and falls
-// back to the whole structure otherwise.
-//
-// Both endpoints wrap their rows in {data, lastModifiedTime}. Printing the rows
-// as a table is the useful default, but the shape varies by capability, so an
-// unexpected payload is shown in full rather than silently rendered as empty.
-func printUsageOrCost(printer *output.Printer, result map[string]any, columns []output.Column) error {
-	raw, ok := result["data"]
-	if !ok {
-		return printer.PrintAny(result)
-	}
-
-	rows, ok := raw.([]any)
-	if !ok {
-		return printer.PrintAny(result)
-	}
-
-	items := make([]map[string]any, 0, len(rows))
-	for _, row := range rows {
-		if m, ok := row.(map[string]any); ok {
-			items = append(items, m)
-		}
-	}
-	if len(items) == 0 {
-		return printer.PrintAny(result)
-	}
-
-	return printer.Print(items, columns)
+// printUsageOrCost prints one row per usage or cost record.
+func printUsageOrCost(printer *output.Printer, result map[string]any, itemsKey string, columns []output.Column) error {
+	return printer.Print(resources.FlattenEnvironmentData(result, itemsKey), columns)
 }

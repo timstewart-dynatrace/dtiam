@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -12,7 +13,7 @@ func newTestNotificationHandler(t *testing.T, mux *http.ServeMux) *NotificationH
 	t.Helper()
 	c, baseURL := newTestClientAndURL(t, mux)
 	h := NewNotificationHandler(c)
-	h.BaseURL = baseURL + "/v1/accounts"
+	h.BaseURL = baseURL + "/v2/accounts"
 	return h
 }
 
@@ -26,6 +27,10 @@ func TestNotificationQuery_Validate(t *testing.T) {
 		{
 			name:  "should accept valid types and severities",
 			query: NotificationQuery{Types: []string{NotificationBudget, NotificationCost}, Severities: []string{SeveritySevere}},
+		},
+		{
+			name:  "should accept the environment upgrade and downgrade types added in v2",
+			query: NotificationQuery{Types: []string{NotificationEnvironmentUpgrade, NotificationEnvironmentDowngrade}},
 		},
 		{
 			name:    "should reject an unknown type",
@@ -63,50 +68,63 @@ func TestNotificationQuery_Validate(t *testing.T) {
 	}
 }
 
-func TestNotificationQuery_BodyOmitsEmptyFilters(t *testing.T) {
-	if got := (NotificationQuery{}).body(); len(got) != 0 {
-		t.Errorf("empty query produced body %v, want none", got)
+func TestNotificationQuery_QueryOmitsEmptyFilters(t *testing.T) {
+	if got := (NotificationQuery{}).query(); len(got) != 0 {
+		t.Errorf("empty query produced params %v, want none", got)
 	}
 }
 
-func TestNotificationQuery_BodyIncludesEveryFilter(t *testing.T) {
+func TestNotificationQuery_QueryRepeatsListFilters(t *testing.T) {
 	q := NotificationQuery{
 		StartDateTime: "2026-09-01T00:00:00Z",
 		EndDateTime:   "2026-10-01T00:00:00Z",
-		Types:         []string{NotificationBudget},
+		Types:         []string{NotificationBudget, NotificationForecast},
 		Severities:    []string{SeverityWarn},
+		Environments:  []string{"abc12345"},
+		Capabilities:  []string{"FULLSTACK_MONITORING"},
 	}
-	got := q.body()
-	if got["startDateTime"] != "2026-09-01T00:00:00Z" {
-		t.Errorf("startDateTime = %v", got["startDateTime"])
+	got := q.query()
+
+	tests := []struct {
+		param string
+		want  []string
+	}{
+		{"start-time", []string{"2026-09-01T00:00:00Z"}},
+		{"end-time", []string{"2026-10-01T00:00:00Z"}},
+		// Repeated, not comma-joined: the v2 API answers types=A,B with 400.
+		{"types", []string{"BUDGET", "FORECAST"}},
+		{"severities", []string{"WARN"}},
+		{"environments", []string{"abc12345"}},
+		{"capabilities", []string{"FULLSTACK_MONITORING"}},
 	}
-	if got["endDateTime"] != "2026-10-01T00:00:00Z" {
-		t.Errorf("endDateTime = %v", got["endDateTime"])
-	}
-	if _, ok := got["types"]; !ok {
-		t.Error("types missing from body")
-	}
-	if _, ok := got["severities"]; !ok {
-		t.Error("severities missing from body")
+	for _, tt := range tests {
+		if v := got[tt.param]; strings.Join(v, "|") != strings.Join(tt.want, "|") {
+			t.Errorf("%s = %v, want %v", tt.param, v, tt.want)
+		}
 	}
 }
 
-func TestNotificationHandler_QueryUsesPostWithFilterBody(t *testing.T) {
-	// Unusually for a read, the notifications API is a POST with the filter in
-	// the body rather than in query parameters.
-	var gotBody map[string]any
-	method := ""
-
+func TestNotificationHandler_QueryUsesV2GetAndFollowsPages(t *testing.T) {
+	var requests []url.Values
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/accounts/test-uuid/notifications", func(w http.ResponseWriter, r *http.Request) {
-		method = r.Method
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+	mux.HandleFunc("/v2/accounts/test-uuid/notifications", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %s, want GET (the v1 POST is deprecated)", r.Method)
+		}
+		q := r.URL.Query()
+		requests = append(requests, q)
+		if q.Get("page-key") == "" {
+			// Live shape: no totalRecordCount, despite the spec.
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"records":     []any{map[string]any{"key": "n1", "type": "budget"}},
+				"hasNextPage": true,
+				"nextPageKey": "cursor-2",
+			})
+			return
+		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"records": []any{
-				map[string]any{"type": "BUDGET", "severity": "WARN", "message": "80% of budget used"},
-			},
-			"totalCount": 1,
-			"hasMore":    false,
+			"records":     []any{map[string]any{"key": "n2", "type": "budget"}},
+			"hasNextPage": false,
 		})
 	})
 
@@ -115,43 +133,26 @@ func TestNotificationHandler_QueryUsesPostWithFilterBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Query() error: %v", err)
 	}
-	if method != http.MethodPost {
-		t.Errorf("method = %s, want POST", method)
+	if len(result.Records) != 2 || result.TotalCount != 2 || result.HasMore {
+		t.Errorf("result = %d records, TotalCount %d, HasMore %v; want 2, 2, false",
+			len(result.Records), result.TotalCount, result.HasMore)
 	}
-	if len(result.Records) != 1 {
-		t.Fatalf("got %d records, want 1", len(result.Records))
+	if len(requests) != 2 {
+		t.Fatalf("made %d requests, want 2", len(requests))
 	}
-	if result.TotalCount != 1 {
-		t.Errorf("TotalCount = %d, want 1", result.TotalCount)
+	if requests[0].Get("types") != "BUDGET" || requests[0].Get("page-size") == "" {
+		t.Errorf("first request = %v, want the filters and a page size", requests[0])
 	}
-	if gotBody["types"] == nil {
-		t.Error("the type filter was not sent in the request body")
-	}
-}
-
-func TestNotificationHandler_QueryReportsHasMore(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/accounts/test-uuid/notifications", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"records":    []any{map[string]any{"type": "COST"}},
-			"totalCount": 500,
-			"hasMore":    true,
-		})
-	})
-
-	result, err := newTestNotificationHandler(t, mux).Query(context.Background(), NotificationQuery{})
-	if err != nil {
-		t.Fatalf("Query() error: %v", err)
-	}
-	if !result.HasMore {
-		t.Error("HasMore = false, want true so the command can warn about truncation")
+	// The cursor carries the query; resending filters with it is a 400.
+	if len(requests[1]) != 1 || requests[1].Get("page-key") != "cursor-2" {
+		t.Errorf("second request = %v, want page-key alone", requests[1])
 	}
 }
 
 func TestNotificationHandler_QueryValidatesBeforeSending(t *testing.T) {
 	called := false
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/accounts/test-uuid/notifications", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/v2/accounts/test-uuid/notifications", func(w http.ResponseWriter, r *http.Request) {
 		called = true
 	})
 
@@ -164,9 +165,9 @@ func TestNotificationHandler_QueryValidatesBeforeSending(t *testing.T) {
 	}
 }
 
-func TestNotificationHandler_APIPathIncludesAccountUUID(t *testing.T) {
+func TestNotificationHandler_APIPathUsesV2(t *testing.T) {
 	h := NewNotificationHandler(newTestClient(t, http.NewServeMux()))
-	want := "https://api.dynatrace.com/v1/accounts/test-uuid/notifications"
+	want := "https://api.dynatrace.com/v2/accounts/test-uuid/notifications"
 	if got := h.APIPath(); got != want {
 		t.Errorf("APIPath() = %q, want %q", got, want)
 	}

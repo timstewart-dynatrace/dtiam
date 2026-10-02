@@ -104,7 +104,7 @@ Outcome: universal read visibility, writes isolated to the group's assigned mana
 
 | Resource | Operations |
 |----------|------------|
-| Groups | get, describe, create, delete, members, add-member, remove-member, bindings |
+| Groups | get, describe, create, update, delete, members, add-member, remove-member, bindings |
 | Users | get, describe, create, delete, add-to-groups, remove-from-groups, replace-groups |
 | Service Users | list, get, create, update, delete, add-to-group, remove-from-group |
 | Policies | get, describe, create, delete (account, environment, global levels) |
@@ -113,7 +113,7 @@ Outcome: universal read visibility, writes isolated to the group's assigned mana
 | Environments | get, describe |
 | Limits | account limits, account check-capacity |
 | Subscriptions | account subscriptions, account forecast, account environment-usage, account environment-cost |
-| Platform Tokens | get, create, delete |
+| Platform Tokens | get, create, delete, activate, deactivate, set-expiration |
 | Group Permissions | group permissions, group grant-permission, group revoke-permission |
 | Audit Logs | get audit-logs |
 | Notifications | account notifications |
@@ -129,7 +129,7 @@ Outcome: universal read visibility, writes isolated to the group's assigned mana
 | `template list` | List built-in and custom templates |
 | `template render NAME --set key=value` | Render a template with variables |
 | `template apply NAME --set key=value` | Create a resource from a template |
-| `apply -f resource.yaml` | Declarative resource creation from YAML/JSON |
+| `apply -f resource.yaml` | Declarative create-or-update from YAML/JSON |
 
 ### Bulk & Analysis
 
