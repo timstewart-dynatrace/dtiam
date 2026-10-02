@@ -17,6 +17,7 @@ import (
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/describe"
 	diffcmd "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/diff"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/doctor"
+	editcmd "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/edit"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/export"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/get"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/group"
@@ -53,6 +54,7 @@ func registerCommands() {
 	cli.AddCommand(applycmd.Cmd)
 	cli.AddCommand(doctor.Cmd)
 	cli.AddCommand(diffcmd.Cmd)
+	cli.AddCommand(editcmd.Cmd)
 	cli.AddCommand(authcmd.Cmd)
 	cli.AddCommand(catalog.Cmd)
 

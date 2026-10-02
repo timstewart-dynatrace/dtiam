@@ -87,4 +87,14 @@ should retry three times before failing
 - All critical paths must have tests before feature is complete
 - Unhappy paths need at least as much coverage as happy paths
 - New code should not reduce overall test coverage
-- Current: 30 test packages, all passing via `make test`
+- Current: 38 test packages, all passing via `make test`
+
+## 7. Integration Suite [SHOULD]
+
+- `test/integration/` (build tag `integration`) drives the real binary against
+  a live account: `DTIAM_INTEGRATION=1 DTIAM_INTEGRATION_CONTEXT=<ctx> make test-integration`
+- Never runs by default; refuses a context that is not `readwrite`
+- Only creates `dtiam-it-<run>-*` objects, deletes them in `t.Cleanup`, and
+  sweeps stale ones; never modifies anything else
+- Every command that changes the account should have a lifecycle test there,
+  asserting on the agent envelope (`-A`)

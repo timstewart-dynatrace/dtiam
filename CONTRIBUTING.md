@@ -87,8 +87,25 @@ Table-driven, with names describing behavior:
 {name: "should return an error when the scope type is unknown", ...}
 ```
 
-Tests must not make real network calls. Use `httptest` and the helpers in
-`pkg/resources/testhelper_test.go`.
+Unit tests (`make test`) must not make real network calls. Use `httptest` and
+the helpers in `pkg/resources/testhelper_test.go`.
+
+### Integration suite
+
+`test/integration/` runs the real binary against a live account. It is behind
+the `integration` build tag and refuses to start without both variables:
+
+```bash
+DTIAM_INTEGRATION=1 DTIAM_INTEGRATION_CONTEXT=my-test-context make test-integration
+```
+
+The context must be at safety level `readwrite`. Every object the suite creates
+is named `dtiam-it-<run>-...` and deleted when its test ends; leftovers from a
+crashed run are swept on the next one (after an hour). Use an account where
+creating and deleting a few throwaway groups, policies, boundaries, a service
+user and a short-lived token is acceptable. Tests drive the CLI in agent mode
+(`-A`) and assert on the envelope, so they exercise output and exit codes too.
+Add an integration test for any command that changes the account.
 
 ## Commit messages
 

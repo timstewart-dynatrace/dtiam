@@ -32,6 +32,7 @@ Global flags: `-c context`, `-o output`, `-v verbose`, `--plain`, `--dry-run`.
 - [token](#token) - Platform token lifecycle
 - [auth](#auth) - whoami and can-i
 - [commands](#commands) - Machine-readable command catalog
+- [edit](#edit) - Edit resources in $EDITOR
 - [boundary](#boundary) - Boundary management
 - [account](#account) - Account limits and subscriptions
 - [cache](#cache) - Cache management
@@ -1947,6 +1948,41 @@ Show the filesystem path where custom templates are stored.
 
 ```bash
 dtiam template path
+```
+
+---
+
+## edit
+
+Edit a group, policy or boundary in your editor (`$VISUAL`, then `$EDITOR`, then
+`vi`), review the diff, and apply it.
+
+```bash
+dtiam edit group|policy|boundary IDENTIFIER [--force] [--from-file PATH] [--dry-run]
+```
+
+| Resource   | Editable fields                                   |
+| ---------- | ------------------------------------------------- |
+| `group`    | `name`, `description`                             |
+| `policy`   | `name`, `description`, `statementQuery`, `tags`   |
+| `boundary` | `name`, `boundaryQuery`                           |
+
+| Option        | Short | Description                                                  |
+| ------------- | ----- | ------------------------------------------------------------ |
+| `--force`     | `-f`  | Apply without asking after showing the diff                  |
+| `--from-file` |       | Start from previously saved edits instead of the live resource |
+| `--dry-run`   |       | Edit and show the diff, but do not apply                     |
+
+The file is YAML with `kind`, `metadata.uuid` and `spec`; read-only fields are
+shown as comments. Saving without changes does nothing. If the edit cannot be
+applied -- invalid YAML, a rejected change, or "no" at the prompt -- the file is
+kept and the error shows the `--from-file` command to resume. `edit` refuses to
+run with `--plain`, `--agent` or without a terminal; use `apply -f` for
+automation. It counts as an update for safety levels.
+
+```bash
+dtiam edit policy "Read Only"
+EDITOR="code --wait" dtiam edit group "Platform Team"
 ```
 
 ---

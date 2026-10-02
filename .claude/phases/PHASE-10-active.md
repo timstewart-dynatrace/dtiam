@@ -61,10 +61,11 @@ deleted afterwards.
 - [x] Found and fixed: effective permissions truncated at 100; unknown
       subcommands exited 0
 
-## Step 3b — 3.4.0 dtctl parity, part 2 (approved scope, not started)
+## Step 3b — 3.4.0 dtctl parity, part 2 — DONE
 
-- [ ] `edit group|policy|boundary NAME` via $EDITOR, diff, update
-- [ ] Integration test suite behind `//go:build integration` + `make test-integration`
+- [x] `edit group|policy|boundary` via $EDITOR, diff, confirm, `--from-file` resume
+- [x] Integration suite (`test/integration/`, `make test-integration`), 9 tests,
+      passing on esa with zero leftovers
 
 ## Step 4 — 3.5.0 new surfaces (proposed, needs approval)
 

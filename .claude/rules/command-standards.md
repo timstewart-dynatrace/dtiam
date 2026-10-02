@@ -10,7 +10,7 @@ These standards are modeled after go-dtctl-main and kubectl conventions. Every c
 dtiam [global-flags] <verb> [<resource>] [<identifier>] [local-flags]
 ```
 
-**Verbs:** `get`, `describe`, `create`, `delete`, `apply`, `export`, `analyze`, `bulk`, `config`, `user`, `group`, `service-user`, `token`, `boundary`, `account`, `cache`, `template`, `auth`, `commands`
+**Verbs:** `get`, `describe`, `create`, `delete`, `apply`, `export`, `analyze`, `bulk`, `config`, `user`, `group`, `service-user`, `token`, `boundary`, `account`, `cache`, `template`, `auth`, `commands`, `edit`
 
 **Resource Naming:**
 - List operations use **plural**: `get groups`, `get policies`
@@ -275,3 +275,4 @@ When adding any new command, verify ALL of the following:
 - [ ] Progress/status messages go to stderr
 - [ ] `--plain` mode produces clean JSON output
 - [ ] Tests exist for flag parsing and dry-run behavior
+- [ ] Mutating commands have a lifecycle test in `test/integration/`

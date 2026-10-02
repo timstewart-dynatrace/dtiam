@@ -19,6 +19,7 @@ dtiam/
 │       ├── token/                    # Platform token activate/deactivate/set-expiration
 │       ├── auth/                     # whoami, can-i
 │       ├── catalog/                  # "commands": machine-readable command catalog
+│       ├── edit/                     # edit group|policy|boundary via $EDITOR
 │       ├── boundary/ account/        # Boundaries; limits, subscriptions, usage
 │       ├── bulk/ export/ apply/      # File-driven operations
 │       ├── diff/                     # Preview what apply would change

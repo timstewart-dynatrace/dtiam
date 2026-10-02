@@ -170,7 +170,10 @@ override omits.
    default additive behavior unless replacement is explicitly intended.
 6. **Never invent permission names.** Get the valid set from
    `dtiam get available-permissions --plain`.
-7. **Check `len()` of a list before acting on `[0]`.** An empty list is a
+7. **Do not use `dtiam edit`.** It needs a terminal and refuses in `--plain`
+   and agent mode. Write the change as a file and use `dtiam diff -f` then
+   `dtiam apply -f`.
+8. **Check `len()` of a list before acting on `[0]`.** An empty list is a
    legitimate result.
 
 ## Repository conventions

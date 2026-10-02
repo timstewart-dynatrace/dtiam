@@ -303,3 +303,21 @@
 **Why:** Conditional grants are common in practice (5 of 207 for one live user: bindings readable only for specific groups). Collapsing them to yes overstates access; to no understates it. Reporting the conditions lets the caller decide. Account Management access (account-idm-write and friends) is granted through group permissions, which the effective-permissions API does not cover, so accepting those names would always answer a misleading "no".
 **Trade-offs:** `can-i` cannot answer "can I create a group" -- that needs group-permission resolution.
 **Revisit if:** can-i should also evaluate account permissions via `group permissions`.
+
+---
+
+## 2026-10-02 — edit Carries the UUID and Resumes Through --from-file
+**Chosen:** The edit document is `kind` + `metadata.uuid` + `spec` (editable fields only). Changing kind or UUID, or adding a non-editable field, is rejected. A failed edit keeps the file; `dtiam edit KIND ID --from-file PATH` reopens it and diffs against the live resource again.
+**Alternatives:** Reuse the plain apply document (name-keyed) and resume with `apply -f`; kubectl-style re-open loop on error.
+**Why:** apply matches by name, so resuming a rename with `apply -f` would create a second object instead of updating the first. Carrying the UUID pins the edit to the resource that was loaded. A resume command is simpler and more predictable than an editor loop, and keeps the diff honest if the resource changed in the meantime.
+**Trade-offs:** The edit file is not an apply file; it cannot be fed to `apply` directly.
+**Revisit if:** apply learns to match by UUID.
+
+---
+
+## 2026-10-02 — Integration Tests Are Black-Box Through the Agent Envelope
+**Chosen:** The suite builds the binary once and runs it with `-A`, asserting on the envelope; gated by build tag plus `DTIAM_INTEGRATION=1` plus a named readwrite context; objects named `dtiam-it-<run>-...`, deleted in t.Cleanup and swept after an hour.
+**Alternatives:** Call pkg/ handlers directly; gate on the current context.
+**Why:** Most bugs found this cycle were in the seam between commands and handlers (wrong paths, keys, flags, output) -- exactly what library-level tests skip. Asserting through the envelope also makes every integration test a test of agent mode, and checks that each command's exit code matches its envelope. Naming the context explicitly means the suite can never run against whichever account happens to be current.
+**Trade-offs:** Slower than unit tests (~50 s) and needs a live account; it is not part of `make test`.
+**Revisit if:** A CI account becomes available -- run it nightly there.
