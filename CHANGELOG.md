@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-10-02
+
+### Fixed
+
+- **The one-line installers could not find any release.** `install.sh`,
+  `install.ps1`, the README install commands and releases link, and the
+  security-report links pointed at `github.com/jtimothystewart/dtiam`, a
+  repository that does not exist. They now point at
+  `github.com/timstewart-dynatrace/dtiam`. Verified by installing v3.0.1 with
+  both scripts, pinned and latest, with checksum verification passing.
+- `.goreleaser.yaml` publishes releases (and would publish the Homebrew formula
+  and deb/rpm metadata) under `timstewart-dynatrace` instead of the same
+  nonexistent owner.
+
+The Go module path is unchanged (`github.com/jtimothystewart/dtiam`); renaming it
+would break library importers and is tracked separately.
+
 ## [3.0.1] - 2026-10-02
 
 Every Account Management call was re-checked against the live OpenAPI spec

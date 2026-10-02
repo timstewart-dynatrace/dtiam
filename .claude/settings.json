@@ -1,7 +1,7 @@
 {
   "projectName": "dtiam",
   "projectType": "go",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "A kubectl-inspired CLI for managing Dynatrace Identity and Access Management (IAM) resources",
   "repository": {
     "owner": "timstewart-dynatrace",

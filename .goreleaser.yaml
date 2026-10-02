@@ -57,7 +57,7 @@ changelog:
 
 release:
   github:
-    owner: jtimothystewart
+    owner: timstewart-dynatrace
     name: dtiam
   draft: true
   prerelease: auto
@@ -65,10 +65,10 @@ release:
 
 brews:
   - repository:
-      owner: jtimothystewart
+      owner: timstewart-dynatrace
       name: homebrew-tap
     directory: Formula
-    homepage: https://github.com/jtimothystewart/dtiam
+    homepage: https://github.com/timstewart-dynatrace/dtiam
     description: A kubectl-style CLI for Dynatrace IAM
     license: MIT
     test: |
@@ -79,8 +79,8 @@ brews:
 nfpms:
   - id: packages
     package_name: dtiam
-    vendor: jtimothystewart
-    homepage: https://github.com/jtimothystewart/dtiam
+    vendor: timstewart-dynatrace
+    homepage: https://github.com/timstewart-dynatrace/dtiam
     maintainer: Timothy Stewart
     description: A kubectl-style CLI for Dynatrace IAM
     license: MIT
