@@ -425,3 +425,42 @@ func TestGetEffectiveEnvironmentToken(t *testing.T) {
 		})
 	}
 }
+
+func TestSafetyLevels(t *testing.T) {
+	tests := []struct {
+		stored string
+		want   string
+	}{
+		{"", SafetyReadWrite}, // contexts from before safety levels keep working
+		{SafetyReadOnly, SafetyReadOnly},
+		{SafetyNoDelete, SafetyNoDelete},
+		{SafetyReadWrite, SafetyReadWrite},
+		{"read-only", SafetyReadOnly}, // a typo fails closed, never open
+	}
+	for _, tt := range tests {
+		t.Run(tt.stored, func(t *testing.T) {
+			ctx := &Context{SafetyLevel: tt.stored}
+			if got := ctx.EffectiveSafetyLevel(); got != tt.want {
+				t.Errorf("EffectiveSafetyLevel(%q) = %q, want %q", tt.stored, got, tt.want)
+			}
+		})
+	}
+
+	if _, err := ParseSafetyLevel("bogus"); err == nil {
+		t.Error("ParseSafetyLevel(bogus) should fail")
+	}
+
+	cfg := &Config{Contexts: []NamedContext{{Name: "prod", Context: Context{AccountUUID: "a"}}}}
+	if err := cfg.SetContextSafetyLevel("prod", SafetyNoDelete); err != nil {
+		t.Fatalf("SetContextSafetyLevel: %v", err)
+	}
+	if cfg.Contexts[0].Context.SafetyLevel != SafetyNoDelete {
+		t.Errorf("level = %q", cfg.Contexts[0].Context.SafetyLevel)
+	}
+	if err := cfg.SetContextSafetyLevel("missing", SafetyReadOnly); err == nil {
+		t.Error("setting a missing context should fail")
+	}
+	if err := cfg.SetContextSafetyLevel("prod", "bogus"); err == nil {
+		t.Error("setting an invalid level should fail")
+	}
+}

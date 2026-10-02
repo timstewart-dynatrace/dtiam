@@ -297,6 +297,7 @@ func ContextColumns() []Column {
 		{Key: "name", Header: "NAME"},
 		{Key: "account_uuid", Header: "ACCOUNT-UUID"},
 		{Key: "credentials_ref", Header: "CREDENTIALS"},
+		{Key: "safety_level", Header: "SAFETY"},
 		{Key: "current", Header: "CURRENT"},
 	}
 }

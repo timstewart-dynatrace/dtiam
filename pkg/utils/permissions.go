@@ -567,12 +567,14 @@ func (api *EffectivePermissionsAPI) GetEffectivePermissions(ctx context.Context,
 		params["services"] = strings.Join(services, ",")
 	}
 
-	// Fetch all pages
+	// Fetch all pages. The response carries no total, so the only end marker is
+	// a short page; checking a total that is never sent stopped every query
+	// after the first page (100 of 210 permissions on a live account).
 	var allPermissions []map[string]any
 	page := 1
-	pageSize := 100
+	const pageSize = 500
 
-	for {
+	for page <= client.MaxPageRequests {
 		params["page"] = fmt.Sprintf("%d", page)
 		params["size"] = fmt.Sprintf("%d", pageSize)
 
@@ -600,8 +602,9 @@ func (api *EffectivePermissionsAPI) GetEffectivePermissions(ctx context.Context,
 
 		allPermissions = append(allPermissions, permissions...)
 
-		// Check if there are more pages
-		if len(allPermissions) >= response.Total || len(permissions) == 0 {
+		// A short page is the last one. A total, when an API version sends
+		// one, ends the loop early.
+		if len(permissions) < pageSize || (response.Total > 0 && len(allPermissions) >= response.Total) {
 			break
 		}
 

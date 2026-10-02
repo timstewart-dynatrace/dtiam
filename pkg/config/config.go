@@ -27,6 +27,65 @@ type NamedContext struct {
 type Context struct {
 	AccountUUID    string `yaml:"account-uuid" json:"account-uuid"`
 	CredentialsRef string `yaml:"credentials-ref" json:"credentials-ref"`
+
+	// SafetyLevel limits what commands may do in this context: readonly,
+	// no-delete, or readwrite (the default when empty). See pkg/safety.
+	SafetyLevel string `yaml:"safety-level,omitempty" json:"safety-level,omitempty"`
+}
+
+// Safety levels a context can carry.
+const (
+	// SafetyReadOnly blocks every command that changes the account, and
+	// requests only read OAuth scopes.
+	SafetyReadOnly = "readonly"
+	// SafetyNoDelete allows creating and updating but blocks deletes and
+	// anything that removes access: memberships, bindings, boundaries.
+	SafetyNoDelete = "no-delete"
+	// SafetyReadWrite allows everything, subject to the usual confirmations.
+	SafetyReadWrite = "readwrite"
+)
+
+// SafetyLevels lists the valid safety levels, most restrictive first.
+var SafetyLevels = []string{SafetyReadOnly, SafetyNoDelete, SafetyReadWrite}
+
+// ParseSafetyLevel validates a safety level. An empty string means readwrite.
+func ParseSafetyLevel(level string) (string, error) {
+	if level == "" {
+		return SafetyReadWrite, nil
+	}
+	for _, l := range SafetyLevels {
+		if level == l {
+			return l, nil
+		}
+	}
+	return "", fmt.Errorf("invalid safety level %q, want one of %s", level, strings.Join(SafetyLevels, ", "))
+}
+
+// EffectiveSafetyLevel returns the context's safety level, defaulting to
+// readwrite so that contexts created before safety levels existed keep working.
+// An invalid stored value is treated as readonly: failing closed is the only
+// safe reading of a setting someone intended to restrict.
+func (c *Context) EffectiveSafetyLevel() string {
+	level, err := ParseSafetyLevel(c.SafetyLevel)
+	if err != nil {
+		return SafetyReadOnly
+	}
+	return level
+}
+
+// SetContextSafetyLevel sets an existing context's safety level.
+func (c *Config) SetContextSafetyLevel(name, level string) error {
+	parsed, err := ParseSafetyLevel(level)
+	if err != nil {
+		return err
+	}
+	for i := range c.Contexts {
+		if c.Contexts[i].Name == name {
+			c.Contexts[i].Context.SafetyLevel = parsed
+			return nil
+		}
+	}
+	return fmt.Errorf("context %q not found", name)
 }
 
 // NamedCredential wraps a credential with its name.

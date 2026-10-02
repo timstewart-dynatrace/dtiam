@@ -51,12 +51,22 @@ deleted afterwards.
 - [x] Verified live: notifications (91 records, filters), usage v3 == v2 totals,
       token lifecycle and group update on throwaway objects
 
-## Step 3 — 3.3.0 dtctl parity (proposed, needs approval)
+## Step 3 — 3.3.0 dtctl parity, part 1 — DONE
 
-Context safety levels; `--agent` envelope; `whoami` / `auth can-i`; `commands`
-catalog; `edit`; integration test suite behind `//go:build integration`.
+- [x] Context safety levels (readonly / no-delete / readwrite), central operations
+      table, enforcement in PersistentPreRunE, read-only scopes for readonly
+- [x] `--agent` / `-A` envelope with error codes; stray stdout captured
+- [x] `auth whoami`, `auth can-i`
+- [x] `commands` catalog
+- [x] Found and fixed: effective permissions truncated at 100; unknown
+      subcommands exited 0
 
-## Step 4 — 3.4.0 new surfaces (proposed, needs approval)
+## Step 3b — 3.4.0 dtctl parity, part 2 (approved scope, not started)
+
+- [ ] `edit group|policy|boundary NAME` via $EDITOR, diff, update
+- [ ] Integration test suite behind `//go:build integration` + `make test-integration`
+
+## Step 4 — 3.5.0 new surfaces (proposed, needs approval)
 
 WIF trust policies (Preview), IP allowlist, policy-level limits, env service users.
 
@@ -91,5 +101,9 @@ WIF trust policies (Preview), IP allowlist, policy-level limits, env service use
   test transport that refuses non-loopback hosts.
 - `create token` could default `--user` to the caller (the access token's `sub`)
   since the API only allows that owner anyway.
+- 151 direct `fmt.Print` calls to stdout in 21 command files bypass the printer
+  (violates command-standards). Agent mode captures them; route them through the
+  printer.
+- `auth can-i` cannot evaluate Account Management access (group permissions).
 - `account forecast` reports "subscription not found" when the API says the
   subscription has no budget.

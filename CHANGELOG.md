@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-02
+
+Safety levels, an agent envelope, identity commands and a command catalog,
+modelled on dtctl. Verified against a live account (reads only, plus a context
+safety test run against a temporary copy of the config file).
+
+### Added
+
+- **Context safety levels.** `config set-context NAME --safety-level
+  readonly|no-delete|readwrite`.
+  - `readonly` blocks every change and requests the OAuth token with read scopes.
+  - `no-delete` allows create and update but blocks deletes and anything that
+    removes access: members, bindings, boundary detach, permission revoke, and
+    `grant-permission --replace`.
+  - `readwrite` (the default) allows everything, so existing contexts are unchanged.
+  - Blocked commands fail before any API call; `--dry-run` is allowed at every
+    level. `config get-contexts` shows each context's level.
+  - Every command declares its operation in one table
+    (`cmd/dtiam/operations.go`); a test fails if a new command does not.
+- **Agent mode: `--agent` / `-A` / `DTIAM_AGENT=1`.** Every command writes
+  exactly one JSON document to stdout, `{ok, result, error, context}`, including
+  on failure, with machine-readable error codes (`safety_blocked`, `usage`,
+  `permission_denied`, `not_found`, ...). Text that older commands print
+  directly is captured into `context.messages`. Opt-in: detected agents still get
+  `--plain` as before.
+- **`auth whoami`**: the identity dtiam authenticates as (from the access token),
+  with its groups, OAuth client, context and safety level.
+- **`auth can-i PERMISSION [--user|--group] [--environment] [--strict]`**:
+  yes / no / conditional from the effective-permissions API; exit 0 for yes, 1 for no.
+- **`commands [--brief]`**: a machine-readable catalog of every command, flag and
+  operation.
+
+### Fixed
+
+- **`analyze effective-user` / `effective-group` returned at most 100
+  permissions.** The resolution API sends no total, and the loop stopped when a
+  total it never received was "reached". An identity with 210 permissions showed
+  100.
+- **A mistyped subcommand succeeded.** `dtiam get groupz` printed `get`'s help
+  and exited 0; it now fails with `unknown command "groupz" for "dtiam get"`.
+- `docs/COMMANDS.md` and the README listed `-c`, `-V/--version`, and
+  `set-context -a/-c` shorthands that do not exist.
+
 ## [3.2.0] - 2026-10-02
 
 Moves dtiam off the account APIs Dynatrace removes on **2027-01-11**, and adds

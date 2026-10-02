@@ -121,6 +121,8 @@ Outcome: universal read visibility, writes isolated to the group's assigned mana
 | Apps | get (requires --environment) |
 | Schemas | get, search (requires --environment) |
 | Environment-level IAM | get env-users, get env-groups (requires --environment) |
+| Identity | auth whoami, auth can-i PERMISSION |
+| Command catalog | commands (machine-readable, with each command's operation) |
 
 ### Templates & Declarative Apply
 
@@ -149,13 +151,25 @@ See the **[Command Reference](docs/COMMANDS.md)** for the full list of verbs, fl
 ## Global Options
 
 ```
--c, --context     Override the current context
--o, --output      Output format: table, json, yaml, csv, wide (default: table)
+    --context     Override the current context
+-o, --output      Output format: table, wide, json, yaml, csv, plain (default: table)
 -v, --verbose     Enable verbose/debug output
     --plain       Plain mode: JSON output, no colors, no prompts
     --dry-run     Preview changes without applying them
--V, --version     Show version and exit
+-A, --agent       Agent mode: one JSON envelope {ok, result, error, context} on stdout
 ```
+
+### Safety levels
+
+Protect a context from accidental changes:
+
+```bash
+dtiam config set-context prod --safety-level readonly    # reads only; read-only OAuth scopes
+dtiam config set-context prod --safety-level no-delete   # create/update, never delete or remove access
+dtiam config set-context prod --safety-level readwrite   # everything (default)
+```
+
+Blocked commands fail before any API call; `--dry-run` works at every level.
 
 ## Configuration
 

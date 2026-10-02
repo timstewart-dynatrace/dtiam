@@ -30,6 +30,8 @@ Global flags: `-c context`, `-o output`, `-v verbose`, `--plain`, `--dry-run`.
 - [service-user](#service-user) - Service user (OAuth client) management
 - [group](#group) - Advanced group operations
 - [token](#token) - Platform token lifecycle
+- [auth](#auth) - whoami and can-i
+- [commands](#commands) - Machine-readable command catalog
 - [boundary](#boundary) - Boundary management
 - [account](#account) - Account limits and subscriptions
 - [cache](#cache) - Cache management
@@ -47,15 +49,57 @@ These options apply to all commands:
 dtiam [OPTIONS] COMMAND [ARGS]
 ```
 
-| Option            | Short | Description                                 |
-| ----------------- | ----- | ------------------------------------------- |
-| `--context TEXT`  | `-c`  | Override the current context                |
-| `--output FORMAT` | `-o`  | Output format: table, json, yaml, csv, wide |
-| `--verbose`       | `-v`  | Enable verbose/debug output                 |
-| `--plain`         |       | Plain output mode (no colors, no prompts)   |
-| `--dry-run`       |       | Preview changes without applying them       |
-| `--version`       | `-V`  | Show version and exit                       |
-| `--help`          |       | Show help message                           |
+| Option            | Short | Description                                                        |
+| ----------------- | ----- | ------------------------------------------------------------------ |
+| `--context TEXT`  |       | Override the current context                                       |
+| `--output FORMAT` | `-o`  | Output format: table, wide, json, yaml, csv, plain                 |
+| `--verbose`       | `-v`  | Enable verbose/debug output                                        |
+| `--plain`         |       | Plain output mode (no colors, no prompts)                          |
+| `--dry-run`       |       | Preview changes without applying them                              |
+| `--agent`         | `-A`  | Agent mode: one JSON envelope on stdout (see [Agent mode](#agent-mode)) |
+| `--help`          | `-h`  | Show help message                                                  |
+
+Use `dtiam version` for the version.
+
+### Safety levels
+
+Each context has a safety level, set with `dtiam config set-context NAME --safety-level LEVEL`:
+
+| Level       | Allows                                   | Blocks                                                                 |
+| ----------- | ---------------------------------------- | ---------------------------------------------------------------------- |
+| `readonly`  | read commands                            | every change; the OAuth token is also requested with read scopes only |
+| `no-delete` | read, create, update                     | deletes and anything that removes access: members, bindings, boundary detach, permission revoke, `--replace` |
+| `readwrite` | everything (default)                     | nothing                                                                |
+
+A blocked command fails before any API call. `--dry-run` is allowed at every
+level. `dtiam commands` shows each command's operation. In a `readonly` context
+`get tokens` is unavailable, because listing tokens needs the token-management
+scope, which can also create them.
+
+### Agent mode
+
+`--agent` (`-A`, or `DTIAM_AGENT=1`) makes every command write exactly one JSON
+document to stdout, success or failure:
+
+```json
+{
+  "ok": true,
+  "result": [ ... ],
+  "error": null,
+  "context": {
+    "command": "dtiam get groups", "operation": "read", "total": 138,
+    "exit_code": 0, "duration": "452ms", "messages": [], "warnings": [], "version": "3.3.0"
+  }
+}
+```
+
+On failure `ok` is `false` and `error` has `code` (`safety_blocked`, `usage`,
+`bad_request`, `auth_required`, `permission_denied`, `not_found`, `conflict`,
+`rate_limited`, `server_error`, `error`), `message`, and sometimes
+`status_code` and `suggestions`. A result that exits non-zero without failing,
+such as `diff` finding drift or `auth can-i` answering no, is `ok: true` with
+`exit_code: 1`. Agent mode implies `--plain`. A detected coding agent still gets
+`--plain` automatically; the envelope is opt-in.
 
 ---
 
@@ -158,16 +202,18 @@ Create or update a context.
 dtiam config set-context NAME [OPTIONS]
 ```
 
-| Argument/Option     | Short | Description                     |
-| ------------------- | ----- | ------------------------------- |
-| `NAME`              |       | Context name                    |
-| `--account-uuid`    | `-a`  | Dynatrace account UUID          |
-| `--credentials-ref` | `-c`  | Reference to a named credential |
+| Argument/Option     | Description                                                     |
+| ------------------- | --------------------------------------------------------------- |
+| `NAME`              | Context name                                                    |
+| `--account-uuid`    | Dynatrace account UUID                                          |
+| `--credentials-ref` | Reference to a named credential                                 |
+| `--safety-level`    | `readonly`, `no-delete` or `readwrite` (see [Safety levels](#safety-levels)) |
 
-**Example:**
+**Examples:**
 
 ```bash
 dtiam config set-context prod --account-uuid abc-123 --credentials-ref prod-creds
+dtiam config set-context prod --safety-level readonly
 ```
 
 ### config delete-context
@@ -1194,6 +1240,62 @@ dtiam token set-expiration TOKEN_ID --date 2027-06-30T00:00:00Z
 
 ---
 
+## auth
+
+### auth whoami
+
+Show the identity dtiam authenticates as -- read from the access token -- with
+its user record, groups, OAuth client, context and safety level. With an OAuth
+client this is the user or service user behind the client.
+
+```bash
+dtiam auth whoami [-o json]
+```
+
+### auth can-i
+
+Ask the effective-permissions API whether the caller, `--user` or `--group`
+holds a permission. Answers `yes`, `no`, or `conditional` (granted only where
+listed conditions hold, such as a boundary or a bound group).
+
+```bash
+dtiam auth can-i PERMISSION [--user USER | --group GROUP] [--environment ENV] [--strict]
+```
+
+| Argument/Option | Description                                            |
+| --------------- | ------------------------------------------------------ |
+| `PERMISSION`    | A policy permission, e.g. `storage:logs:read`          |
+| `--user`        | Check this user (email or UID) instead of the caller  |
+| `--group`       | Check this group (UUID or name) instead of the caller |
+| `--environment` | Check at environment level instead of account level   |
+| `--strict`      | Treat `conditional` as no                              |
+
+Exit code 0 for yes/conditional, 1 for no. This covers platform permissions
+granted by IAM policies. Account Management access (managing users, groups and
+policies through `api.dynatrace.com`) comes from account permissions on groups,
+which the API does not report -- see `group permissions`.
+
+```bash
+dtiam auth can-i iam:bindings:write
+dtiam auth can-i storage:logs:read --user alice@example.com --environment abc12345
+```
+
+---
+
+## commands
+
+List every command with its usage, flags, and operation (read, create, update,
+delete -- the classification safety levels enforce). Intended for agents:
+`dtiam commands -o json` describes the CLI in one call.
+
+```bash
+dtiam commands [--brief] [-o json|yaml]
+```
+
+The table view is always brief.
+
+---
+
 ## boundary
 
 Boundary attach/detach operations.
@@ -2032,10 +2134,10 @@ dtiam analyze effective-group DevOps --level environment --level-id env123
 
 ## Exit Codes
 
-| Code | Description                                         |
-| ---- | --------------------------------------------------- |
-| 0    | Success                                             |
-| 1    | Error (resource not found, permission denied, etc.) |
+| Code | Description                                                              |
+| ---- | ------------------------------------------------------------------------ |
+| 0    | Success; `auth can-i` answered yes or conditional                        |
+| 1    | Error, including an unknown subcommand; `diff` found drift; `auth can-i` answered no |
 
 ### config migrate-secrets
 

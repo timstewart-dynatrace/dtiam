@@ -34,6 +34,32 @@ dtiam get groups --plain
 Combine with `-o json` or `-o yaml` when you need a specific format regardless
 of mode. `--dry-run` previews any mutating command without applying it.
 
+### Agent envelope (`-A`)
+
+For the most robust integration, pass `--agent` (`-A`) or set `DTIAM_AGENT=1`.
+Every command then writes **exactly one JSON document** to stdout, including on
+failure:
+
+```json
+{"ok": false, "result": null,
+ "error": {"code": "safety_blocked", "message": "...", "suggestions": ["..."]},
+ "context": {"command": "dtiam delete group", "operation": "delete", "exit_code": 1, ...}}
+```
+
+Branch on `ok` and `error.code` (`safety_blocked`, `usage`, `permission_denied`,
+`not_found`, `conflict`, `rate_limited`, `server_error`, ...) instead of parsing
+stderr. Informational text that older commands print goes to
+`context.messages`, never into the JSON stream. `ok: true` with
+`exit_code: 1` means a result, not a failure (`diff` found drift, `can-i` said no).
+
+### Discover commands and identity
+
+```bash
+dtiam commands -o json            # every command, flag, and its operation
+dtiam auth whoami -o json         # who this credential is
+dtiam auth can-i storage:logs:read --plain   # exit 0 = yes/conditional, 1 = no
+```
+
 ### Stream contract
 
 | Stream | Carries |
@@ -132,15 +158,19 @@ override omits.
 ## Safety rules for agents
 
 1. **Run `dtiam doctor --plain` first.** Do not diagnose auth failures by trial.
-2. **Use `--dry-run` before any mutation** you have not performed before.
-3. **`--plain` skips confirmation prompts.** That is deliberate, since agents
+   Then `dtiam auth whoami` to confirm which identity you are acting as.
+2. **Respect `safety_blocked`.** A context's safety level (`readonly`,
+   `no-delete`) is the operator's decision. Do not switch context or change the
+   level to get around it; report it.
+3. **Use `--dry-run` before any mutation** you have not performed before.
+4. **`--plain` skips confirmation prompts.** That is deliberate, since agents
    have no stdin — but it means destructive commands execute immediately. Pair
    with `--dry-run` first.
-4. **`group grant-permission --replace` removes every other grant.** Prefer the
+5. **`group grant-permission --replace` removes every other grant.** Prefer the
    default additive behavior unless replacement is explicitly intended.
-5. **Never invent permission names.** Get the valid set from
+6. **Never invent permission names.** Get the valid set from
    `dtiam get available-permissions --plain`.
-6. **Check `len()` of a list before acting on `[0]`.** An empty list is a
+7. **Check `len()` of a list before acting on `[0]`.** An empty list is a
    legitimate result.
 
 ## Repository conventions

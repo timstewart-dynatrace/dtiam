@@ -10,7 +10,7 @@ These standards are modeled after go-dtctl-main and kubectl conventions. Every c
 dtiam [global-flags] <verb> [<resource>] [<identifier>] [local-flags]
 ```
 
-**Verbs:** `get`, `describe`, `create`, `delete`, `apply`, `export`, `analyze`, `bulk`, `config`, `user`, `group`, `service-user`, `token`, `boundary`, `account`, `cache`, `template`
+**Verbs:** `get`, `describe`, `create`, `delete`, `apply`, `export`, `analyze`, `bulk`, `config`, `user`, `group`, `service-user`, `token`, `boundary`, `account`, `cache`, `template`, `auth`, `commands`
 
 **Resource Naming:**
 - List operations use **plural**: `get groups`, `get policies`
@@ -261,7 +261,11 @@ Verbose output goes to **stderr** so it doesn't interfere with stdout data.
 When adding any new command, verify ALL of the following:
 
 - [ ] Uses `common.CreateClient()` for API access
-- [ ] Uses `cli.GlobalState.NewPrinter()` for all data output
+- [ ] Listed in the operations table (`cmd/dtiam/operations.go`) with the right
+      operation -- read, create, update or delete; anything that removes access
+      is delete. `TestEveryCommandDeclaresAnOperation` fails otherwise.
+- [ ] Uses `cli.GlobalState.NewPrinter()` for all data output (never `fmt.Print`
+      to stdout: agent mode captures it, but only as unstructured messages)
 - [ ] Has `Use`, `Short`, `Long`, `Example` fields
 - [ ] Mutating commands support `--dry-run`
 - [ ] Destructive commands use `prompt.ConfirmDelete()` with `--force`

@@ -19,6 +19,7 @@ var (
 	verboseFlag bool
 	plainFlag   bool
 	dryRunFlag  bool
+	agentFlag   bool
 )
 
 // RootCmd is the root command for dtiam.
@@ -39,6 +40,12 @@ or supported by Dynatrace.`,
 		GlobalState.Verbose = verboseFlag
 		GlobalState.Plain = plainFlag
 		GlobalState.DryRun = dryRunFlag
+
+		// Agent mode first: it implies --plain and must capture stdout before
+		// the command can write anything.
+		if agentFlag || os.Getenv(EnvAgent) != "" {
+			startAgentMode(cmd)
+		}
 
 		// Imply --plain when running under a coding agent. An agent has no
 		// terminal to answer a confirmation prompt at and no use for ANSI
@@ -64,7 +71,9 @@ or supported by Dynatrace.`,
 			GlobalState.Output = format
 		}
 
-		return nil
+		// Enforce the context's safety level before the command runs, so a
+		// blocked command makes no API call at all.
+		return checkSafety(cmd)
 	},
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -77,6 +86,8 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose output")
 	RootCmd.PersistentFlags().BoolVar(&plainFlag, "plain", false, "Disable colors and interactive features")
 	RootCmd.PersistentFlags().BoolVar(&dryRunFlag, "dry-run", false, "Preview changes without applying them")
+	RootCmd.PersistentFlags().BoolVarP(&agentFlag, "agent", "A", false,
+		"Agent mode: write one JSON envelope {ok, result, error, context} to stdout")
 
 	// Bind cobra flags to Viper for automatic env var support
 	_ = config.V.BindPFlag("context", RootCmd.PersistentFlags().Lookup("context"))
@@ -113,13 +124,45 @@ var ErrSilentExit = errors.New("silent exit")
 
 // Execute runs the root command.
 func Execute() {
-	if err := RootCmd.Execute(); err != nil {
+	err := RootCmd.Execute()
+
+	// In agent mode every outcome, including errors, is reported in the
+	// envelope on stdout rather than as an "Error:" line on stderr.
+	if GlobalState.Agent {
+		os.Exit(finishAgentMode(err))
+	}
+	// A usage error (unknown flag, bad arguments) stops cobra before
+	// PersistentPreRunE, so agent mode never started. Report it in an envelope
+	// anyway when the agent asked for one.
+	if err != nil && agentRequested() {
+		startAgentMode(nil)
+		os.Exit(finishAgentMode(err))
+	}
+
+	if err != nil {
 		if errors.Is(err, ErrSilentExit) {
 			os.Exit(1)
 		}
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
+}
+
+// agentRequested reports whether agent mode was asked for. It also scans the
+// raw arguments, because a usage error can stop cobra before flags are parsed.
+func agentRequested() bool {
+	if agentFlag || os.Getenv(EnvAgent) != "" {
+		return true
+	}
+	for _, a := range os.Args[1:] {
+		if a == "--" {
+			break
+		}
+		if a == "-A" || a == "--agent" || a == "--agent=true" {
+			return true
+		}
+	}
+	return false
 }
 
 // AddCommand adds a command to the root command.
