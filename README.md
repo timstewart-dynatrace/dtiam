@@ -122,6 +122,7 @@ Outcome: universal read visibility, writes isolated to the group's assigned mana
 | Schemas | get, search (requires --environment) |
 | Environment-level IAM | get env-users, get env-groups (requires --environment) |
 | Identity | auth whoami, auth can-i PERMISSION |
+| Interactive editing | edit group, edit policy, edit boundary (opens $EDITOR, shows a diff, asks before applying) |
 | Command catalog | commands (machine-readable, with each command's operation) |
 
 ### Templates & Declarative Apply

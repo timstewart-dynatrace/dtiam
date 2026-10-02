@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-10-02
+
+### Added
+
+- **`edit group|policy|boundary IDENTIFIER`** opens the resource as YAML in
+  `$VISUAL` / `$EDITOR` / `vi`.
+  - Only the editable fields can change; read-only fields are shown as comments.
+  - After you save, dtiam shows a field diff and asks before applying (`--force`
+    skips the question). `--dry-run` shows the diff without applying.
+  - If an edit cannot be applied, the file is kept and `--from-file` resumes it.
+  - Refuses to run under `--plain`, `--agent`, or without a terminal; counts as
+    an update for safety levels.
+- **Live-account integration suite** (`test/integration/`, build tag
+  `integration`, `make test-integration`). It covers:
+  - every read command
+  - group, policy, boundary, binding, service user and token lifecycles
+  - membership changes, boundary attach/detach, and apply/diff idempotency
+  - a real `edit` run under a pseudo-terminal
+  - the agent envelope's error codes, and safety-level enforcement
+
+  It runs only with `DTIAM_INTEGRATION=1` and `DTIAM_INTEGRATION_CONTEXT` set,
+  refuses contexts that aren't `readwrite`, and creates and deletes only
+  `dtiam-it-*` objects. Verified passing against a live account: 9 tests, no
+  objects left behind.
+
 ## [3.3.0] - 2026-10-02
 
 Safety levels, an agent envelope, identity commands and a command catalog,

@@ -37,6 +37,7 @@ var operations = map[string]safety.Operation{
 	"create": safety.Create,
 	"delete": safety.Delete,
 	"apply":  safety.Update, // creates or updates; never deletes
+	"edit":   safety.Update,
 
 	// Templates: only "apply" reaches the account.
 	"template":       safety.Read,

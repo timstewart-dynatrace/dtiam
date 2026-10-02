@@ -1,4 +1,4 @@
-.PHONY: all build test lint clean install fmt vet validate
+.PHONY: all build test test-integration lint clean install fmt vet validate
 
 # Variables
 BINARY_NAME := dtiam
@@ -27,6 +27,16 @@ build-all:
 # Run tests
 test:
 	go test -v -race -coverprofile=coverage.out ./...
+
+# Run the live-account integration suite (opt-in; creates and deletes
+# dtiam-it-* objects). Requires DTIAM_INTEGRATION=1 and
+# DTIAM_INTEGRATION_CONTEXT=<context at safety level readwrite>.
+test-integration:
+	@if [ "$$DTIAM_INTEGRATION" != "1" ] || [ -z "$$DTIAM_INTEGRATION_CONTEXT" ]; then \
+		echo "Set DTIAM_INTEGRATION=1 and DTIAM_INTEGRATION_CONTEXT=<context> to run the integration suite."; \
+		exit 1; \
+	fi
+	go test -tags integration -count=1 -v -timeout 15m ./test/integration/...
 
 # Run tests with coverage report
 test-coverage: test
@@ -85,6 +95,7 @@ help:
 	@echo "  build-all    - Build for all platforms"
 	@echo "  test         - Run tests"
 	@echo "  test-coverage - Run tests with coverage report"
+	@echo "  test-integration - Run the live-account suite (needs DTIAM_INTEGRATION=1, DTIAM_INTEGRATION_CONTEXT)"
 	@echo "  lint         - Run linter"
 	@echo "  fmt          - Format code"
 	@echo "  vet          - Run go vet"
