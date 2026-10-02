@@ -38,21 +38,25 @@ deleted afterwards.
 - [x] `DTIAM_API_URL` / `api-url`, `environment-url`, `environment-token` wired
 - [x] Tests rewritten to the live contract; new regression tests
 
-## Step 2 — 3.1.0 API currency — NEXT
+## Step 2 — 3.2.0 API currency — DONE
 
-- [ ] Notifications: `POST /v1/.../notifications` -> `GET /v2/.../notifications` (deprecated, removal 2027-01-11)
-- [ ] Usage: `/sub/v2/.../environments/usage` -> `/sub/v3/...` (deprecated, removal 2027-01-11)
-- [ ] Remove unused `PolicyHandler.Validate` / `ValidateUpdate` (validation endpoints deprecated)
-- [ ] Platform token `PUT /{id}/expiration-date` and `PUT /{id}/status`
-- [ ] `group update` command (PUT /groups/{uuid} now in the handler)
-- [ ] Config subcommand to set `api-url` / `environment-url` / `environment-token`
+- [x] Notifications -> `GET /v2/.../notifications` (paged; new filters/types; column fix)
+- [x] Usage -> `/sub/v3/...` (paged); cost paged; flattened rows; ACTIVE default
+- [x] `PolicyHandler.Validate` / `ValidateUpdate` marked Deprecated (remove in 4.0)
+- [x] `token activate|deactivate|set-expiration`
+- [x] `group update`
+- [x] `config set-credentials --api-url --environment-url --environment-token` (keyring)
+- [x] Found and fixed: `migrate-secrets` left plaintext secrets in the file
+- [x] Found and fixed: `create token` request shape (never worked)
+- [x] Verified live: notifications (91 records, filters), usage v3 == v2 totals,
+      token lifecycle and group update on throwaway objects
 
-## Step 3 — 3.2.0 dtctl parity (proposed, needs approval)
+## Step 3 — 3.3.0 dtctl parity (proposed, needs approval)
 
 Context safety levels; `--agent` envelope; `whoami` / `auth can-i`; `commands`
 catalog; `edit`; integration test suite behind `//go:build integration`.
 
-## Step 4 — 3.3.0 new surfaces (proposed, needs approval)
+## Step 4 — 3.4.0 new surfaces (proposed, needs approval)
 
 WIF trust policies (Preview), IP allowlist, policy-level limits, env service users.
 
@@ -82,5 +86,10 @@ WIF trust policies (Preview), IP allowlist, policy-level limits, env service use
 - `get schemas` uses `{env}.live.dynatrace.com/api/v2` (classic API); with an
   OAuth token the platform path `{env}.apps.dynatrace.com/platform/classic/environment-api/v2`
   is likely required. Not verifiable with the current OAuth client (no settings scope).
+- Handler tests on absolute URLs reach the real api.dynatrace.com if they forget
+  to override the base URL (two usage tests did, failing on 401). Consider a
+  test transport that refuses non-loopback hosts.
+- `create token` could default `--user` to the caller (the access token's `sub`)
+  since the API only allows that owner anyway.
 - `account forecast` reports "subscription not found" when the API says the
   subscription has no budget.

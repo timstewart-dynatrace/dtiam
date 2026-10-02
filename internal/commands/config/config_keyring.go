@@ -12,9 +12,9 @@ import (
 
 var migrateSecretsCmd = &cobra.Command{
 	Use:   "migrate-secrets",
-	Short: "Move plaintext client secrets into the OS keyring",
-	Long: `Move any plaintext client secrets in the config file into the OS keyring,
-replacing each with a reference.
+	Short: "Move plaintext secrets into the OS keyring",
+	Long: `Move any plaintext client secrets and environment tokens in the config file
+into the OS keyring, replacing each with a reference.
 
 dtiam historically stored client secrets as plaintext in the config file, and
 still does when no keyring is available. This moves existing secrets into the
@@ -43,33 +43,44 @@ safe to run repeatedly. If the keyring is unavailable, nothing is changed.`,
 		}
 
 		// Collect first so dry-run and the real run report identically.
+		// pending is one plaintext secret to move: the credential it belongs to,
+		// the config field holding it, and its keyring key.
 		type pending struct {
 			name   string
+			field  string
+			key    string
+			label  string
 			secret string
 		}
 		var todo []pending
 		alreadyMigrated := 0
 
 		for _, named := range cfg.Credentials {
-			secret := named.Credential.ClientSecret
-			switch {
-			case secret == "":
-				continue
-			case config.IsKeyringReference(secret):
-				alreadyMigrated++
-			default:
-				todo = append(todo, pending{name: named.Name, secret: secret})
+			secrets := []pending{
+				{named.Name, "client-secret", named.Name, "client secret", named.Credential.ClientSecret},
+				{named.Name, "environment-token", config.EnvironmentTokenKeyringKey(named.Name),
+					"environment token", named.Credential.EnvironmentToken},
+			}
+			for _, p := range secrets {
+				switch {
+				case p.secret == "":
+					continue
+				case config.IsKeyringReference(p.secret):
+					alreadyMigrated++
+				default:
+					todo = append(todo, p)
+				}
 			}
 		}
 
 		if len(todo) == 0 {
-			printer.PrintMessage("Nothing to migrate: %d credential(s) already use the keyring.", alreadyMigrated)
+			printer.PrintMessage("Nothing to migrate: %d secret(s) already use the keyring.", alreadyMigrated)
 			return nil
 		}
 
 		if cli.GlobalState.IsDryRun() {
 			for _, p := range todo {
-				printer.PrintWarning("Dry run: would move the secret for %q into the keyring", p.name)
+				printer.PrintWarning("Dry run: would move the %s for %q into the keyring", p.label, p.name)
 			}
 			return nil
 		}
@@ -77,16 +88,21 @@ safe to run repeatedly. If the keyring is unavailable, nothing is changed.`,
 		store := &config.SecretStore{AllowFileFallback: false}
 		migrated := 0
 		for _, p := range todo {
-			newValue, ok, err := store.MigrateSecretToKeyring(p.name, p.secret)
+			newValue, ok, err := store.MigrateSecretToKeyring(p.key, p.secret)
 			if err != nil {
 				// Report and continue: one failure should not block the rest, and
 				// a partially-migrated config is still valid because untouched
 				// credentials keep their plaintext secret.
-				printer.PrintError("Could not migrate %q: %v", p.name, err)
+				printer.PrintError("Could not migrate the %s for %q: %v", p.label, p.name, err)
 				continue
 			}
 			if ok {
-				cfg.SetCredentialField(p.name, "client-secret", newValue)
+				if !cfg.SetCredentialField(p.name, p.field, newValue) {
+					// The secret is in the keyring but the file still holds the
+					// plaintext; never count that as migrated.
+					printer.PrintError("Could not update the %s for %q in the config file", p.label, p.name)
+					continue
+				}
 				migrated++
 			}
 		}
@@ -99,7 +115,7 @@ safe to run repeatedly. If the keyring is unavailable, nothing is changed.`,
 			return fmt.Errorf("failed to save config after migrating %d secret(s): %w", migrated, err)
 		}
 
-		printer.PrintSuccess("Moved %d client secret(s) into the OS keyring", migrated)
+		printer.PrintSuccess("Moved %d secret(s) into the OS keyring", migrated)
 		if migrated < len(todo) {
 			printer.PrintWarning("%d secret(s) could not be migrated and remain in the config file",
 				len(todo)-migrated)
@@ -112,7 +128,8 @@ var keyringStatusCmd = &cobra.Command{
 	Use:   "keyring-status",
 	Short: "Show whether the OS keyring is in use and where each secret lives",
 	Long: `Report whether an OS keyring is available and, for each credential,
-whether its client secret is held in the keyring or in the config file.
+whether its client secret and environment token are held in the keyring or in
+the config file.
 
 Use this to confirm no plaintext secrets remain after 'config migrate-secrets'.`,
 	Example: `  # Show keyring status
@@ -133,15 +150,10 @@ Use this to confirm no plaintext secrets remain after 'config migrate-secrets'.`
 
 		rows := make([]map[string]any, 0, len(cfg.Credentials))
 		for _, named := range cfg.Credentials {
-			location := "config file (plaintext)"
-			if named.Credential.ClientSecret == "" {
-				location = "not set"
-			} else if config.IsKeyringReference(named.Credential.ClientSecret) {
-				location = "OS keyring"
-			}
 			rows = append(rows, map[string]any{
-				"credential": named.Name,
-				"secret":     location,
+				"credential":        named.Name,
+				"secret":            secretLocation(named.Credential.ClientSecret),
+				"environment_token": secretLocation(named.Credential.EnvironmentToken),
 			})
 		}
 
@@ -158,5 +170,18 @@ func keyringStatusColumns() []output.Column {
 	return []output.Column{
 		{Key: "credential", Header: "CREDENTIAL"},
 		{Key: "secret", Header: "SECRET LOCATION"},
+		{Key: "environment_token", Header: "ENVIRONMENT TOKEN"},
+	}
+}
+
+// secretLocation describes where a stored secret value lives.
+func secretLocation(stored string) string {
+	switch {
+	case stored == "":
+		return "not set"
+	case config.IsKeyringReference(stored):
+		return "OS keyring"
+	default:
+		return "config file (plaintext)"
 	}
 }

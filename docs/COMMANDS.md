@@ -29,6 +29,7 @@ Global flags: `-c context`, `-o output`, `-v verbose`, `--plain`, `--dry-run`.
 - [user](#user) - User management
 - [service-user](#service-user) - Service user (OAuth client) management
 - [group](#group) - Advanced group operations
+- [token](#token) - Platform token lifecycle
 - [boundary](#boundary) - Boundary management
 - [account](#account) - Account limits and subscriptions
 - [cache](#cache) - Cache management
@@ -179,22 +180,36 @@ dtiam config delete-context NAME
 
 ### config set-credentials
 
-Store OAuth2 credentials.
+Create or update a credential set.
+
+A new credential needs both `--client-id` and `--client-secret`. An existing one
+can be updated with any subset of flags; fields you do not pass keep their
+values. Pass a flag with an empty value (e.g. `--environment-token ""`) to clear it.
 
 ```bash
 dtiam config set-credentials NAME [OPTIONS]
 ```
 
-| Argument/Option   | Short | Description          |
-| ----------------- | ----- | -------------------- |
-| `NAME`            |       | Credential name      |
-| `--client-id`     | `-i`  | OAuth2 client ID     |
-| `--client-secret` | `-s`  | OAuth2 client secret |
+| Argument/Option       | Description                                                                 |
+| --------------------- | --------------------------------------------------------------------------- |
+| `NAME`                | Credential name                                                             |
+| `--client-id`         | OAuth2 client ID                                                            |
+| `--client-secret`     | OAuth2 client secret (stored in the OS keyring)                             |
+| `--api-url`           | Alternative host for all Account Management API calls                       |
+| `--environment-url`   | Default environment for `get apps`, `get schemas`, `get env-users`, `get env-groups` |
+| `--environment-token` | Token for those environment commands (stored in the OS keyring)             |
+| `--no-keyring`        | Store secrets in the config file instead of the keyring                     |
+| `--require-keyring`   | Fail rather than fall back to plaintext storage                             |
 
-**Example:**
+Secrets go to the OS keyring when one is available, and the config file holds
+only a reference. Where each secret ended up is always reported.
+
+**Examples:**
 
 ```bash
 dtiam config set-credentials prod-creds --client-id dt0s01.XXX --client-secret dt0s01.XXX.YYY
+dtiam config set-credentials prod-creds --environment-url abc12345 --environment-token dt0s16.XXX
+dtiam config set-credentials dev-creds --api-url https://api.example.com
 ```
 
 ### config delete-credentials
@@ -617,23 +632,34 @@ dtiam create boundary --name "prod-only" --zones "Production,Staging"
 
 ### create token
 
-Create a new platform token. The token value is only returned once during creation.
+Create a new platform token. The token value is only returned once during
+creation -- save it immediately (with `-o json` it is in the `token` field).
+
+The owner (`--user`) must be the identity dtiam authenticates as -- for an OAuth
+client, the service user behind it. The API refuses (HTTP 403) to mint tokens for
+anyone else.
 
 ```bash
-dtiam create token [OPTIONS]
+dtiam create token --name NAME --user USER --scopes SCOPES [OPTIONS]
 ```
 
-| Option         | Short | Description                              |
-| -------------- | ----- | ---------------------------------------- |
-| `--name`       | `-n`  | Token name (required)                    |
-| `--scopes`     |       | Comma-separated scopes                   |
-| `--expires-in` |       | Token expiration (e.g., 30d, 1y)         |
-| `--output`     | `-o`  | Output format                            |
+| Option          | Short | Description                                                          |
+| --------------- | ----- | -------------------------------------------------------------------- |
+| `--name`        | `-n`  | Token name (required)                                                |
+| `--user`        |       | Owning user or service user, by email or UID (required)              |
+| `--scopes`      |       | Comma-separated scopes (required)                                    |
+| `--expires-in`  |       | Lifetime: `30d`, `2w`, `1y`, `12h` (default `30d`)                   |
+| `--expires-at`  |       | Exact expiration, RFC 3339                                           |
+| `--environment` |       | Limit to these environment IDs (repeatable); default is the account  |
+| `--resource`    |       | Resource URN, e.g. `urn:dtaccount:UUID` (repeatable)                 |
+| `--tag`         |       | Tag to attach (repeatable)                                           |
 
-**Example:**
+**Examples:**
 
 ```bash
-dtiam create token --name "CI Token" --scopes "account-idm-read" --expires-in 30d
+dtiam create token --name "CI Token" --user ci-bot@example.com --scopes account-idm-read
+dtiam create token --name "Logs" --user 1a2b3c4d-... --scopes storage:logs:read \
+  --environment abc12345 --expires-at 2027-01-01T00:00:00Z
 ```
 
 ---
@@ -971,6 +997,26 @@ dtiam group remove-member IDENTIFIER [OPTIONS]
 | `IDENTIFIER`    |       | Group UUID or name           |
 | `--user`        | `-u`  | User email or UID to remove (required) |
 
+### group update
+
+Rename a group or change its description. Fields you do not pass keep their
+current values.
+
+```bash
+dtiam group update IDENTIFIER [--name NAME] [--description TEXT]
+```
+
+| Argument/Option | Short | Description                                  |
+| --------------- | ----- | -------------------------------------------- |
+| `IDENTIFIER`    |       | Group UUID or name                           |
+| `--name`        | `-n`  | New group name                               |
+| `--description` | `-d`  | New description (`""` clears it)             |
+
+```bash
+dtiam group update "Platform Team" --name "Platform Engineering"
+dtiam group update "Platform Team" --description "Owns the platform" --dry-run
+```
+
 ### group bindings
 
 List all policy bindings for a group.
@@ -1111,6 +1157,40 @@ dtiam group revoke-permission IDENTIFIER --permission NAME --scope SCOPE [OPTION
 | `--scope-type`  |       | `account`, `tenant`, or `management-zone` (default `tenant`) |
 | `--force`       | `-f`  | Skip confirmation                                           |
 | `--dry-run`     |       | Preview without applying                                    |
+
+---
+
+## token
+
+Platform token lifecycle. Create, list and delete tokens with `create token`,
+`get tokens` and `delete token`. Requires the `platform-token:tokens:manage` scope.
+
+### token deactivate
+
+Set a token's status to `INACTIVE`. Anything using it loses access immediately;
+the token is kept and can be reactivated. Asks for confirmation unless `--force`
+or `--plain` is set.
+
+```bash
+dtiam token deactivate TOKEN_ID [--force]
+```
+
+### token activate
+
+Set a token's status back to `ACTIVE`.
+
+```bash
+dtiam token activate TOKEN_ID
+```
+
+### token set-expiration
+
+Change when a token expires. The date is RFC 3339 and is validated before any
+request, including under `--dry-run`.
+
+```bash
+dtiam token set-expiration TOKEN_ID --date 2027-06-30T00:00:00Z
+```
 
 ---
 
@@ -1292,8 +1372,10 @@ dtiam account capabilities -o json
 
 ### account notifications
 
-List account notifications: budget, cost, forecast, and bring-your-own-key
-events. Requires the `account-uac-read` scope.
+List account notifications, newest first: budget, cost, forecast,
+bring-your-own-key, and environment upgrade/downgrade events. Every matching
+notification is returned (dtiam follows the API's pages). Requires the
+`account-uac-read` scope.
 
 Filter values are validated locally, so a mistyped type or severity fails with a
 clear message instead of silently matching nothing.
@@ -1306,8 +1388,10 @@ dtiam account notifications [OPTIONS]
 | ------------ | ----------------------------------------------------------------------- |
 | `--start`    | Start of window (ISO-8601)                                              |
 | `--end`      | End of window (ISO-8601)                                                |
-| `--type`     | `FORECAST`, `BUDGET`, `COST`, `BYOK_REVOKED`, `BYOK_ACTIVATED`           |
+| `--type`     | `FORECAST`, `BUDGET`, `COST`, `BYOK_REVOKED`, `BYOK_ACTIVATED`, `ENVIRONMENT_UPGRADE`, `ENVIRONMENT_DOWNGRADE` |
 | `--severity` | `SEVERE`, `WARN`, `INFO`                                                |
+| `--environment` | Filter by environment ID (repeatable)                                |
+| `--capability`  | Filter by capability key, e.g. `FULLSTACK_MONITORING`                |
 | `--output`   | Output format                                                           |
 
 ```bash
@@ -1323,7 +1407,9 @@ Show subscription usage broken down by monitoring environment.
 This is distinct from `account subscriptions`, which reports only the usage
 totals embedded in the subscription record. This command calls the dedicated
 per-environment usage endpoint, so it can attribute consumption to individual
-environments. Requires the `account-uac-read` scope.
+environments. One row is printed per environment, capability and period
+(`-o wide` adds the end time, capability name and cluster). Requires the
+`account-uac-read` scope.
 
 ```bash
 dtiam account environment-usage [SUBSCRIPTION] --start TIME --end TIME [OPTIONS]
@@ -1331,7 +1417,7 @@ dtiam account environment-usage [SUBSCRIPTION] --start TIME --end TIME [OPTIONS]
 
 | Argument/Option | Description                                                        |
 | --------------- | ------------------------------------------------------------------ |
-| `SUBSCRIPTION`  | Subscription UUID or name (optional if the account has only one)    |
+| `SUBSCRIPTION`  | Subscription UUID or name (default: the account's only ACTIVE subscription) |
 | `--start`       | Start of window, e.g. `2026-09-01T00:00:00Z` (required)             |
 | `--end`         | End of window (required)                                           |
 | `--environment` | Restrict to these environment IDs                                  |
@@ -1348,9 +1434,10 @@ dtiam account environment-usage --start 2026-09-01T00:00:00Z --end 2026-10-01T00
 
 Show subscription cost broken down by monitoring environment.
 
-> **Note:** this endpoint lives on the **v3** Subscription API while subscription
-> listing, usage, and forecast remain on v2. dtiam handles the version difference
-> internally.
+> **Note:** per-environment cost and usage use the **v3** Subscription API, while
+> subscription listing and forecast remain on v2. dtiam handles the version
+> difference internally and follows every page. One row is printed per
+> environment, capability and period.
 
 ```bash
 dtiam account environment-cost [SUBSCRIPTION] --start TIME --end TIME [OPTIONS]
@@ -1358,7 +1445,7 @@ dtiam account environment-cost [SUBSCRIPTION] --start TIME --end TIME [OPTIONS]
 
 | Argument/Option | Description                                                     |
 | --------------- | --------------------------------------------------------------- |
-| `SUBSCRIPTION`  | Subscription UUID or name (optional if the account has only one) |
+| `SUBSCRIPTION`  | Subscription UUID or name (default: the only ACTIVE subscription) |
 | `--start`       | Start of window (required)                                      |
 | `--end`         | End of window (required)                                        |
 | `--output`      | Output format                                                   |
@@ -1952,7 +2039,8 @@ dtiam analyze effective-group DevOps --level environment --level-id env123
 
 ### config migrate-secrets
 
-Move plaintext client secrets from the config file into the OS keyring.
+Move plaintext client secrets and environment tokens from the config file into
+the OS keyring.
 
 ```bash
 dtiam config migrate-secrets [--dry-run]
@@ -1965,7 +2053,8 @@ never left in a broken state.
 
 ### config keyring-status
 
-Show whether the OS keyring is in use and where each credential's secret lives.
+Show whether the OS keyring is in use and where each credential's client secret
+and environment token live.
 
 ```bash
 dtiam config keyring-status [--output FORMAT]

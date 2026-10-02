@@ -92,6 +92,11 @@ func (h *PolicyHandler) ListAggregate(ctx context.Context) ([]map[string]any, er
 }
 
 // Validate validates a policy definition.
+//
+// Deprecated: the validation endpoints were deprecated by Dynatrace on
+// 2026-06-15 and are removed on 2027-01-11; this method will be removed in
+// dtiam 4.0. Policy create and update now validate the statement themselves,
+// so call Create or Update and handle the returned error instead.
 func (h *PolicyHandler) Validate(ctx context.Context, data map[string]any) (*ValidationResult, error) {
 	path := fmt.Sprintf("%s/validation", h.Path)
 	body, err := h.Client.Post(ctx, path, data)
@@ -130,6 +135,11 @@ func (h *PolicyHandler) Validate(ctx context.Context, data map[string]any) (*Val
 }
 
 // ValidateUpdate validates an update to an existing policy.
+//
+// Deprecated: the validation endpoints were deprecated by Dynatrace on
+// 2026-06-15 and are removed on 2027-01-11; this method will be removed in
+// dtiam 4.0. Policy create and update now validate the statement themselves,
+// so call Create or Update and handle the returned error instead.
 func (h *PolicyHandler) ValidateUpdate(ctx context.Context, policyID string, data map[string]any) (*ValidationResult, error) {
 	path := fmt.Sprintf("%s/validation/%s", h.Path, policyID)
 	body, err := h.Client.Post(ctx, path, data)
@@ -160,6 +170,8 @@ func (h *PolicyHandler) ValidateUpdate(ctx context.Context, policyID string, dat
 }
 
 // ValidationResult represents the result of a policy validation.
+//
+// Deprecated: used only by the deprecated Validate and ValidateUpdate.
 type ValidationResult struct {
 	Valid      bool
 	Errors     []string

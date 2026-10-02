@@ -16,6 +16,7 @@ dtiam/
 │       ├── get/                      # List/retrieve, incl. --watch
 │       ├── describe/ create/ delete/ # Single-resource operations
 │       ├── user/ serviceuser/ group/ # Identity lifecycle
+│       ├── token/                    # Platform token activate/deactivate/set-expiration
 │       ├── boundary/ account/        # Boundaries; limits, subscriptions, usage
 │       ├── bulk/ export/ apply/      # File-driven operations
 │       ├── diff/                     # Preview what apply would change

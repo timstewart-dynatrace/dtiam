@@ -33,4 +33,5 @@ func init() {
 	Cmd.AddCommand(permissionsCmd)
 	Cmd.AddCommand(grantPermissionCmd)
 	Cmd.AddCommand(revokePermissionCmd)
+	Cmd.AddCommand(updateCmd)
 }

@@ -121,6 +121,16 @@ func SubscriptionColumns() []Column {
 	}
 }
 
+// CreatedTokenColumns returns columns for the create-token response, which
+// carries only name, tokenId and the one-time token value. The value is left out
+// of the table; it is printed separately, and is in -o json output.
+func CreatedTokenColumns() []Column {
+	return []Column{
+		{Key: "tokenId", Header: "TOKEN ID"},
+		{Key: "name", Header: "NAME"},
+	}
+}
+
 // TokenColumns returns columns for platform token resources.
 //
 // Field names verified against a live account: the response carries tokenId,
@@ -213,34 +223,48 @@ func GroupPermissionColumns() []Column {
 // NotificationColumns returns columns for account notifications.
 func NotificationColumns() []Column {
 	return []Column{
-		{Key: "dateTime", Header: "TIMESTAMP"},
+		// Live record fields are date, key, type (lowercase), severity, message
+		// and details{environments, capabilities}; dateTime, id and
+		// subscriptionName do not exist and printed blank before 3.2.0.
+		{Key: "date", Header: "DATE"},
 		{Key: "type", Header: "TYPE"},
 		{Key: "severity", Header: "SEVERITY"},
 		{Key: "message", Header: "MESSAGE"},
-		{Key: "subscriptionName", Header: "SUBSCRIPTION", WideOnly: true},
-		{Key: "id", Header: "ID", WideOnly: true},
+		{Key: "details.capabilities", Header: "CAPABILITIES", WideOnly: true},
+		{Key: "key", Header: "KEY", WideOnly: true},
 	}
 }
 
 // EnvironmentUsageColumns returns columns for per-environment subscription usage.
 func EnvironmentUsageColumns() []Column {
+	// One row per environment x capability x period, as flattened by
+	// resources.FlattenEnvironmentData. Before 3.2.0 the table showed the
+	// nested record list as "N items" with blank capability and unit.
 	return []Column{
 		{Key: "environmentId", Header: "ENVIRONMENT"},
 		{Key: "capabilityKey", Header: "CAPABILITY"},
-		{Key: "usage", Header: "USAGE"},
-		{Key: "unit", Header: "UNIT"},
-		{Key: "environmentName", Header: "NAME", WideOnly: true},
+		{Key: "value", Header: "VALUE"},
+		{Key: "unitMeasure", Header: "UNIT"},
+		{Key: "startTime", Header: "START"},
+		{Key: "endTime", Header: "END", WideOnly: true},
+		{Key: "capabilityName", Header: "NAME", WideOnly: true},
+		{Key: "clusterId", Header: "CLUSTER", WideOnly: true},
 	}
 }
 
 // EnvironmentCostColumns returns columns for per-environment subscription cost.
 func EnvironmentCostColumns() []Column {
+	// Cost records carry value and currencyCode, not cost/currency.
 	return []Column{
 		{Key: "environmentId", Header: "ENVIRONMENT"},
 		{Key: "capabilityKey", Header: "CAPABILITY"},
-		{Key: "cost", Header: "COST"},
-		{Key: "currency", Header: "CURRENCY"},
-		{Key: "environmentName", Header: "NAME", WideOnly: true},
+		{Key: "value", Header: "COST"},
+		{Key: "currencyCode", Header: "CURRENCY"},
+		{Key: "startTime", Header: "START"},
+		{Key: "endTime", Header: "END", WideOnly: true},
+		{Key: "bookingDate", Header: "BOOKED", WideOnly: true},
+		{Key: "capabilityName", Header: "NAME", WideOnly: true},
+		{Key: "clusterId", Header: "CLUSTER", WideOnly: true},
 	}
 }
 

@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-02
+
+Moves dtiam off the account APIs Dynatrace removes on **2027-01-11**, and adds
+the token and group lifecycle commands. Every change was verified against a live
+account; write paths used throwaway `dtiam-probe-*` objects that were deleted.
+
+### Added
+
+- **`token` command group:** `token deactivate` (confirmed; `--force`),
+  `token activate`, and `token set-expiration --date`, using
+  `PUT /platform-tokens/{id}/status` and `/expiration-date`.
+- **`group update`** to rename a group or change its description.
+- **`config set-credentials --api-url --environment-url --environment-token`.**
+  An existing credential can now be updated with any subset of flags. The
+  environment token is stored in the OS keyring like the client secret;
+  `migrate-secrets`, `keyring-status`, `delete-credentials` and `doctor` cover it.
+- **`account notifications --environment --capability`** filters, and the
+  `ENVIRONMENT_UPGRADE` / `ENVIRONMENT_DOWNGRADE` types.
+- **`create token`** flags `--user`, `--expires-at`, `--environment`,
+  `--resource` and `--tag`.
+
+### Changed
+
+- **Notifications use `GET /v2/.../notifications`** instead of the v1 POST
+  (deprecated 2026-06-15, removed 2027-01-11). Every page is fetched.
+- **Environment usage uses `/sub/v3/.../environments/usage`** instead of v2
+  (same deprecation). Usage and cost now follow every page (v3 returns at most
+  50 records per page). Verified: v3 totals match v2 exactly.
+- **`environment-usage` and `environment-cost` default to the ACTIVE
+  subscription.** Accounts typically hold expired and pending terms as well, so
+  the old "only subscription" default almost never applied.
+- **`environment-usage` / `environment-cost` print one row per environment,
+  capability and period**, with value and unit.
+- `resources.TokenHandler.Create` takes a `PlatformTokenRequest`;
+  `resources.NotificationQuery` gains `Environments` and `Capabilities`.
+
+### Fixed
+
+- **`config migrate-secrets` left every plaintext secret in the config file**
+  while reporting it as moved: the secret was copied into the keyring, but the
+  config field was never rewritten. Secrets migrated with an earlier version are
+  in both places; re-run `dtiam config migrate-secrets` to remove the plaintext.
+- **`create token` could never succeed.** It sent `scopes`/`expiresIn`; the API
+  requires `scope`, `resource`, `tags`, `expirationDate` and `userUuid`.
+  `--scopes` and `--user` are now required. Note the API only mints tokens owned
+  by the calling identity.
+- `account notifications` showed blank DATE and ID columns (records carry `date`
+  and `key`).
+- `account environment-usage` showed "N items" with blank capability and unit;
+  `environment-cost` read `cost`/`currency`, which the API does not send
+  (`value`/`currencyCode`).
+
+### Deprecated
+
+- `resources.PolicyHandler.Validate`, `ValidateUpdate` and `ValidationResult`
+  call the policy validation endpoints Dynatrace removes on 2027-01-11. They will
+  be removed in 4.0; policy create and update validate inline.
+- `client.NotificationsBaseURL` (v1); use `client.NotificationsV2BaseURL`.
+
 ## [3.1.0] - 2026-10-02
 
 ### Added

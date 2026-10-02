@@ -20,6 +20,7 @@ import (
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/group"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/serviceuser"
 	templatecmd "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/template"
+	tokencmd "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/token"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/user"
 )
 
@@ -32,6 +33,7 @@ func main() {
 	cli.AddCommand(deletecmd.Cmd)
 	cli.AddCommand(user.Cmd)
 	cli.AddCommand(serviceuser.Cmd)
+	cli.AddCommand(tokencmd.Cmd)
 	cli.AddCommand(group.Cmd)
 	cli.AddCommand(boundary.Cmd)
 	cli.AddCommand(account.Cmd)

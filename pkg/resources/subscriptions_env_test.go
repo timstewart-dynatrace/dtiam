@@ -32,17 +32,17 @@ func TestSubscriptionHandler_EnvironmentUsageRequiresWindow(t *testing.T) {
 func TestSubscriptionHandler_EnvironmentUsageSendsWindowAndFilters(t *testing.T) {
 	var query url.Values
 	mux := http.NewServeMux()
-	mux.HandleFunc("/subscriptions/s1/environments/usage", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/sub/v3/accounts/test-uuid/subscriptions/s1/environments/usage", func(w http.ResponseWriter, r *http.Request) {
 		query = r.URL.Query()
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"data":             []any{map[string]any{"environmentId": "abc", "usage": 10}},
+			"data":             []any{map[string]any{"environmentId": "abc", "usage": []any{}}},
 			"lastModifiedTime": "2026-10-01T00:00:00Z",
 		})
 	})
 
 	c, baseURL := newTestClientAndURL(t, mux)
 	h := NewSubscriptionHandler(c)
-	h.Path = baseURL + "/subscriptions"
+	h.V3BaseURL = baseURL + "/sub/v3/accounts/test-uuid"
 
 	result, err := h.EnvironmentUsage(context.Background(), "s1",
 		"2026-09-01T00:00:00Z", "2026-10-01T00:00:00Z",
@@ -67,14 +67,14 @@ func TestSubscriptionHandler_EnvironmentUsageSendsWindowAndFilters(t *testing.T)
 func TestSubscriptionHandler_EnvironmentUsageOmitsEmptyFilters(t *testing.T) {
 	var query url.Values
 	mux := http.NewServeMux()
-	mux.HandleFunc("/subscriptions/s1/environments/usage", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/sub/v3/accounts/test-uuid/subscriptions/s1/environments/usage", func(w http.ResponseWriter, r *http.Request) {
 		query = r.URL.Query()
 		_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
 	})
 
 	c, baseURL := newTestClientAndURL(t, mux)
 	h := NewSubscriptionHandler(c)
-	h.Path = baseURL + "/subscriptions"
+	h.V3BaseURL = baseURL + "/sub/v3/accounts/test-uuid"
 
 	if _, err := h.EnvironmentUsage(context.Background(), "s1", "s", "e", nil, nil); err != nil {
 		t.Fatalf("EnvironmentUsage() error: %v", err)
@@ -163,5 +163,101 @@ func TestNewSubscriptionHandler_SetsV3BaseURL(t *testing.T) {
 	}
 	if !strings.Contains(h.Path, "/sub/v2/") {
 		t.Errorf("Path = %q, want it to stay on v2", h.Path)
+	}
+}
+
+func TestSubscriptionHandler_EnvironmentUsageFollowsV3Pages(t *testing.T) {
+	var requests []url.Values
+	mux := http.NewServeMux()
+	mux.HandleFunc("/sub/v3/accounts/test-uuid/subscriptions/s1/environments/usage", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		requests = append(requests, q)
+		// Live behavior: one environment's records are split across pages.
+		if q.Get("page-key") == "" {
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"data": []any{map[string]any{"environmentId": "abc", "usage": []any{
+					map[string]any{"capabilityKey": "A", "value": 1.0},
+				}}},
+				"lastModifiedTime": "2026-10-01T00:00:00Z",
+				"nextPageKey":      "k2",
+			})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": []any{map[string]any{"environmentId": "abc", "clusterId": "c1", "usage": []any{
+				map[string]any{"capabilityKey": "B", "value": 2.0},
+			}}},
+			"lastModifiedTime": "2026-10-01T00:00:00Z",
+			"nextPageKey":      nil,
+		})
+	})
+
+	c, baseURL := newTestClientAndURL(t, mux)
+	h := NewSubscriptionHandler(c)
+	h.V3BaseURL = baseURL + "/sub/v3/accounts/test-uuid"
+
+	result, err := h.EnvironmentUsage(context.Background(), "s1", "START", "END", []string{"abc"}, nil)
+	if err != nil {
+		t.Fatalf("EnvironmentUsage() error: %v", err)
+	}
+	if len(requests) != 2 {
+		t.Fatalf("made %d requests, want 2", len(requests))
+	}
+	// Unlike notifications, the Subscription API needs the full query on every
+	// page: page-key alone is rejected with "'endTime' must be provided".
+	second := requests[1]
+	if second.Get("page-key") != "k2" || second.Get("startTime") != "START" ||
+		second.Get("endTime") != "END" || second.Get("environmentIds") != "abc" {
+		t.Errorf("second request = %v, want page-key plus the full query", second)
+	}
+	// 50 is the API's maximum; larger values are a 400.
+	if requests[0].Get("page-size") != "50" {
+		t.Errorf("page-size = %q, want 50", requests[0].Get("page-size"))
+	}
+
+	rows := FlattenEnvironmentData(result, "usage")
+	if len(rows) != 2 {
+		t.Fatalf("flattened %d rows, want 2", len(rows))
+	}
+	if rows[0]["capabilityKey"] != "A" || rows[1]["capabilityKey"] != "B" || rows[1]["clusterId"] != "c1" {
+		t.Errorf("rows = %v, want A then B (with cluster c1)", rows)
+	}
+	for _, r := range rows {
+		if r["environmentId"] != "abc" {
+			t.Errorf("row %v lost its environmentId", r)
+		}
+	}
+}
+
+func TestFlattenEnvironmentData(t *testing.T) {
+	tests := []struct {
+		name     string
+		result   map[string]any
+		itemsKey string
+		want     int
+	}{
+		{name: "should return no rows for no data", result: map[string]any{"data": []any{}}, itemsKey: "usage", want: 0},
+		{name: "should tolerate a missing data key", result: map[string]any{}, itemsKey: "usage", want: 0},
+		{
+			name: "should emit one row per cost record across environments",
+			result: map[string]any{"data": []any{
+				map[string]any{"environmentId": "e1", "cost": []any{
+					map[string]any{"value": 1.0, "currencyCode": "USD"},
+					map[string]any{"value": 2.0, "currencyCode": "USD"},
+				}},
+				map[string]any{"environmentId": "e2", "cost": []any{
+					map[string]any{"value": 3.0, "currencyCode": "USD"},
+				}},
+			}},
+			itemsKey: "cost",
+			want:     3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FlattenEnvironmentData(tt.result, tt.itemsKey); len(got) != tt.want {
+				t.Errorf("got %d rows, want %d", len(got), tt.want)
+			}
+		})
 	}
 }

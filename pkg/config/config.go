@@ -164,6 +164,13 @@ func (c *Config) SetCredentialField(name, field, value string) bool {
 		if c.Credentials[i].Name == name {
 			cred := &c.Credentials[i].Credential
 			switch field {
+			case "client-id":
+				cred.ClientID = value
+			case "client-secret":
+				// Without this case "config migrate-secrets" copied each secret
+				// into the keyring but left the plaintext in the file, while
+				// reporting it as moved.
+				cred.ClientSecret = value
 			case "api-url":
 				cred.APIURL = value
 			case "scopes":
@@ -224,6 +231,21 @@ func GetEffectiveEnvironmentToken(cred *Credential) string {
 		return cred.EnvironmentToken
 	}
 	return ""
+}
+
+// ResolveEnvironmentToken returns the environment token for the current
+// credential, reading it from the OS keyring when the config file holds only a
+// keyring reference. DTIAM_ENVIRONMENT_TOKEN takes precedence.
+func ResolveEnvironmentToken(cfg *Config) (string, error) {
+	var cred *Credential
+	if cfg != nil {
+		cred = cfg.GetCurrentCredential()
+	}
+	token := GetEffectiveEnvironmentToken(cred)
+	if !IsKeyringReference(token) {
+		return token, nil
+	}
+	return NewSecretStore().GetSecret(EnvironmentTokenKeyringKey(cfg.CurrentCredentialName()), token)
 }
 
 // GetEffectiveScopes returns the OAuth scope override, checking env > credential.

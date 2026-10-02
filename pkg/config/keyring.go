@@ -63,6 +63,13 @@ func KeyringAvailable() bool {
 	return false
 }
 
+// EnvironmentTokenKeyringKey is the keyring entry name for a credential's
+// environment token. Client secrets are stored under the bare credential name,
+// so the token needs its own key to sit alongside it.
+func EnvironmentTokenKeyringKey(credentialName string) string {
+	return credentialName + "/environment-token"
+}
+
 // IsKeyringReference reports whether a stored client-secret value is a marker
 // pointing at the keyring rather than the secret itself.
 func IsKeyringReference(value string) bool {

@@ -17,6 +17,8 @@ var (
 	notificationsEndFlag        string
 	notificationsTypesFlag      []string
 	notificationsSeveritiesFlag []string
+	notificationsEnvsFlag       []string
+	notificationsCapsFlag       []string
 )
 
 func init() {
@@ -25,18 +27,23 @@ func init() {
 	notificationsCmd.Flags().StringVar(&notificationsEndFlag, "end", "",
 		"End of the window (ISO-8601)")
 	notificationsCmd.Flags().StringSliceVar(&notificationsTypesFlag, "type", nil,
-		"Filter by type: FORECAST, BUDGET, COST, BYOK_REVOKED, BYOK_ACTIVATED")
+		"Filter by type: FORECAST, BUDGET, COST, BYOK_REVOKED, BYOK_ACTIVATED, ENVIRONMENT_UPGRADE, ENVIRONMENT_DOWNGRADE")
 	notificationsCmd.Flags().StringSliceVar(&notificationsSeveritiesFlag, "severity", nil,
 		"Filter by severity: SEVERE, WARN, INFO")
+	notificationsCmd.Flags().StringSliceVar(&notificationsEnvsFlag, "environment", nil,
+		"Filter by environment ID (repeatable or comma-separated)")
+	notificationsCmd.Flags().StringSliceVar(&notificationsCapsFlag, "capability", nil,
+		"Filter by capability key, e.g. FULLSTACK_MONITORING")
 }
 
 var notificationsCmd = &cobra.Command{
 	Use:     "notifications",
 	Aliases: []string{"notification"},
 	Short:   "List account notifications",
-	Long: `List account-level notifications: budget, cost, forecast, and
-bring-your-own-key events.
+	Long: `List account-level notifications: budget, cost, forecast,
+bring-your-own-key, and environment upgrade/downgrade events, newest first.
 
+Every matching notification is returned; dtiam follows the API's pages.
 Requires the account-uac-read OAuth scope.
 
 Filter values are validated locally, so a mistyped type or severity fails with a
@@ -51,6 +58,9 @@ clear message instead of silently matching nothing.`,
   dtiam account notifications --type BUDGET,COST \
     --start 2026-09-01T00:00:00Z --end 2026-10-01T00:00:00Z
 
+  # Notifications for one environment and capability
+  dtiam account notifications --environment abc12345 --capability FULLSTACK_MONITORING
+
   # Machine-friendly output
   dtiam account notifications --plain`,
 	Args: cobra.NoArgs,
@@ -60,6 +70,8 @@ clear message instead of silently matching nothing.`,
 			EndDateTime:   notificationsEndFlag,
 			Types:         upperAll(notificationsTypesFlag),
 			Severities:    upperAll(notificationsSeveritiesFlag),
+			Environments:  notificationsEnvsFlag,
+			Capabilities:  upperAll(notificationsCapsFlag),
 		}
 
 		// Validate before creating a client so a typo does not cost an SSO round trip.
@@ -82,7 +94,7 @@ clear message instead of silently matching nothing.`,
 
 		if result.HasMore {
 			printer.PrintWarning(
-				"More notifications exist beyond this response (%d matched); narrow the window to see the rest",
+				"Stopped after %d notifications (page limit reached); narrow the window to see the rest",
 				result.TotalCount)
 		}
 

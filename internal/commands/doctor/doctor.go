@@ -317,12 +317,14 @@ func secretStorageCheck(cfg *config.Config) CheckResult {
 	plaintext := 0
 	inKeyring := 0
 	for _, named := range cfg.Credentials {
-		switch {
-		case named.Credential.ClientSecret == "":
-		case config.IsKeyringReference(named.Credential.ClientSecret):
-			inKeyring++
-		default:
-			plaintext++
+		for _, secret := range []string{named.Credential.ClientSecret, named.Credential.EnvironmentToken} {
+			switch {
+			case secret == "":
+			case config.IsKeyringReference(secret):
+				inKeyring++
+			default:
+				plaintext++
+			}
 		}
 	}
 

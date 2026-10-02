@@ -63,6 +63,23 @@ dtiam's `utils.StringFrom()` and `safemap` helpers handle all three cases unifor
 
 ## Pagination
 
+The account APIs page in at least four incompatible ways. Each rule below was
+verified against a live account.
+
+| API | Style | Page size | Later pages send |
+|---|---|---|---|
+| Notifications `GET /v2/.../notifications` | `page-key` / `nextPageKey`, `hasNextPage` | default 20, 500 accepted | **`page-key` alone** -- resending filters with it is a 400 |
+| Subscription v3 `.../environments/usage` and `/cost` | `page-key` / `nextPageKey` (null on the last page) | **max 50** (more is a 400) | **`page-key` plus the full query** -- `page-key` alone is a 400 ("'endTime' must be provided") |
+| Service users | `page-key` / `nextPageKey` | 500 | see `client.ServiceUserPagination` |
+| Platform tokens, boundaries, limits | page number | 500 | page number |
+
+Notifications v2 list filters (`types`, `severities`, `environments`,
+`capabilities`) are **repeated** parameters (`types=A&types=B`); a
+comma-separated value is a 400. The documented `totalRecordCount` field is not
+sent. The Subscription v3 filters (`environmentIds`, `capabilityKeys`) are
+comma-separated. v3 usage splits one environment's records across pages, so the
+same `environmentId` appears in several entries; v3 totals match v2 exactly.
+
 ### Effective Permissions API
 
 - Uses **page-based** pagination: `page=1&size=100`
@@ -131,6 +148,17 @@ Deleting a resource that was already deleted returns 404, not a success code. dt
 - `POST /service-users` and `PUT /service-users/{uid}` accept only `name` and `description`; `name` is required on PUT. Group membership is not part of either.
 - `PUT /groups/{uuid}` takes `{uuid, name, description, federatedAttributeValues}`.
 - `PUT .../policies/{uuid}` requires `name`, `description` and `statementQuery`. The policy **list** omits `statementQuery`, so an update must start from `GET .../policies/{uuid}`.
+
+### Platform Tokens
+
+- `POST /platform-tokens` requires `name`, `scope`, `resource` (URNs such as
+  `urn:dtaccount:{uuid}` or `urn:dtenvironment:{id}`), `tags`, `expirationDate`
+  and `userUuid`. It returns `{name, tokenId, token}` once.
+- The owner (`userUuid`) must be the calling identity. Minting a token for
+  another service user returns 403 with no further detail. For an OAuth client,
+  the caller is the service user in the access token's `sub` claim.
+- `PUT /platform-tokens/{id}/status` takes `{"status": "ACTIVE"|"INACTIVE"}`;
+  `PUT /platform-tokens/{id}/expiration-date` takes `{"expirationDate": RFC 3339}`.
 
 ### 409 on Duplicate Create
 
