@@ -56,6 +56,12 @@ catalog; `edit`; integration test suite behind `//go:build integration`.
 
 WIF trust policies (Preview), IP allowlist, policy-level limits, env service users.
 
+## Step 1b — 3.0.2 installer repo paths — DONE
+
+- [x] install.sh / install.ps1 / README / SECURITY / CODE_OF_CONDUCT / CONTRIBUTING
+      / .goreleaser.yaml point at `timstewart-dynatrace/dtiam`
+- [x] Both installers verified against the v3.0.1 release (pinned and latest)
+
 ## Known issues found, not yet fixed
 
 - `export group|policy|all|...` and `bulk export-group-members` define a local
@@ -69,5 +75,13 @@ WIF trust policies (Preview), IP allowlist, policy-level limits, env service use
 - `get schemas` uses `{env}.live.dynatrace.com/api/v2` (classic API); with an
   OAuth token the platform path `{env}.apps.dynatrace.com/platform/classic/environment-api/v2`
   is likely required. Not verifiable with the current OAuth client (no settings scope).
+- Go module path is `github.com/jtimothystewart/dtiam`, which does not resolve,
+  so `go install ...@latest` and library imports fail. Renaming is MAJOR for
+  importers -- needs a decision.
+- `.goreleaser.yaml` archive `name_template` (`dtiam_Darwin_x86_64`) does not
+  match what the installers download (`dtiam_{version}_{os}_{arch}.tar.gz`), and
+  Windows is zip where install.ps1 expects tar.gz. v3.0.1 assets were built by
+  hand with the installer naming. `timstewart-dynatrace/homebrew-tap` does not
+  exist, so the brews step would fail.
 - `account forecast` reports "subscription not found" when the API says the
   subscription has no budget.

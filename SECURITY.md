@@ -7,7 +7,7 @@
 ## Reporting a vulnerability
 
 Report security issues privately via
-[GitHub Security Advisories](https://github.com/jtimothystewart/dtiam/security/advisories/new).
+[GitHub Security Advisories](https://github.com/timstewart-dynatrace/dtiam/security/advisories/new).
 
 Please do **not** open a public issue for a security problem.
 

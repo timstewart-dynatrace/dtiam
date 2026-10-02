@@ -11,7 +11,7 @@ agreed before you write code. Large rewrites need explicit agreement.
 ## Development setup
 
 ```bash
-git clone https://github.com/jtimothystewart/dtiam.git
+git clone https://github.com/timstewart-dynatrace/dtiam.git
 cd dtiam
 make build          # -> bin/dtiam
 make test

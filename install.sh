@@ -4,7 +4,7 @@
 # dtiam is an independent, community-developed tool and is NOT produced,
 # endorsed, or supported by Dynatrace.
 #
-#   curl -fsSL https://raw.githubusercontent.com/jtimothystewart/dtiam/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/timstewart-dynatrace/dtiam/main/install.sh | sh
 #
 # Environment variables:
 #   DTIAM_VERSION    version to install (default: latest release)
@@ -13,7 +13,7 @@
 
 set -eu
 
-REPO="jtimothystewart/dtiam"
+REPO="timstewart-dynatrace/dtiam"
 BINARY="dtiam"
 
 err() { printf '%s\n' "error: $*" >&2; exit 1; }

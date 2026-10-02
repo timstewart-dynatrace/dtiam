@@ -16,7 +16,7 @@
     Installation directory. Defaults to $env:LOCALAPPDATA\Programs\dtiam.
 
 .EXAMPLE
-    irm https://raw.githubusercontent.com/jtimothystewart/dtiam/main/install.ps1 | iex
+    irm https://raw.githubusercontent.com/timstewart-dynatrace/dtiam/main/install.ps1 | iex
 
 .EXAMPLE
     .\install.ps1 -Version 2.2.0 -InstallDir C:\Tools\dtiam
@@ -30,7 +30,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$Repo   = 'jtimothystewart/dtiam'
+$Repo   = 'timstewart-dynatrace/dtiam'
 $Binary = 'dtiam.exe'
 
 function Write-Info { param([string]$Message) Write-Host $Message }

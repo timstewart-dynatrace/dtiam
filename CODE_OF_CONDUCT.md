@@ -37,7 +37,7 @@ they deem inappropriate, threatening, offensive, or harmful.
 
 Report abusive, harassing, or otherwise unacceptable behavior by opening a
 private report through
-[GitHub Security Advisories](https://github.com/jtimothystewart/dtiam/security/advisories/new)
+[GitHub Security Advisories](https://github.com/timstewart-dynatrace/dtiam/security/advisories/new)
 or by contacting the maintainer directly. All complaints will be reviewed and
 investigated promptly and fairly, and the privacy and security of the reporter
 will be respected.

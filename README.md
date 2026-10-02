@@ -22,10 +22,10 @@ dtiam bulk add-users-to-group -f users.csv    # Bulk operations
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/jtimothystewart/dtiam/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/timstewart-dynatrace/dtiam/main/install.sh | sh
 
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/jtimothystewart/dtiam/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/timstewart-dynatrace/dtiam/main/install.ps1 | iex
 ```
 
 Both scripts detect your platform, verify the release checksum, and install to a
@@ -42,7 +42,7 @@ cd dtiam && make build     # -> bin/dtiam
 make install
 ```
 
-Binary downloads are on the [releases page](https://github.com/jtimothystewart/dtiam/releases).
+Binary downloads are on the [releases page](https://github.com/timstewart-dynatrace/dtiam/releases).
 
 **Requires:** Go 1.23+ (building from source), a Dynatrace account with API access.
 
