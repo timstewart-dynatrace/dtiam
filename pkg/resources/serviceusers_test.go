@@ -95,20 +95,57 @@ func TestServiceUserHandler_GetByName_NotFound(t *testing.T) {
 	}
 }
 
-func TestServiceUserHandler_Create_Success(t *testing.T) {
+// serviceUserMux serves the live shapes for service user "su1": GET
+// /service-users/su1 has no groups, and its memberships live on the user
+// record at GET /users/{email}.
+func serviceUserMux(t *testing.T, onUsers func(w http.ResponseWriter, r *http.Request)) *http.ServeMux {
+	t.Helper()
 	mux := http.NewServeMux()
+	mux.HandleFunc("/service-users/su1", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"uid": "su1", "email": "su1@service.sso.dynatrace.com", "name": "CI Bot", "description": "old",
+			})
+		case http.MethodPut:
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if body["name"] == nil || body["name"] == "" {
+				w.WriteHeader(400) // PUT requires name
+				return
+			}
+			if _, ok := body["groups"]; ok {
+				t.Error("PUT /service-users/{uid} does not accept groups")
+			}
+			_ = json.NewEncoder(w).Encode(body)
+		default:
+			w.WriteHeader(405)
+		}
+	})
+	if onUsers != nil {
+		mux.HandleFunc("/users/su1@service.sso.dynatrace.com", onUsers)
+		mux.HandleFunc("/users/su1@service.sso.dynatrace.com/groups", onUsers)
+	}
+	return mux
+}
+
+func TestServiceUserHandler_Create_AddsGroupsThroughUserEndpoint(t *testing.T) {
+	var created map[string]any
+	var groupsPosted []string
+	mux := serviceUserMux(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			_ = json.NewDecoder(r.Body).Decode(&groupsPosted)
+			w.WriteHeader(201)
+		}
+	})
 	mux.HandleFunc("/service-users", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(405)
 			return
 		}
-		var body map[string]any
-		_ = json.NewDecoder(r.Body).Decode(&body)
-		if body["name"] != "NewBot" {
-			t.Errorf("expected name NewBot, got %v", body["name"])
-		}
+		_ = json.NewDecoder(r.Body).Decode(&created)
 		w.WriteHeader(201)
-		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su-new", "name": "NewBot"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su1", "email": "su1@service.sso.dynatrace.com", "name": "NewBot"})
 	})
 
 	h := newTestServiceUserHandler(t, mux)
@@ -117,8 +154,14 @@ func TestServiceUserHandler_Create_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
-	if result["uid"] != "su-new" {
-		t.Errorf("Create() uid = %v, want su-new", result["uid"])
+	if result["uid"] != "su1" {
+		t.Errorf("Create() uid = %v, want su1", result["uid"])
+	}
+	if _, ok := created["groups"]; ok {
+		t.Error("Create() sent groups to POST /service-users, which accepts only name and description")
+	}
+	if len(groupsPosted) != 1 || groupsPosted[0] != "g1" {
+		t.Errorf("Create() group membership = %v, want [g1] via POST /users/{email}", groupsPosted)
 	}
 }
 
@@ -182,16 +225,12 @@ func TestServiceUserHandler_Delete_NotFound(t *testing.T) {
 	}
 }
 
-func TestServiceUserHandler_GetGroups_Success(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/service-users/su1", func(w http.ResponseWriter, r *http.Request) {
+func TestServiceUserHandler_GetGroups_ReadsUserRecord(t *testing.T) {
+	mux := serviceUserMux(t, func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"uid":  "su1",
-			"name": "CI Bot",
-			"groups": []any{
-				map[string]any{"uuid": "g1", "name": "Admins"},
-				"g2",
-			},
+			"uid":    "su1",
+			"email":  "su1@service.sso.dynatrace.com",
+			"groups": []any{map[string]any{"uuid": "g1", "groupName": "Admins"}, map[string]any{"uuid": "g2"}},
 		})
 	})
 
@@ -200,26 +239,14 @@ func TestServiceUserHandler_GetGroups_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetGroups() error: %v", err)
 	}
-	if len(groups) != 2 {
-		t.Fatalf("GetGroups() returned %d groups, want 2", len(groups))
-	}
-	// First group is a map
-	if groups[0]["uuid"] != "g1" {
-		t.Errorf("groups[0] uuid = %v, want g1", groups[0]["uuid"])
-	}
-	// Second group is a string UUID
-	if groups[1]["uuid"] != "g2" {
-		t.Errorf("groups[1] uuid = %v, want g2", groups[1]["uuid"])
+	if len(groups) != 2 || groups[0]["uuid"] != "g1" || groups[1]["uuid"] != "g2" {
+		t.Errorf("GetGroups() = %v, want g1 and g2", groups)
 	}
 }
 
 func TestServiceUserHandler_GetGroups_NoGroups(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/service-users/su1", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"uid":  "su1",
-			"name": "CI Bot",
-		})
+	mux := serviceUserMux(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su1", "email": "su1@service.sso.dynatrace.com"})
 	})
 
 	h := newTestServiceUserHandler(t, mux)
@@ -232,24 +259,62 @@ func TestServiceUserHandler_GetGroups_NoGroups(t *testing.T) {
 	}
 }
 
-func TestServiceUserHandler_Update_Success(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/service-users/su1", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
-			// GET for other tests
-			_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su1", "name": "CI Bot"})
-			return
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"uid": "su1", "name": "Updated Bot"})
-	})
-
-	h := newTestServiceUserHandler(t, mux)
-	name := "Updated Bot"
-	result, err := h.Update(context.Background(), "su1", &name, nil, nil)
+func TestServiceUserHandler_Update_FillsRequiredName(t *testing.T) {
+	h := newTestServiceUserHandler(t, serviceUserMux(t, nil))
+	desc := "new description"
+	result, err := h.Update(context.Background(), "su1", nil, &desc, nil)
 	if err != nil {
 		t.Fatalf("Update() error: %v", err)
 	}
-	if result["name"] != "Updated Bot" {
-		t.Errorf("Update() name = %v, want Updated Bot", result["name"])
+	if result["name"] != "CI Bot" || result["description"] != "new description" {
+		t.Errorf("Update() = %v, want name kept as CI Bot and description replaced", result)
+	}
+}
+
+func TestServiceUserHandler_GroupMembership(t *testing.T) {
+	tests := []struct {
+		name       string
+		change     func(h *ServiceUserHandler) error
+		wantMethod string
+		wantGroup  string
+	}{
+		{
+			name:       "should add to a group with POST /users/{email}",
+			change:     func(h *ServiceUserHandler) error { return h.AddToGroup(context.Background(), "su1", "g9") },
+			wantMethod: http.MethodPost,
+			wantGroup:  "g9",
+		},
+		{
+			name:       "should remove from a group with DELETE /users/{email}/groups",
+			change:     func(h *ServiceUserHandler) error { return h.RemoveFromGroup(context.Background(), "su1", "g9") },
+			wantMethod: http.MethodDelete,
+			wantGroup:  "g9",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var method, group string
+			mux := serviceUserMux(t, func(w http.ResponseWriter, r *http.Request) {
+				method = r.Method
+				if r.Method == http.MethodPost {
+					var body []string
+					_ = json.NewDecoder(r.Body).Decode(&body)
+					if len(body) == 1 {
+						group = body[0]
+					}
+				} else {
+					group = r.URL.Query().Get("group-uuid")
+				}
+				w.WriteHeader(200)
+			})
+
+			h := newTestServiceUserHandler(t, mux)
+			if err := tt.change(h); err != nil {
+				t.Fatalf("membership change error: %v", err)
+			}
+			if method != tt.wantMethod || group != tt.wantGroup {
+				t.Errorf("sent %s for group %q, want %s for %q", method, group, tt.wantMethod, tt.wantGroup)
+			}
+		})
 	}
 }

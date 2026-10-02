@@ -152,10 +152,13 @@ func (h *OrgLevelHandler) ListGroups(
 		return nil, err
 	}
 
-	params := map[string]string{}
-	if partialString != "" {
-		params["partialString"] = partialString
+	// Groups filter on partialGroupName, not the partialString users take, and
+	// the API rejects a request without it (or a uuid): "Mandatory query param
+	// partialGroupName or uuid was not provided". Minimum length is 3.
+	if len(strings.TrimSpace(partialString)) < 3 {
+		return nil, fmt.Errorf("a search term of at least 3 characters is required to list groups at an organizational level")
 	}
+	params := map[string]string{"partialGroupName": partialString}
 
 	handler := &BaseHandler{
 		Client:     h.Client,

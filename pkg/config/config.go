@@ -213,6 +213,19 @@ func GetEffectiveEnvironmentURL(cred *Credential) string {
 	return ""
 }
 
+// GetEffectiveEnvironmentToken returns the environment API token, checking
+// env > credential. Empty means environment-served commands authenticate with
+// the account credentials instead.
+func GetEffectiveEnvironmentToken(cred *Credential) string {
+	if token := os.Getenv(EnvEnvironmentTkn); token != "" {
+		return token
+	}
+	if cred != nil {
+		return cred.EnvironmentToken
+	}
+	return ""
+}
+
 // GetEffectiveScopes returns the OAuth scope override, checking env > credential.
 //
 // An empty result means "use the built-in default set" (auth.DefaultScopeList).

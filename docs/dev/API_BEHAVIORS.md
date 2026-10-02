@@ -81,6 +81,8 @@ dtiam's `utils.StringFrom()` and `safemap` helpers handle all three cases unifor
 ### Bindings API
 
 - **Not paginated.** Returns all bindings for the specified level in one response. This can be large for accounts with many policies.
+- **The group view has its own shape.** `GET .../bindings/groups/{uuid}` returns `{"policyUuids": [...]}`, not the `policyBindings` envelope the other binding endpoints use. With `?details=true` it adds `bindingsDetails`, one `{policyUuid, groups, boundaries, levelType, levelId}` entry per binding. Reading `policyBindings` from it yields nothing, which is how `group bindings`, `group clone --include-policies` and the local `analyze` commands came back empty before 3.0.1.
+- **The pair view is wrapped.** `GET .../bindings/{policy}/{group}` returns `{levelType, levelId, policyBindings: [...]}`, while `PUT` on the same path takes the bare `{boundaries, parameters, metadata}`. Read the binding from inside the envelope; reading `boundaries` from the top level finds none.
 
 ---
 
@@ -88,31 +90,47 @@ dtiam's `utils.StringFrom()` and `safemap` helpers handle all three cases unifor
 
 ### Standard Error Shape
 
-Most 4xx/5xx responses follow this format:
+The Account Management API (`api.dynatrace.com`) returns a **boolean** `error`:
 
 ```json
-{
-    "error": {
-        "code": 404,
-        "message": "Group not found"
-    }
-}
+{ "error": true, "message": "Cannot get requested resource.", "payload": null }
 ```
 
-But some endpoints return:
+The environment Platform APIs (`{env}.apps.dynatrace.com`) nest the message:
 
 ```json
-{
-    "message": "Forbidden",
-    "statusCode": 403
-}
+{ "error": { "code": 400, "message": "Mandatory query param partialGroupName or uuid was not provided" } }
 ```
 
-dtiam's `handleResponse()` checks `error.message` first, then falls back to `message`, then to the raw response body.
+The SSO token endpoint uses OAuth's `{"error": "invalid_request", "error_description": "..."}`.
+
+`extractErrorMessage()` in `pkg/client` reads `message`, then `error` as a string, then `error.message`, then `error_description`, then the raw body. Before 3.0.1 it decoded into a struct with a string `error` field; the boolean form made that decode fail and **every Account Management error printed with a blank message**.
+
+### 400, Not 404, for a Name Where an ID Is Expected
+
+`GET .../policies/{x}` and `GET .../boundaries/{x}` answer a non-UUID with `400 Validation failed (uuid is expected)`. Name resolution must treat that like 404 and fall back to the list, or `get policies NAME` fails.
+
+### Endpoints That Have No Single-Item GET
+
+| Collection | Path that does not exist | Resolve instead from |
+|---|---|---|
+| Groups | `GET /groups/{uuid}` (only PUT and DELETE) | `GET /groups` |
+| Environments (v2) | `GET /env/v2/.../environments/{id}` | `GET .../environments` |
+| Platform tokens | `GET /platform-tokens/{id}` (only DELETE) | `GET /platform-tokens` |
+| Users by UID | `GET /users/{uid}` returns 400 "Expected email to be email" | `GET /users/{email}` |
+
+Handlers mark the first three with `BaseHandler.NoSingleGet`, which makes `Get` resolve from `List`.
 
 ### 404 on Deleted Resources
 
 Deleting a resource that was already deleted returns 404, not a success code. dtiam treats this as a non-error for idempotent delete operations.
+
+### Request Body Shapes That Differ From the Obvious
+
+- `POST /groups` takes and returns an **array** of groups. A bare object fails with `500 payload.map is not a function`.
+- `POST /service-users` and `PUT /service-users/{uid}` accept only `name` and `description`; `name` is required on PUT. Group membership is not part of either.
+- `PUT /groups/{uuid}` takes `{uuid, name, description, federatedAttributeValues}`.
+- `PUT .../policies/{uuid}` requires `name`, `description` and `statementQuery`. The policy **list** omits `statementQuery`, so an update must start from `GET .../policies/{uuid}`.
 
 ### 409 on Duplicate Create
 
@@ -199,9 +217,17 @@ A binding connects: Group + Policy + optional Boundary(s)
 - Boundary UUIDs are optional (array, can be empty or null)
 - A single group can be bound to the same policy multiple times with different boundaries
 
-### Deleting Bindings
+### Creating and Deleting Bindings
 
-The DELETE endpoint for bindings does not use a binding UUID. Instead, it requires the group UUID and policy UUID in the request body. This is because bindings are identified by their (group, policy) composite key, not by a unique ID.
+Bindings have no UUID; they are addressed by the (policy, group) pair in the path:
+
+- Create: `POST .../bindings/{policy}/{group}` with `{boundaries, parameters, metadata}` (appends a binding).
+- Delete: `DELETE .../bindings/{policy}/{group}`.
+- Change boundaries: `PUT .../bindings/{policy}/{group}` with the bare binding.
+
+The level-wide `.../bindings` collection has only `GET` and `DELETE` -- and that DELETE removes **every** binding at the level. Before 3.0.1 dtiam created bindings with `POST .../bindings` and deleted them by rewriting the whole level with `PUT .../bindings`; neither operation is in the spec.
+
+A parameterized policy can bind the same pair more than once with different parameters. The per-pair endpoints then match on `query-params`; dtiam refuses boundary changes in that case rather than editing one binding arbitrarily.
 
 ### Level Scoping
 
@@ -221,9 +247,29 @@ A policy bound at the account level grants permissions account-wide. A policy bo
 
 `POST /service-users` returns the generated client secret in the response body. This is the ONLY time the secret is available — it cannot be retrieved again. If the user loses it, they must delete and recreate the service user.
 
-### UID Format
+### UID and Email
 
-Service user UIDs follow a different format than regular user UIDs. They look like OAuth client IDs: `dt0s01.XXXXXX`.
+A service user's `uid` is a UUID, like a regular user's. Its `email` is `{uid}@service.sso.dynatrace.com`. The OAuth client ID (`dt0s02.XXXX`) is a separate value returned on create.
+
+### Group Membership
+
+`GET /service-users/{uid}` does **not** include groups. Service users are users for membership purposes: read groups from `GET /users/{email}` and change them with `POST /users/{email}` and `DELETE /users/{email}/groups?group-uuid=...`. A new service user is also given its own `service_user_group_{uid}` group automatically.
+
+---
+
+## User Group Membership
+
+Membership is managed through the user, never through the group:
+
+| Operation | Endpoint |
+|---|---|
+| List a user's groups | `GET /users/{email}` (the `groups` field; there is no `GET /users/{x}/groups`) |
+| Add to groups | `POST /users/{email}` with a JSON array of group UUIDs |
+| Remove from groups | `DELETE /users/{email}/groups?group-uuid=A&group-uuid=B` (query params, not a body) |
+| Replace all | `PUT /users/{email}/groups` with a JSON array |
+| List a group's members | `GET /groups/{uuid}/users` |
+
+There is no `POST /groups/{uuid}/users` or `DELETE /groups/{uuid}/users/{uid}`. `GET /users` excludes service users unless `?service-users=true`, which returns both kinds.
 
 ---
 
@@ -237,11 +283,19 @@ Service user UIDs follow a different format than regular user UIDs. They look li
 
 ### Settings Schemas
 
-- **Base URL:** `https://{environment-id}.apps.dynatrace.com/platform/classic/environment-api/v2/settings/schemas`
-- Same environment-level pattern
+- **Base URL used by dtiam:** `https://{environment-id}.live.dynatrace.com/api/v2/settings/schemas`
 - Used for validating schema IDs in boundary creation
 
-Both of these APIs require a separate token/scope from the account-level IAM token. dtiam uses `DTIAM_ENVIRONMENT_URL` and `DTIAM_ENVIRONMENT_TOKEN` environment variables for these.
+### Environment-Level Platform IAM
+
+- **Base URL:** `https://{environment-id}.apps.dynatrace.com/platform/iam/v1/organizational-levels/{account|environment}/{id}`
+- `users` requires `partialString` or `uuid`; `groups` requires `partialGroupName` (minimum 3 characters) or `uuid`. Neither will enumerate everything.
+- Groups come back as `{uuid, groupName, type}`, not the account API's `{uuid, name, owner}`.
+- An **account** OAuth token works here, provided it carries `iam:users:read` / `iam:groups:read`.
+
+### Authenticating to Environment APIs
+
+These scopes are deliberately not in the default set: requesting a scope the OAuth client was not granted fails the whole token request with HTTP 400, which would break every command. Instead each environment command requests only its own scopes (`auth.EnvironmentIAMScopes`, `auth.AppEngineScopes`, `auth.SettingsSchemaScopes`), so only that command fails if they are missing. An environment token (`DTIAM_ENVIRONMENT_TOKEN` or the credential's `environment-token`) takes precedence when set. The environment URL comes from `--environment`, `DTIAM_ENVIRONMENT_URL`, or the credential's `environment-url`.
 
 ---
 

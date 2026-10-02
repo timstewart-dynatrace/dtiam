@@ -34,22 +34,50 @@ func TestUserHandler_List_Success(t *testing.T) {
 	}
 }
 
-func TestUserHandler_Get_Success(t *testing.T) {
+// userMux serves the live shapes: the user list (with ?service-users=true
+// adding service users), and GET /users/{email} with the user's groups. GET
+// /users/{uid} is rejected with 400 as the live API does.
+func userMux(t *testing.T) *http.ServeMux {
+	t.Helper()
 	mux := http.NewServeMux()
-	mux.HandleFunc("/users/u1", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"uid":   "u1",
-			"email": "alice@example.com",
+			"items": []any{map[string]any{"uid": "u1", "email": "alice@example.com"}},
 		})
 	})
+	mux.HandleFunc("/users/alice@example.com", func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"uid":    "u1",
+			"email":  "alice@example.com",
+			"groups": []any{map[string]any{"uuid": "g1", "groupName": "Admins"}},
+		})
+	})
+	mux.HandleFunc("/users/u1", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		_, _ = w.Write([]byte(`{"error":true,"message":"Expected email to be email. Received: u1","payload":null}`))
+	})
+	return mux
+}
 
-	h := newTestUserHandler(t, mux)
-	item, err := h.Get(context.Background(), "u1")
-	if err != nil {
-		t.Fatalf("Get() error: %v", err)
+func TestUserHandler_Get(t *testing.T) {
+	tests := []struct {
+		name string
+		user string
+	}{
+		{name: "should get a user by email", user: "alice@example.com"},
+		{name: "should resolve a UID to an email instead of calling GET /users/{uid}", user: "u1"},
 	}
-	if item["email"] != "alice@example.com" {
-		t.Errorf("Get() email = %v, want alice@example.com", item["email"])
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newTestUserHandler(t, userMux(t))
+			item, err := h.Get(context.Background(), tt.user)
+			if err != nil {
+				t.Fatalf("Get() error: %v", err)
+			}
+			if item["email"] != "alice@example.com" {
+				t.Errorf("Get() email = %v, want alice@example.com", item["email"])
+			}
+		})
 	}
 }
 
@@ -170,66 +198,38 @@ func TestUserHandler_Create_MinimalFields(t *testing.T) {
 	}
 }
 
-func TestUserHandler_Delete_Success(t *testing.T) {
+func TestUserHandler_Delete_ByUIDDeletesByEmail(t *testing.T) {
+	users := userMux(t)
+	deleted := false
 	mux := http.NewServeMux()
-	mux.HandleFunc("/users/u1", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
-			w.WriteHeader(405)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete && r.URL.Path == "/users/alice@example.com" {
+			deleted = true
+			w.WriteHeader(200)
 			return
 		}
-		w.WriteHeader(204)
+		users.ServeHTTP(w, r)
 	})
 
 	h := newTestUserHandler(t, mux)
-	err := h.Delete(context.Background(), "u1")
-	if err != nil {
+	if err := h.Delete(context.Background(), "u1"); err != nil {
 		t.Fatalf("Delete() error: %v", err)
 	}
-}
-
-func TestUserHandler_GetGroups_Success(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/users/u1/groups", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []any{
-				map[string]any{"uuid": "g1", "name": "Admins"},
-			},
-		})
-	})
-
-	h := newTestUserHandler(t, mux)
-	groups, err := h.GetGroups(context.Background(), "u1")
-	if err != nil {
-		t.Fatalf("GetGroups() error: %v", err)
-	}
-	if len(groups) != 1 {
-		t.Fatalf("GetGroups() returned %d groups, want 1", len(groups))
+	if !deleted {
+		t.Error("Delete() did not send DELETE /users/{email}")
 	}
 }
 
-func TestUserHandler_GetGroups_FallbackToUserObject(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/users/u1/groups", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(404)
-		_, _ = w.Write([]byte(`{"message":"not found"}`))
-	})
-	mux.HandleFunc("/users/u1", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"uid":   "u1",
-			"email": "alice@example.com",
-			"groups": []any{
-				map[string]any{"uuid": "g1", "name": "Admins"},
-			},
-		})
-	})
-
-	h := newTestUserHandler(t, mux)
-	groups, err := h.GetGroups(context.Background(), "u1")
-	if err != nil {
-		t.Fatalf("GetGroups() error: %v", err)
-	}
-	if len(groups) != 1 {
-		t.Fatalf("GetGroups() returned %d groups, want 1", len(groups))
+func TestUserHandler_GetGroups_ReadsUserRecord(t *testing.T) {
+	for _, user := range []string{"alice@example.com", "u1"} {
+		h := newTestUserHandler(t, userMux(t))
+		groups, err := h.GetGroups(context.Background(), user)
+		if err != nil {
+			t.Fatalf("GetGroups(%q) error: %v", user, err)
+		}
+		if len(groups) != 1 || groups[0]["uuid"] != "g1" {
+			t.Errorf("GetGroups(%q) = %v, want group g1", user, groups)
+		}
 	}
 }
 
@@ -250,20 +250,24 @@ func TestUserHandler_ReplaceGroups_Success(t *testing.T) {
 	}
 }
 
-func TestUserHandler_RemoveFromGroups_Success(t *testing.T) {
+func TestUserHandler_RemoveFromGroups_UsesQueryParams(t *testing.T) {
+	var got []string
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users/alice@example.com/groups", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			w.WriteHeader(405)
 			return
 		}
-		w.WriteHeader(204)
+		got = r.URL.Query()["group-uuid"]
+		w.WriteHeader(200)
 	})
 
 	h := newTestUserHandler(t, mux)
-	err := h.RemoveFromGroups(context.Background(), "alice@example.com", []string{"g1"})
-	if err != nil {
+	if err := h.RemoveFromGroups(context.Background(), "alice@example.com", []string{"g1", "g2"}); err != nil {
 		t.Fatalf("RemoveFromGroups() error: %v", err)
+	}
+	if len(got) != 2 || got[0] != "g1" || got[1] != "g2" {
+		t.Errorf("RemoveFromGroups() group-uuid params = %v, want [g1 g2]", got)
 	}
 }
 

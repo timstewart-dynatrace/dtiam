@@ -195,3 +195,39 @@
 **Why:** Everything in `internal/` was unimportable, so anyone wanting dtiam's IAM client had to shell out to the binary and parse its output — which is what `--plain` exists for, but a poor substitute for calling `resources.NewGroupHandler(c).List(ctx, nil)`. The split line is the useful one: `pkg/` is what a caller would reuse, `internal/` is cobra wiring. Moving `commands` out too (as dtctl does) would invite callers to depend on command plumbing — flag registration, `RunE` closures, global state — rather than on the client and handlers, and that is a dependency we would then have to keep stable. A facade would have meant maintaining two surfaces for one implementation.
 **Trade-offs:** A breaking change for anyone importing the old paths, hence 3.0.0. Mitigated by the migration being a mechanical `internal/` → `pkg/` substitution, and by the CLI being entirely unaffected: the complete `--help` tree is byte-identical across 4,110 lines, and an external module importing eight of the moved packages was built and run to confirm they resolve from outside the module.
 **Revisit if:** A `pkg/` package needs something from `internal/cli` — that would be a sign the split line is in the wrong place, and the shared piece should move to `pkg/` rather than the import being added.
+
+---
+
+## 2026-10-02 — The Live Spec and a Live Account Are the References, Not the Docs Pages
+**Chosen:** Validate every endpoint against `https://api.dynatrace.com/spec-json` (method, path, body schema, `x-token-scopes`, `deprecated`) and then against a live account, with write paths exercised on throwaway `dtiam-probe-*` objects that are deleted afterwards.
+**Alternatives:** Docs pages; the local `ARCHIVE/go-dtctl-main/api-spec/` folder; mocked tests only.
+**Why:** Phase 09 "verified all endpoints" against the local spec folder, which contains no Account Management spec at all, so the claim was unfalsifiable. The live spec immediately showed operations dtiam used that do not exist (`POST`/`PUT` on the level-wide bindings collection, `POST /groups/{uuid}/users`, `GET /groups/{uuid}`, `GET /users/{uid}`). But the spec alone is not enough either: it says nothing about `POST /groups` rejecting a bare object, the boolean `error` field, or 400-instead-of-404 for names. Those only showed up against a real account. Mock tests had passed throughout because each one encoded the same wrong assumption as the code it tested.
+**Trade-offs:** Live write testing touches a real account. Confined to objects created for the test, with membership and binding phases kept separate so the probe group never held both a member and a policy.
+**Revisit if:** A dedicated sandbox account becomes available, at which point this should become a `//go:build integration` suite like dtctl's.
+
+---
+
+## 2026-10-02 — Collections Without a Single-Item GET Resolve From List
+**Chosen:** A `BaseHandler.NoSingleGet` flag that makes `Get` search `List` by `IDField`, set on groups, environments and platform tokens.
+**Alternatives:** Per-handler `Get` overrides (what tokens and environments had); fall back from 404 to list in every caller.
+**Why:** The per-handler overrides had drifted -- the token one compared the wrong field, the environment one called the missing endpoint. Callers falling back on 404 is what `GetOrResolve` did, but direct `handler.Get` callers (analyze, export, describe expansion) did not, which is why those commands failed while `get groups ID` worked. Putting the knowledge on the handler makes every caller correct and saves a guaranteed-404 round trip.
+**Trade-offs:** A by-ID lookup now costs a full list. These collections are small (hundreds), and the alternative was a 404 followed by the same list.
+**Revisit if:** The API adds single-item GETs, or a collection grows large enough that listing per lookup matters.
+
+---
+
+## 2026-10-02 — Environment Commands Request Their Own Scopes
+**Chosen:** Environment-served commands build a client via `common.CreateEnvironmentClient(scopes)`, which uses a configured environment token if present, else requests only that command's scopes (`auth.EnvironmentIAMScopes`, `AppEngineScopes`, `SettingsSchemaScopes`) with the account OAuth client.
+**Alternatives:** Add the scopes to `DefaultScopeList`; require an environment token for all environment commands.
+**Why:** A token request naming a scope the OAuth client was not granted fails outright with HTTP 400 -- verified live -- so adding `app-engine:apps:run` to the default set would break *every* command for clients without it. Requiring an environment token was unnecessary: an account OAuth token with `iam:users:read` / `iam:groups:read` works against the environment Platform IAM API (verified live). Per-command scopes mean a missing grant fails exactly the command that needs it.
+**Trade-offs:** Environment commands ignore `DTIAM_SCOPES`, since that override is shaped for the account APIs. An environment token is the escape hatch.
+**Revisit if:** Users need to override environment scopes independently; add `DTIAM_ENVIRONMENT_SCOPES` then.
+
+---
+
+## 2026-10-02 — API Host Override Rewrites the Host, Not a Base Path
+**Chosen:** `DTIAM_API_URL` / `api-url` is reduced to scheme+host and replaces `https://api.dynatrace.com` in every account-API URL, relative or absolute, at request time.
+**Alternatives:** Override only the client's relative base URL; a per-API base-URL map.
+**Why:** dtiam reaches nine account APIs (`/iam/v1`, `/env/v2`, `/sub/v2`, `/sub/v3`, `/audit/v1`, `/ref/v1`, `/v1`...) through absolute URLs, so overriding the relative base alone would have moved a fraction of the calls and silently left the rest on production -- worse than the setting doing nothing. All of them share one host, so a host rewrite moves them together with no per-API configuration. Environment URLs and the SSO endpoint are on other hosts and are untouched; a host that merely shares the prefix is not rewritten.
+**Trade-offs:** The SSO token URL is not covered, so a dev stage with its own SSO still needs more work.
+**Revisit if:** A target stage needs a different SSO endpoint, or the account APIs split across hosts.

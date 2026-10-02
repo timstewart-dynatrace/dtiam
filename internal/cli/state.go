@@ -2,8 +2,7 @@
 package cli
 
 import (
-	"os"
-
+	"github.com/jtimothystewart/dtiam/pkg/config"
 	"github.com/jtimothystewart/dtiam/pkg/output"
 )
 
@@ -66,9 +65,14 @@ func (s *State) IsAgent() bool {
 	return s.AgentName != ""
 }
 
-// EnvironmentURL returns the environment URL from the DTIAM_ENVIRONMENT_URL env var.
+// EnvironmentURL returns the environment URL from DTIAM_ENVIRONMENT_URL, or
+// else from the current credential's environment-url.
 func (s *State) EnvironmentURL() string {
-	return os.Getenv("DTIAM_ENVIRONMENT_URL")
+	var cred *config.Credential
+	if cfg, err := config.Load(); err == nil {
+		cred = cfg.GetCurrentCredential()
+	}
+	return config.GetEffectiveEnvironmentURL(cred)
 }
 
 // NewPrinter creates a new printer with the current state settings.

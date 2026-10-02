@@ -82,7 +82,9 @@ rather than on the client and handlers. The split was clean because none of the
 ### Command Layer (`internal/commands/`) — internal
 - Verb-noun pattern: `get groups`, `create group`, `delete policy`
 - Each verb is a package with a single exported `Cmd`
-- Commands use `common.CreateClient()` for API access
+- Commands use `common.CreateClient()` for account APIs, and
+  `common.CreateEnvironmentClient(auth.<X>Scopes)` for environment-served APIs
+  (apps, schemas, env-users, env-groups) -- see DECISIONS.md 2026-10-02
 - All follow `command-standards.md`
 
 ### Resource Layer (`pkg/resources/`)
@@ -148,6 +150,11 @@ Pagination is declared per handler via `BaseHandler.Pagination`
 (`pkg/client/pagination.go`). A nil value means the endpoint returns its
 whole collection in one response. `BaseHandler.List` follows all pages before
 returning, so command code never sees a partial result.
+
+`BaseHandler.NoSingleGet` marks collections with no GET-by-ID endpoint (groups,
+environments, platform tokens); `Get` then resolves from `List`. Users are
+addressed by email only -- `UserHandler` resolves a UID first. Live API shapes
+that differ from the docs are listed in `docs/dev/API_BEHAVIORS.md`.
 
 **Environment API**: `https://api.dynatrace.com/env/v2/accounts/{uuid}/environments`
 

@@ -2,8 +2,13 @@ package client
 
 // API base URLs for Dynatrace services.
 const (
+	// DefaultAPIHost is the host every Account Management API is served from.
+	// Config.APIHost replaces it, so all account APIs move together when an
+	// alternative host (for example a sprint or dev stage) is configured.
+	DefaultAPIHost = "https://api.dynatrace.com"
+
 	// IAMBaseURL is the root URL for the IAM API.
-	IAMBaseURL = "https://api.dynatrace.com/iam/v1"
+	IAMBaseURL = DefaultAPIHost + "/iam/v1"
 
 	// AccountsBasePath is the accounts path under the IAM API.
 	AccountsBasePath = IAMBaseURL + "/accounts"

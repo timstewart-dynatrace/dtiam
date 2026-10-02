@@ -143,14 +143,17 @@ func TestOrgLevelHandler_ListUsersAcceptsUUIDOnly(t *testing.T) {
 	}
 }
 
-func TestOrgLevelHandler_ListGroupsReadsResultsKey(t *testing.T) {
+func TestOrgLevelHandler_ListGroupsSendsPartialGroupName(t *testing.T) {
+	var query url.Values
 	mux := http.NewServeMux()
 	mux.HandleFunc("/platform/iam/v1/organizational-levels/environment/abc12345/groups",
 		func(w http.ResponseWriter, r *http.Request) {
+			query = r.URL.Query()
+			// Live shape: groupName and type, not name/owner.
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"results": []any{
-					map[string]any{"uuid": "g1", "name": "Admins"},
-					map[string]any{"uuid": "g2", "name": "Devs"},
+					map[string]any{"uuid": "g1", "groupName": "Admins", "type": "LOCAL"},
+					map[string]any{"uuid": "g2", "groupName": "Admin readers", "type": "SAML"},
 				},
 				"totalCount": 2,
 			})
@@ -159,12 +162,27 @@ func TestOrgLevelHandler_ListGroupsReadsResultsKey(t *testing.T) {
 	c, baseURL := newTestClientAndURL(t, mux)
 	h := NewOrgLevelHandler(c, baseURL)
 
-	groups, err := h.ListGroups(context.Background(), LevelEnvironment, "abc12345", "")
+	groups, err := h.ListGroups(context.Background(), LevelEnvironment, "abc12345", "admin")
 	if err != nil {
 		t.Fatalf("ListGroups() error: %v", err)
 	}
 	if len(groups) != 2 {
 		t.Fatalf("got %d groups, want 2", len(groups))
+	}
+	// The groups endpoint filters on partialGroupName; partialString (the
+	// users parameter) is rejected as a missing mandatory filter.
+	if query.Get("partialGroupName") != "admin" || query.Has("partialString") {
+		t.Errorf("query = %v, want partialGroupName=admin and no partialString", query)
+	}
+}
+
+func TestOrgLevelHandler_ListGroupsRequiresSearchTerm(t *testing.T) {
+	c, baseURL := newTestClientAndURL(t, http.NewServeMux())
+	h := NewOrgLevelHandler(c, baseURL)
+	for _, term := range []string{"", "ab"} {
+		if _, err := h.ListGroups(context.Background(), LevelEnvironment, "abc12345", term); err == nil {
+			t.Errorf("ListGroups(%q) expected an error: the API needs at least 3 characters", term)
+		}
 	}
 }
 

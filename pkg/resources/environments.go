@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -28,24 +27,10 @@ func NewEnvironmentHandler(c *client.Client) *EnvironmentHandler {
 			ListKey:   "data",
 			IDField:   "id",
 			NameField: "name",
+			// env/v2 has no GET /environments/{id}; it answers 404 for every ID.
+			NoSingleGet: true,
 		},
 	}
-}
-
-// Get gets an environment by ID.
-func (h *EnvironmentHandler) Get(ctx context.Context, id string) (map[string]any, error) {
-	path := fmt.Sprintf("%s/%s", h.Path, id)
-	body, err := h.Client.Get(ctx, path, nil)
-	if err != nil {
-		return nil, h.handleError("get", err)
-	}
-
-	var result map[string]any
-	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return result, nil
 }
 
 // GetByName gets an environment by name.

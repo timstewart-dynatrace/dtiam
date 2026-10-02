@@ -15,6 +15,7 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
+	diffpkg "github.com/jtimothystewart/dtiam/pkg/diff"
 	"github.com/jtimothystewart/dtiam/pkg/resources"
 	tmpl "github.com/jtimothystewart/dtiam/pkg/template"
 	"github.com/jtimothystewart/dtiam/pkg/utils"
@@ -27,8 +28,14 @@ var Cmd = &cobra.Command{
 	Long: `Apply a resource definition from a YAML or JSON file.
 
 The file must contain a 'kind' field (Group, Policy, Boundary, Binding) and a
-'spec' field with the resource properties. Multiple resources can be defined
-in a single file using YAML document separators (---).
+'spec' field with the resource properties.
+
+Resources are matched by name (bindings by their group and policy). A missing
+resource is created; an existing one is updated to match the spec, and one that
+already matches is left unchanged, so applying the same file twice is safe.
+
+Multiple resources can be defined in a single file using YAML document
+separators (---).
 
 Template variables can be substituted using --set key=value flags.`,
 	Example: `  # Create a group from a YAML file
@@ -96,7 +103,7 @@ Template variables can be substituted using --set key=value flags.`,
 			}
 
 			if cli.GlobalState.IsDryRun() {
-				printer.PrintWarning("Would create %s:", kind)
+				printer.PrintWarning("Would create or update %s (run 'dtiam diff' to see which):", kind)
 				rendered, _ := yaml.Marshal(spec)
 				fmt.Fprintf(os.Stderr, "%s\n", rendered)
 				continue
@@ -143,7 +150,9 @@ func splitYAMLDocuments(content []byte) [][]byte {
 	return docs
 }
 
-// applyResource creates a resource based on kind and spec.
+// applyResource creates a resource, or updates it when one with the same name
+// already exists. A resource whose live state already matches the spec is
+// left alone, so applying the same file twice is a no-op.
 func applyResource(kind string, spec map[string]any, printer interface {
 	PrintSuccess(string, ...any)
 	PrintDetail(map[string]any) error
@@ -155,29 +164,66 @@ func applyResource(kind string, spec map[string]any, printer interface {
 	defer c.Close()
 
 	ctx := context.Background()
+	name := utils.StringFrom(spec, "name")
 
 	switch strings.ToLower(kind) {
 	case "group":
+		if name == "" {
+			return fmt.Errorf("group spec requires a 'name' field")
+		}
 		handler := resources.NewGroupHandler(c)
-		result, err := handler.Create(ctx, spec)
+		live, err := handler.GetByName(ctx, name)
 		if err != nil {
 			return err
 		}
-		printer.PrintSuccess("Group %q created", utils.StringFrom(result, "name"))
+		if live == nil {
+			if _, err := handler.Create(ctx, spec); err != nil {
+				return err
+			}
+			printer.PrintSuccess("Group %q created", name)
+			return nil
+		}
+		if !diffpkg.Compare("Group", name, spec, live).HasChanges() {
+			printer.PrintSuccess("Group %q unchanged", name)
+			return nil
+		}
+		if _, err := handler.Update(ctx, utils.StringFrom(live, "uuid"), spec); err != nil {
+			return err
+		}
+		printer.PrintSuccess("Group %q updated", name)
 		return nil
 
 	case "policy":
+		if name == "" {
+			return fmt.Errorf("policy spec requires a 'name' field")
+		}
 		handler := resources.NewPolicyHandler(c)
-		result, err := handler.Create(ctx, spec)
+		live, err := resources.GetPolicyByName(ctx, handler, name)
 		if err != nil {
 			return err
 		}
-		printer.PrintSuccess("Policy %q created", utils.StringFrom(result, "name"))
+		if live == nil {
+			if _, err := handler.Create(ctx, spec); err != nil {
+				return err
+			}
+			printer.PrintSuccess("Policy %q created", name)
+			return nil
+		}
+		if !diffpkg.Compare("Policy", name, spec, live).HasChanges() {
+			printer.PrintSuccess("Policy %q unchanged", name)
+			return nil
+		}
+		if _, err := handler.Update(ctx, utils.StringFrom(live, "uuid"), mergePolicy(live, spec)); err != nil {
+			return err
+		}
+		printer.PrintSuccess("Policy %q updated", name)
 		return nil
 
 	case "boundary":
+		if name == "" {
+			return fmt.Errorf("boundary spec requires a 'name' field")
+		}
 		handler := resources.NewBoundaryHandler(c)
-		name := utils.StringFrom(spec, "name")
 		var zones []string
 		if z, ok := spec["zones"].([]any); ok {
 			for _, zone := range z {
@@ -194,22 +240,52 @@ func applyResource(kind string, spec map[string]any, printer interface {
 		if d, ok := spec["description"].(string); ok {
 			desc = &d
 		}
-		_, err := handler.Create(ctx, name, zones, query, desc)
+		live, err := handler.GetByName(ctx, name)
 		if err != nil {
 			return err
 		}
-		printer.PrintSuccess("Boundary %q created", name)
+		if live == nil {
+			if _, err := handler.Create(ctx, name, zones, query, desc); err != nil {
+				return err
+			}
+			printer.PrintSuccess("Boundary %q created", name)
+			return nil
+		}
+		// zones is a spec-side shorthand for boundaryQuery and has no live
+		// counterpart, so it would always compare as changed; leave it out.
+		comparable := make(map[string]any, len(spec))
+		for k, v := range spec {
+			if k != "zones" {
+				comparable[k] = v
+			}
+		}
+		if len(zones) == 0 && !diffpkg.Compare("Boundary", name, comparable, live).HasChanges() {
+			printer.PrintSuccess("Boundary %q unchanged", name)
+			return nil
+		}
+		if _, err := handler.Update(ctx, utils.StringFrom(live, "uuid"), &name, zones, query, desc); err != nil {
+			return err
+		}
+		printer.PrintSuccess("Boundary %q updated", name)
 		return nil
 
 	case "binding":
-		handler := resources.NewBindingHandler(c)
 		groupUUID := utils.StringFrom(spec, "group")
 		policyUUID := utils.StringFrom(spec, "policy")
 		if groupUUID == "" || policyUUID == "" {
 			return fmt.Errorf("binding spec requires 'group' and 'policy' fields")
 		}
-		_, err := handler.Create(ctx, groupUUID, policyUUID, nil, nil)
+		bound, err := resources.NewGroupHandler(c).GetPolicies(ctx, groupUUID)
 		if err != nil {
+			return err
+		}
+		for _, p := range bound {
+			if strings.EqualFold(p, policyUUID) {
+				printer.PrintSuccess("Binding unchanged (group=%s, policy=%s)", groupUUID, policyUUID)
+				return nil
+			}
+		}
+		if _, err := resources.NewBindingHandler(c).Create(ctx, groupUUID, policyUUID, nil, nil); err != nil {
 			return err
 		}
 		printer.PrintSuccess("Binding created (group=%s, policy=%s)", groupUUID, policyUUID)
@@ -218,4 +294,25 @@ func applyResource(kind string, spec map[string]any, printer interface {
 	default:
 		return fmt.Errorf("unsupported resource kind: %s (expected Group, Policy, Boundary, or Binding)", kind)
 	}
+}
+
+// mergePolicy builds a policy update body. PUT on a policy requires name,
+// description and statementQuery, so fields the spec omits keep their live
+// values rather than being cleared.
+func mergePolicy(live, spec map[string]any) map[string]any {
+	body := map[string]any{}
+	for _, field := range []string{"name", "description", "statementQuery", "tags"} {
+		if v, ok := live[field]; ok && v != nil {
+			body[field] = v
+		}
+	}
+	for _, field := range []string{"name", "description", "statementQuery", "tags"} {
+		if v, ok := spec[field]; ok {
+			body[field] = v
+		}
+	}
+	if _, ok := body["description"]; !ok {
+		body["description"] = ""
+	}
+	return body
 }

@@ -120,15 +120,15 @@ func init() {
 var removeMemberCmd = &cobra.Command{
 	Use:   "remove-member IDENTIFIER",
 	Short: "Remove a user from a group",
-	Long: `Remove a user from a group by specifying the group and user UID.
+	Long: `Remove a user from a group by specifying the group and the user.
 
 The group can be identified by UUID or name. The user is specified
-via the --user flag with their UID.`,
+via the --user flag with their email or UID.`,
 	Example: `  # Remove a user from a group by name
   dtiam group remove-member "Production Team" --user USER_UID
 
-  # Remove a user from a group by UUID
-  dtiam group remove-member 8f6e5d4c-3b2a-1098-7654-321fedcba098 --user USER_UID
+  # Remove a user from a group by UUID, identifying the user by email
+  dtiam group remove-member 8f6e5d4c-3b2a-1098-7654-321fedcba098 --user user@example.com
 
   # Dry run preview
   dtiam group remove-member "Production Team" --user USER_UID --dry-run`,
@@ -174,5 +174,5 @@ via the --user flag with their UID.`,
 }
 
 func init() {
-	removeMemberCmd.Flags().StringP("user", "u", "", "User UID to remove (required)")
+	removeMemberCmd.Flags().StringP("user", "u", "", "User email or UID to remove (required)")
 }

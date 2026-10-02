@@ -8,6 +8,7 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
+	"github.com/jtimothystewart/dtiam/pkg/auth"
 	"github.com/jtimothystewart/dtiam/pkg/output"
 	"github.com/jtimothystewart/dtiam/pkg/resources"
 )
@@ -38,7 +39,7 @@ var schemasCmd = &cobra.Command{
 			return fmt.Errorf("--environment flag or DTIAM_ENVIRONMENT_URL is required")
 		}
 
-		c, err := common.CreateClient()
+		c, err := common.CreateEnvironmentClient(auth.SettingsSchemaScopes)
 		if err != nil {
 			return err
 		}

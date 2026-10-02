@@ -165,3 +165,21 @@ type ValidationResult struct {
 	Errors     []string
 	StatusCode int
 }
+
+// GetPolicyByName finds a policy by name and returns its full record, or nil
+// when there is none.
+//
+// The policy list omits statementQuery, so a list entry cannot be compared
+// against a spec or used as the base of an update (PUT requires the
+// statement). The match is re-read by UUID to get the complete policy.
+func GetPolicyByName(ctx context.Context, h *PolicyHandler, name string) (map[string]any, error) {
+	match, err := h.GetByName(ctx, name)
+	if err != nil || match == nil {
+		return match, err
+	}
+	uuid, _ := match["uuid"].(string)
+	if uuid == "" {
+		return match, nil
+	}
+	return h.Get(ctx, uuid)
+}

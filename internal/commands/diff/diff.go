@@ -201,7 +201,7 @@ func compareResource(ctx context.Context, c *client.Client, kind string, spec ma
 		if name == "" {
 			return diffpkg.ResourceDiff{}, fmt.Errorf("policy spec requires a 'name' field")
 		}
-		live, err := resources.NewPolicyHandler(c).GetByName(ctx, name)
+		live, err := resources.GetPolicyByName(ctx, resources.NewPolicyHandler(c), name)
 		if err != nil {
 			return diffpkg.ResourceDiff{}, err
 		}

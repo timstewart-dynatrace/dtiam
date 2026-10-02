@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -40,6 +42,7 @@ type Client struct {
 	tokenProvider TokenProvider
 	resty         *resty.Client
 	baseURL       string
+	apiHost       string
 	verbose       bool
 }
 
@@ -50,6 +53,11 @@ type Config struct {
 	Timeout       time.Duration
 	RetryConfig   *RetryConfig
 	Verbose       bool
+
+	// APIHost overrides DefaultAPIHost for every account API request, relative
+	// or absolute. Empty means the default. A trailing path such as /iam/v1 is
+	// tolerated and stripped, since that is how the override is often written.
+	APIHost string
 }
 
 // RetryConfig configures retry behavior.
@@ -84,7 +92,8 @@ func New(config Config) *Client {
 		rc = *config.RetryConfig
 	}
 
-	baseURL := fmt.Sprintf("%s/%s", BaseURL, config.AccountUUID)
+	apiHost := normalizeAPIHost(config.APIHost)
+	baseURL := rewriteHost(fmt.Sprintf("%s/%s", BaseURL, config.AccountUUID), apiHost)
 
 	r := resty.New().
 		SetTimeout(timeout).
@@ -135,6 +144,7 @@ func New(config Config) *Client {
 		tokenProvider: config.TokenProvider,
 		resty:         r,
 		baseURL:       baseURL,
+		apiHost:       apiHost,
 		verbose:       config.Verbose,
 	}
 }
@@ -210,6 +220,25 @@ func (c *Client) Delete(ctx context.Context, path string) ([]byte, error) {
 	return c.handleResponse(resp)
 }
 
+// DeleteWithParams performs a DELETE request with query parameters.
+func (c *Client) DeleteWithParams(ctx context.Context, path string, params map[string]string) ([]byte, error) {
+	query := url.Values{}
+	for k, v := range params {
+		query.Set(k, v)
+	}
+	return c.DeleteWithQuery(ctx, path, query)
+}
+
+// DeleteWithQuery performs a DELETE request with query parameters that may
+// repeat, such as the group-uuid list on DELETE /users/{email}/groups.
+func (c *Client) DeleteWithQuery(ctx context.Context, path string, query url.Values) ([]byte, error) {
+	resp, err := c.resty.R().SetContext(ctx).SetQueryParamsFromValues(query).Delete(c.buildURL(path))
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	return c.handleResponse(resp)
+}
+
 // DeleteWithBody performs a DELETE request with a body.
 func (c *Client) DeleteWithBody(ctx context.Context, path string, body any) ([]byte, error) {
 	url := c.buildURL(path)
@@ -271,18 +300,7 @@ func (c *Client) handleResponse(resp *resty.Response) ([]byte, error) {
 			ResponseBody: string(resp.Body()),
 		}
 
-		// Try to extract error message from JSON
-		var errResp struct {
-			Error   string `json:"error"`
-			Message string `json:"message"`
-		}
-		if json.Unmarshal(resp.Body(), &errResp) == nil {
-			if errResp.Message != "" {
-				apiErr.Message = errResp.Message
-			} else if errResp.Error != "" {
-				apiErr.Message = errResp.Error
-			}
-		}
+		apiErr.Message = extractErrorMessage(resp.Body())
 
 		return nil, apiErr
 	}
@@ -294,11 +312,70 @@ func (c *Client) handleResponse(resp *resty.Response) ([]byte, error) {
 func (c *Client) buildURL(path string) string {
 	// Handle absolute URLs
 	if len(path) > 7 && (path[:7] == "http://" || path[:8] == "https://") {
-		return path
+		return rewriteHost(path, c.apiHost)
 	}
 
 	if len(path) > 0 && path[0] == '/' {
 		return c.baseURL + path
 	}
 	return c.baseURL + "/" + path
+}
+
+// normalizeAPIHost reduces an API host override to scheme and host, so that
+// "https://api.example.com/iam/v1/" and "https://api.example.com" are the same.
+// An empty or default value yields "", meaning no rewrite.
+func normalizeAPIHost(host string) string {
+	host = strings.TrimRight(strings.TrimSpace(host), "/")
+	if host == "" {
+		return ""
+	}
+	if u, err := url.Parse(host); err == nil && u.Scheme != "" && u.Host != "" {
+		host = u.Scheme + "://" + u.Host
+	}
+	if host == DefaultAPIHost {
+		return ""
+	}
+	return host
+}
+
+// rewriteHost replaces DefaultAPIHost at the start of rawURL with apiHost.
+// URLs on other hosts -- environment URLs, the SSO endpoint -- are unchanged.
+func rewriteHost(rawURL, apiHost string) string {
+	if apiHost == "" || !strings.HasPrefix(rawURL, DefaultAPIHost) {
+		return rawURL
+	}
+	rest := rawURL[len(DefaultAPIHost):]
+	if rest != "" && rest[0] != '/' && rest[0] != '?' {
+		return rawURL // a different host that merely shares the prefix
+	}
+	return apiHost + rest
+}
+
+// extractErrorMessage pulls a human-readable message out of an error response.
+//
+// The APIs disagree on the shape: the Account Management API sends
+// {"error": true, "message": "..."}, the environment Platform APIs send
+// {"error": {"message": "..."}}, and others send {"error": "..."}. Decoding
+// into a struct with a string "error" field failed on the boolean form and
+// discarded the message, so every Account Management error printed blank.
+func extractErrorMessage(body []byte) string {
+	var resp map[string]any
+	if json.Unmarshal(body, &resp) != nil {
+		return strings.TrimSpace(string(body))
+	}
+	if msg, ok := resp["message"].(string); ok && msg != "" {
+		return msg
+	}
+	switch e := resp["error"].(type) {
+	case string:
+		return e
+	case map[string]any:
+		if msg, ok := e["message"].(string); ok {
+			return msg
+		}
+	}
+	if desc, ok := resp["error_description"].(string); ok {
+		return desc
+	}
+	return ""
 }

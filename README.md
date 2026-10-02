@@ -180,6 +180,15 @@ credentials:
 | `DTIAM_CONTEXT` | Override current context name |
 | `DTIAM_OUTPUT` | Default output format |
 | `DTIAM_VERBOSE` | Enable verbose mode |
+| `DTIAM_SCOPES` | Override the OAuth scopes requested for account commands (space-separated) |
+| `DTIAM_API_URL` | Alternative host for every Account Management API call, e.g. a dev stage (default `https://api.dynatrace.com`) |
+| `DTIAM_ENVIRONMENT_URL` | Default environment for `get apps`, `get schemas`, `get env-users`, `get env-groups` |
+| `DTIAM_ENVIRONMENT_TOKEN` | Token for those environment commands; without it they use the account credentials and request only the scopes they need |
+
+`DTIAM_API_URL`, `DTIAM_ENVIRONMENT_URL` and `DTIAM_ENVIRONMENT_TOKEN` can also be
+set per credential as `api-url`, `environment-url` and `environment-token` under
+that credential in the config file (there is no `config` subcommand for them
+yet). The environment variable wins when both are set.
 
 ### Credential storage
 
