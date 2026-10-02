@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jtimothystewart/dtiam/pkg/client"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
 )
 
 // SchemaHandler handles Settings 2.0 schema resources.

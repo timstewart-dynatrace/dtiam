@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/jtimothystewart/dtiam/pkg/client"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
 )
 
 // recordingMux captures the query parameters of every request so tests can

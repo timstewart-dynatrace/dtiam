@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jtimothystewart/dtiam/pkg/config"
-	"github.com/jtimothystewart/dtiam/pkg/output"
-	"github.com/jtimothystewart/dtiam/pkg/version"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/version"
 )
 
 var (

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jtimothystewart/dtiam/pkg/client"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
 )
 
 // AuditHandler handles account audit log resources.

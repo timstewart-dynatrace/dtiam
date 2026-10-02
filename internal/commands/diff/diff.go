@@ -12,14 +12,14 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/pkg/client"
-	diffpkg "github.com/jtimothystewart/dtiam/pkg/diff"
-	"github.com/jtimothystewart/dtiam/pkg/output"
-	"github.com/jtimothystewart/dtiam/pkg/resources"
-	tmpl "github.com/jtimothystewart/dtiam/pkg/template"
-	"github.com/jtimothystewart/dtiam/pkg/utils"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/common"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
+	diffpkg "github.com/timstewart-dynatrace/dtiam/v3/pkg/diff"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
+	tmpl "github.com/timstewart-dynatrace/dtiam/v3/pkg/template"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/utils"
 )
 
 // Cmd is the diff command.

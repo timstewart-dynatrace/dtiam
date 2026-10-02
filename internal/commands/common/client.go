@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/pkg/auth"
-	"github.com/jtimothystewart/dtiam/pkg/client"
-	"github.com/jtimothystewart/dtiam/pkg/config"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
 )
 
 // tokenProviderAdapter adapts auth.TokenProvider to client.TokenProvider

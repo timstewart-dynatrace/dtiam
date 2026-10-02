@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/pkg/prompt"
-	"github.com/jtimothystewart/dtiam/pkg/resources"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/common"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/prompt"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 )
 
 var groupCmd = &cobra.Command{

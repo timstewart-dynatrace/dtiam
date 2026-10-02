@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jtimothystewart/dtiam/pkg/auth"
-	"github.com/jtimothystewart/dtiam/pkg/config"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
 )
 
 func TestVersionCheckAlwaysOK(t *testing.T) {

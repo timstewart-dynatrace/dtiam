@@ -3,7 +3,7 @@ package resources
 import (
 	"context"
 
-	"github.com/jtimothystewart/dtiam/pkg/client"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
 )
 
 // TokenHandler handles platform token resources.

@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/jtimothystewart/dtiam/pkg/client"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
 )
 
 // UserHandler handles user resources.
