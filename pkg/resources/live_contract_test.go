@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jtimothystewart/dtiam/pkg/client"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
 )
 
 // The tests in this file pin API behavior verified against a live account on

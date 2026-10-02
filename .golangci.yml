@@ -12,7 +12,7 @@ formatters:
     goimports:
       # Keeps dtiam imports in their own group, per .claude/rules/go.md.
       local-prefixes:
-        - github.com/jtimothystewart/dtiam
+        - github.com/timstewart-dynatrace/dtiam/v3
 
 linters:
   enable:

@@ -231,3 +231,21 @@
 **Why:** dtiam reaches nine account APIs (`/iam/v1`, `/env/v2`, `/sub/v2`, `/sub/v3`, `/audit/v1`, `/ref/v1`, `/v1`...) through absolute URLs, so overriding the relative base alone would have moved a fraction of the calls and silently left the rest on production -- worse than the setting doing nothing. All of them share one host, so a host rewrite moves them together with no per-API configuration. Environment URLs and the SSO endpoint are on other hosts and are untouched; a host that merely shares the prefix is not rewritten.
 **Trade-offs:** The SSO token URL is not covered, so a dev stage with its own SSO still needs more work.
 **Revisit if:** A target stage needs a different SSO endpoint, or the account APIs split across hosts.
+
+---
+
+## 2026-10-02 — Module Path Carries /v3 and Matches the Repository
+**Chosen:** `github.com/timstewart-dynatrace/dtiam/v3`, released as a minor (3.1.0).
+**Alternatives:** `github.com/timstewart-dynatrace/dtiam` without the suffix; keep `github.com/jtimothystewart/dtiam` and document the project as binary-only; release as 4.0.0.
+**Why:** The old path named a repository that does not exist, so `go install` and library imports could never resolve -- the `pkg/` move in 3.0.0 had no reachable audience. Without `/v3`, Go's module rules make the proxy ignore every v2+ tag (it served v1.3.0, verified), so matching the repo URL alone would not have fixed `go install @latest`. Treated as a minor rather than a major because an unresolvable import path has no importers to break; the CLI is unchanged.
+**Trade-offs:** Every import line changed (99 files). Anyone who vendored the source under the old path must rewrite imports.
+**Revisit if:** dtiam moves repositories again, or goes to v4 (the path must then end in `/v4`).
+
+---
+
+## 2026-10-02 — No Homebrew Tap; Installers Are the Distribution Path
+**Chosen:** Remove the `brews` section from `.goreleaser.yaml`; align archive names with `install.sh` / `install.ps1`.
+**Alternatives:** Create `timstewart-dynatrace/homebrew-tap`; keep the section with `skip_upload: true`.
+**Why:** The tap repo never existed, so the step could only fail a release. The installers already cover macOS, Linux and Windows with checksum verification, and `go install` now works. One naming scheme (`dtiam_{version}_{os}_{arch}.tar.gz`, tar.gz everywhere since install.ps1 uses Windows' built-in tar) lets GoReleaser output and hand-built assets be interchangeable.
+**Trade-offs:** No `brew install dtiam`.
+**Revisit if:** Users ask for Homebrew -- create the tap and restore the section.

@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jtimothystewart/dtiam/internal/cli"
-	tmpl "github.com/jtimothystewart/dtiam/pkg/template"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
+	tmpl "github.com/timstewart-dynatrace/dtiam/v3/pkg/template"
 )
 
 var listCmd = &cobra.Command{

@@ -43,7 +43,8 @@ goreleaser release --clean
 
 GoReleaser configuration: `.goreleaser.yaml`
 - Builds for: darwin/amd64, darwin/arm64, linux/amd64, linux/arm64, windows/amd64
-- Creates: tar.gz archives, checksums, GitHub release, Homebrew tap, deb/rpm packages
+- Creates: tar.gz archives named `dtiam_{version}_{os}_{arch}.tar.gz` (the names install.sh / install.ps1 download), checksums, a draft GitHub release, deb/rpm packages
+- No Homebrew tap: the brews section was removed in 3.1.0 (the tap repo does not exist)
 
 ### GitHub Release
 
@@ -58,7 +59,8 @@ gh release create vX.Y.Z --title "vX.Y.Z" \
 - [ ] GitHub release page has correct assets
 - [ ] Binary downloads work: `curl -L <release-url> | tar xz`
 - [ ] Version output correct: `dtiam version`
-- [ ] Homebrew install works (if tap configured): `brew install dtiam`
+- [ ] Installer works: `curl -fsSL https://raw.githubusercontent.com/timstewart-dynatrace/dtiam/main/install.sh | DTIAM_INSTALL_DIR=$(mktemp -d) sh`
+- [ ] `go install github.com/timstewart-dynatrace/dtiam/v3/cmd/dtiam@vX.Y.Z` resolves
 - [ ] Key commands functional: `dtiam get groups --help`
 
 ## 4. Rollback Procedure [MUST]

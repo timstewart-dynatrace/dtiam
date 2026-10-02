@@ -8,13 +8,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/pkg/auth"
-	"github.com/jtimothystewart/dtiam/pkg/config"
-	"github.com/jtimothystewart/dtiam/pkg/output"
-	"github.com/jtimothystewart/dtiam/pkg/resources"
-	"github.com/jtimothystewart/dtiam/pkg/version"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/common"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/version"
 )
 
 // Check statuses, ordered by severity.

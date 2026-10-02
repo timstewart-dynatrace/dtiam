@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	"github.com/jtimothystewart/dtiam/pkg/auth"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
 )
 
 func TestNewOAuthProviderWithScopes_EmptyUsesDefaults(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"github.com/jtimothystewart/dtiam/pkg/logging"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/logging"
 )
 
 // TokenProvider provides authentication headers for HTTP requests.

@@ -13,9 +13,9 @@ builds:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X github.com/jtimothystewart/dtiam/pkg/version.Version={{.Version}}
-      - -X github.com/jtimothystewart/dtiam/pkg/version.Commit={{.Commit}}
-      - -X github.com/jtimothystewart/dtiam/pkg/version.Date={{.Date}}
+      - -X github.com/timstewart-dynatrace/dtiam/v3/pkg/version.Version={{.Version}}
+      - -X github.com/timstewart-dynatrace/dtiam/v3/pkg/version.Commit={{.Commit}}
+      - -X github.com/timstewart-dynatrace/dtiam/v3/pkg/version.Date={{.Date}}
     goos:
       - linux
       - darwin
@@ -28,16 +28,16 @@ builds:
         goarch: arm64
 
 archives:
-  - format: tar.gz
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-    format_overrides:
-      - goos: windows
-        format: zip
+  # Names must match what install.sh / install.ps1 download:
+  #   dtiam_{version}_{os}_{arch}.tar.gz  (lowercase os, amd64/arm64)
+  # Windows is tar.gz too: install.ps1 extracts with the tar.exe that ships
+  # with Windows 10 1803+. The binary sits at the archive root.
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
 
 checksum:
   name_template: 'checksums.txt'
@@ -62,19 +62,6 @@ release:
   draft: true
   prerelease: auto
   name_template: "{{.ProjectName}} v{{.Version}}"
-
-brews:
-  - repository:
-      owner: timstewart-dynatrace
-      name: homebrew-tap
-    directory: Formula
-    homepage: https://github.com/timstewart-dynatrace/dtiam
-    description: A kubectl-style CLI for Dynatrace IAM
-    license: MIT
-    test: |
-      system "#{bin}/dtiam", "version"
-    install: |
-      bin.install "dtiam"
 
 nfpms:
   - id: packages

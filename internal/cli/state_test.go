@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jtimothystewart/dtiam/pkg/output"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
 )
 
 func TestState_Defaults(t *testing.T) {

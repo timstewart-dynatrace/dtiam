@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 
-	"github.com/jtimothystewart/dtiam/internal/cli"
-	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/pkg/output"
-	"github.com/jtimothystewart/dtiam/pkg/utils"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/common"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/utils"
 )
 
 var groupPermissionsCmd = &cobra.Command{

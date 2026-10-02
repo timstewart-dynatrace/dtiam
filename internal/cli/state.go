@@ -2,8 +2,8 @@
 package cli
 
 import (
-	"github.com/jtimothystewart/dtiam/pkg/config"
-	"github.com/jtimothystewart/dtiam/pkg/output"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
 )
 
 // State holds the global CLI state.

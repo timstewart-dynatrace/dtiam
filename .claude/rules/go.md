@@ -36,7 +36,7 @@ import (
     "github.com/spf13/cobra"
 
     // internal
-    "github.com/jtimothystewart/dtiam/internal/cli"
+    "github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
 )
 ```
 
@@ -62,8 +62,8 @@ package newfeature
 import (
     "context"
     "github.com/spf13/cobra"
-    "github.com/jtimothystewart/dtiam/internal/cli"
-    "github.com/jtimothystewart/dtiam/internal/commands/common"
+    "github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
+    "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/common"
 )
 
 var Cmd = &cobra.Command{
@@ -165,7 +165,7 @@ Filter behavior: case-insensitive, substring match, client-side.
 ### Global State Access
 
 ```go
-import "github.com/jtimothystewart/dtiam/internal/cli"
+import "github.com/timstewart-dynatrace/dtiam/v3/internal/cli"
 
 cli.GlobalState.Context   // string - context override
 cli.GlobalState.Output    // output.Format - output format

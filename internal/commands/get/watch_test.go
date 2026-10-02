@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jtimothystewart/dtiam/pkg/watch"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/watch"
 )
 
 func TestAddWatchFlags(t *testing.T) {

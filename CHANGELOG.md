@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-02
+
+### Added
+
+- **`go install` and library imports work.** The module path is now
+  `github.com/timstewart-dynatrace/dtiam/v3`:
+
+  ```bash
+  go install github.com/timstewart-dynatrace/dtiam/v3/cmd/dtiam@latest
+  go get github.com/timstewart-dynatrace/dtiam/v3@latest
+  ```
+
+### Changed
+
+- **Module path** `github.com/jtimothystewart/dtiam` ->
+  `github.com/timstewart-dynatrace/dtiam/v3`. The old path never resolved (no
+  such repository), so no one could have depended on it. The `/v3` suffix is
+  required by Go for major versions 2 and above; without it the Go proxy only
+  served the stale v1.3.0. Importers update their import paths; the CLI is
+  unaffected.
+- **GoReleaser archives match the installers.** Archives are now
+  `dtiam_{version}_{os}_{arch}.tar.gz` (Windows included, as tar.gz), the names
+  `install.sh` and `install.ps1` download. Previously a GoReleaser release would
+  have produced `dtiam_Darwin_x86_64.tar.gz` and a Windows `.zip`, which neither
+  installer could find. Verified with a local snapshot build.
+
+### Removed
+
+- The Homebrew formula step in `.goreleaser.yaml`. Its tap repository does not
+  exist, so every GoReleaser release would have failed at that step. Install
+  with the scripts, `go install`, or a release archive.
+
 ## [3.0.2] - 2026-10-02
 
 ### Fixed

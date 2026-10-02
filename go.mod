@@ -1,4 +1,4 @@
-module github.com/jtimothystewart/dtiam
+module github.com/timstewart-dynatrace/dtiam/v3
 
 go 1.23.0
 

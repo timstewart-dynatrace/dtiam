@@ -105,7 +105,7 @@ RunE: func(cmd *cobra.Command, args []string) error {
 Destructive = delete, remove, replace, bulk modify, anything that cannot be undone.
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/prompt"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/prompt"
 
 // Standard pattern:
 if cli.GlobalState.IsDryRun() {

@@ -19,8 +19,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jtimothystewart/dtiam/internal/commands/common"
-	"github.com/jtimothystewart/dtiam/pkg/resources"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/common"
+	"github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 )
 
 // skipIfNoCredentials skips the test if API credentials are not configured.

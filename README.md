@@ -32,6 +32,12 @@ Both scripts detect your platform, verify the release checksum, and install to a
 directory on your PATH. Pin a version with `DTIAM_VERSION`, or choose the
 location with `DTIAM_INSTALL_DIR`.
 
+With Go 1.23+:
+
+```bash
+go install github.com/timstewart-dynatrace/dtiam/v3/cmd/dtiam@latest
+```
+
 From source:
 
 ```bash
@@ -241,14 +247,19 @@ Override the requested set with `DTIAM_SCOPES` (space-separated, as OAuth2 requi
 ## Using dtiam as a Go library
 
 The reusable packages live under `pkg/`, so dtiam can be imported rather than
-shelled out to:
+shelled out to. The module path carries the major version, as Go requires for
+v2 and above:
+
+```bash
+go get github.com/timstewart-dynatrace/dtiam/v3@latest
+```
 
 ```go
 import (
     "context"
 
-    "github.com/jtimothystewart/dtiam/pkg/client"
-    "github.com/jtimothystewart/dtiam/pkg/resources"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 )
 
 c := client.New(client.Config{AccountUUID: uuid, TokenProvider: provider})

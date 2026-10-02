@@ -12,11 +12,11 @@ While dtiam is primarily a CLI tool, its internal packages can be imported and u
 
 ```go
 import (
-    "github.com/jtimothystewart/dtiam/pkg/config"
-    "github.com/jtimothystewart/dtiam/pkg/client"
-    "github.com/jtimothystewart/dtiam/pkg/auth"
-    "github.com/jtimothystewart/dtiam/pkg/resources"
-    "github.com/jtimothystewart/dtiam/pkg/output"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
 )
 ```
 
@@ -25,7 +25,7 @@ import (
 ### Loading Configuration
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/config"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
 
 // Load existing configuration from ~/.config/dtiam/config
 cfg, err := config.Load()
@@ -48,7 +48,7 @@ fmt.Printf("Client ID: %s\n", cred.Credential.ClientID)
 ### Creating Configuration Programmatically
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/config"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
 
 cfg := config.NewConfig()
 
@@ -72,7 +72,7 @@ if err := config.Save(cfg); err != nil {
 ```go
 import (
     "os"
-    "github.com/jtimothystewart/dtiam/pkg/config"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/config"
 )
 
 // Check for environment overrides
@@ -88,8 +88,8 @@ bearerToken := os.Getenv("DTIAM_BEARER_TOKEN")
 
 ```go
 import (
-    "github.com/jtimothystewart/dtiam/pkg/client"
-    "github.com/jtimothystewart/dtiam/pkg/auth"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
 )
 
 // Create OAuth2 token manager
@@ -119,8 +119,8 @@ if err != nil {
 
 ```go
 import (
-    "github.com/jtimothystewart/dtiam/pkg/client"
-    "github.com/jtimothystewart/dtiam/pkg/auth"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
 )
 
 // Create static token manager (for bearer tokens)
@@ -138,7 +138,7 @@ defer c.Close()
 ### Custom Retry Configuration
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/client"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
 
 retryConfig := client.RetryConfig{
     MaxRetries:      5,
@@ -158,7 +158,7 @@ c := client.New(
 ### Error Handling
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/client"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
 
 resp, err := c.Get(ctx, "/groups/invalid-uuid")
 if err != nil {
@@ -181,7 +181,7 @@ if err != nil {
 ```go
 import (
     "context"
-    "github.com/jtimothystewart/dtiam/pkg/resources"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 )
 
 handler := resources.NewGroupHandler(c)
@@ -214,7 +214,7 @@ err = handler.RemoveMember(ctx, "group-uuid", "user-uid")
 ### Users
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewUserHandler(c)
 ctx := context.Background()
@@ -252,7 +252,7 @@ err = handler.Delete(ctx, "user-uid")
 ### Service Users
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewServiceUserHandler(c)
 ctx := context.Background()
@@ -288,7 +288,7 @@ err = handler.RemoveFromGroup(ctx, "service-user-uid", "group-uuid")
 ### Policies
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 // Account-level policies
 handler := resources.NewPolicyHandler(c, "account", accountUUID)
@@ -320,7 +320,7 @@ err = handler.Delete(ctx, "policy-uuid")
 ### Bindings
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewBindingHandler(c)
 ctx := context.Background()
@@ -347,7 +347,7 @@ err = handler.RemoveBoundary(ctx, "group-uuid", "policy-uuid", "boundary-uuid")
 ### Boundaries
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewBoundaryHandler(c)
 ctx := context.Background()
@@ -380,7 +380,7 @@ err = handler.Delete(ctx, "boundary-uuid")
 ### Environments
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewEnvironmentHandler(c)
 ctx := context.Background()
@@ -398,7 +398,7 @@ env, err := handler.GetByName(ctx, "Production")
 ### Account Limits
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewLimitsHandler(c)
 ctx := context.Background()
@@ -419,7 +419,7 @@ if hasCapacity {
 ### Subscriptions
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewSubscriptionHandler(c)
 ctx := context.Background()
@@ -439,7 +439,7 @@ forecast, err := handler.GetForecast(ctx)
 Platform token operations. Requires `platform-token:tokens:manage` scope.
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewTokenHandler(c)
 ctx := context.Background()
@@ -462,7 +462,7 @@ err := handler.Delete(ctx, "token-id")
 App Engine Registry operations. Requires environment URL and `app-engine:apps:run` scope.
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 // env-id is auto-expanded to full URL
 handler := resources.NewAppHandler(c, "abc12345")
@@ -482,7 +482,7 @@ ids, err := handler.GetIDs(ctx)
 Settings 2.0 schema operations. Requires environment URL and `settings.read` scope.
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewSchemaHandler(c, "abc12345")
 
@@ -504,7 +504,7 @@ builtinIDs, err := handler.GetBuiltinIDs(ctx)
 ### Using the Printer
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/output"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
 
 // Create printer
 printer := output.NewPrinter(output.FormatTable, false)
@@ -523,7 +523,7 @@ err = printer.Print(data, columns)
 ### Output Formats
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/output"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
 
 // Available formats
 output.FormatTable   // ASCII table (default)
@@ -537,7 +537,7 @@ output.FormatPlain   // Machine-readable plain text
 ### Custom Columns
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/output"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
 
 // Basic column
 col := output.Column{Key: "name", Header: "NAME"}
@@ -560,7 +560,7 @@ dtiam supports two authentication methods:
 The `OAuthTokenManager` handles OAuth2 client credentials flow with automatic token refresh. This is recommended for automation and long-running processes.
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/auth"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
 
 // Create manager with OAuth2 credentials
 tokenMgr := auth.NewOAuthTokenManager(
@@ -581,7 +581,7 @@ isValid := tokenMgr.IsValid()
 The `StaticTokenManager` uses a pre-existing bearer token. **Warning:** Static tokens do NOT auto-refresh and will fail when expired.
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/auth"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
 
 // Create manager with static bearer token
 // WARNING: Token will NOT auto-refresh!
@@ -608,7 +608,7 @@ token, err := tokenMgr.GetToken()
 The `GetOrResolve` helper function handles resolution of identifiers that could be UUIDs or names:
 
 ```go
-import "github.com/jtimothystewart/dtiam/pkg/resources"
+import "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 
 handler := resources.NewGroupHandler(c)
 ctx := context.Background()
@@ -629,10 +629,10 @@ import (
     "fmt"
     "log"
 
-    "github.com/jtimothystewart/dtiam/pkg/auth"
-    "github.com/jtimothystewart/dtiam/pkg/client"
-    "github.com/jtimothystewart/dtiam/pkg/output"
-    "github.com/jtimothystewart/dtiam/pkg/resources"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/auth"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/client"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/output"
+    "github.com/timstewart-dynatrace/dtiam/v3/pkg/resources"
 )
 
 func main() {
