@@ -7,6 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-02
+
+Every Account Management call was re-checked against the live OpenAPI spec
+(`api.dynatrace.com/spec-json`) and against a live account. The previous
+revalidation compared against a local spec folder that does not contain the
+Account Management API, so these were missed. All fixes were verified live with
+throwaway objects that were then deleted.
+
+### Fixed — security-relevant
+
+- **`boundary detach` removed every boundary on the binding, and `boundary attach`
+  replaced them all.** The binding was read from the top level of a response that
+  wraps it in `policyBindings`, so the current boundaries were always seen as
+  empty. Detaching one boundary therefore *widened* access to the full policy.
+  Template parameters on the binding were dropped as well. Now only the named
+  boundary is added or removed, and parameters are kept. Bindings that exist
+  several times for one pair (parameterized policies) are refused rather than
+  edited arbitrarily.
+- **`delete binding` rewrote every binding at the level** with a read-modify-PUT
+  of the whole collection (an operation the API does not document), losing any
+  concurrent change. It now uses `DELETE .../bindings/{policy}/{group}`.
+
+### Fixed
+
+- **Every Account Management error printed a blank message.** The API sends
+  `"error": true`, and decoding that into a string field discarded the message.
+  Errors now show the API's text ("payload.map is not a function", "Expected email
+  to be email", ...).
+- **`create group` always failed** (HTTP 500): `POST /groups` takes an array.
+  This also broke `apply`, `bulk create-groups`, `group clone` and `group setup`.
+- **Group policies always came back empty.** `GET .../bindings/groups/{uuid}`
+  returns `{policyUuids, bindingsDetails}`, not `policyBindings`, and
+  `GroupHandler.GetPolicies` also used a path that 404ed. Affected `group
+  bindings`, `get bindings --group`, `describe group`, `export group`, `diff` on
+  bindings, the local `analyze` commands, and **`group clone --include-policies`,
+  which silently copied no policies**.
+- **Lookup by ID failed for groups, environments and platform tokens**, whose
+  APIs have no single-item GET. Fixed `get groups ID`, `get environments ID`,
+  `describe environment`, `get tokens ID`, `analyze group-permissions`,
+  `analyze effective-group` and `export group`.
+- **Lookup by name failed for policies and boundaries** (`get policies NAME`,
+  `describe boundary NAME`): the API answers a name with 400, not 404.
+- **`user list-groups` and `analyze user-permissions` failed**: they called
+  `/users/{uid}/groups` and `/users/{uid}`, neither of which exists. Users are
+  addressed by email; a UID is now resolved first. `delete user UID` had the
+  same problem.
+- **Group membership used undocumented endpoints.** `group add-member` /
+  `remove-member` and `user remove-from-groups` now use `POST /users/{email}` and
+  `DELETE /users/{email}/groups?group-uuid=...`. `group remove-member --user`
+  accepts an email or a UID, including a service user's.
+- **Service-user group commands did not work.** `service-user list-groups`
+  always showed none, and `add-to-group` / `remove-from-group` / `create --groups`
+  sent a `groups` field the API ignores. They now go through the user endpoints.
+  `service-user update --description` without `--name` no longer fails (PUT
+  requires the name).
+- **`apply` never updated anything** despite "Create or update" in its help. It
+  now creates missing resources, updates changed ones (keeping fields the spec
+  omits), and reports matching ones as unchanged, so re-applying is safe.
+- **`diff` always reported a policy's statement as changed**: the policy list
+  omits `statementQuery`. Both `apply` and `diff` now read the full policy.
+- **`get env-groups` always failed**: the API filters groups on
+  `partialGroupName`, not `partialString`, and requires it. `--search` (3+
+  characters) is now required. Its table showed blank names; columns now match
+  the response (`groupName`, `type`).
+- **`get env-users` / `get env-groups` were denied** because the account token
+  never carried `iam:users:read` / `iam:groups:read`. Environment commands
+  (`get apps`, `get schemas`, `get env-users`, `get env-groups`, app and schema
+  boundary validation) now request just the scopes they need, so a client
+  lacking them fails only that command.
+- **`DTIAM_API_URL`, the credential's `api-url`, `environment-url` and
+  `environment-token`, and `DTIAM_ENVIRONMENT_TOKEN` were read but never used.**
+  The API URL now moves every Account Management call to the given host; the
+  environment URL and token feed the environment commands.
+- `group clone` reported "Copied N" even when copies failed; it now reports
+  how many succeeded.
+
+### Changed
+
+- `resources.BindingHandler.UpdateGroupBindings` now takes `[]string` policy
+  UUIDs, matching the API's `{"policyUuids": [...]}` body. The previous signature
+  could not produce a valid request.
+- `resources.GroupHandler.RemoveMember` accepts an email or a UID.
+- Handler errors now wrap the underlying `*client.APIError`, so `errors.As`
+  reaches the status code.
+
 ## [3.0.0] - 2026-10-01
 
 ### Changed — BREAKING

@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/jtimothystewart/dtiam/pkg/client"
@@ -47,63 +48,90 @@ func (h *ServiceUserHandler) GetByName(ctx context.Context, name string) (map[st
 	return nil, nil
 }
 
-// Create creates a new service user.
+// Create creates a new service user, then adds it to the given groups.
+//
+// POST /service-users accepts only name and description; group membership is
+// managed through the user endpoints using the service user's email, as it is
+// for any other user.
 func (h *ServiceUserHandler) Create(ctx context.Context, name string, description *string, groups []string) (map[string]any, error) {
 	data := map[string]any{
 		"name": name,
 	}
-
 	if description != nil {
 		data["description"] = *description
 	}
-	if len(groups) > 0 {
-		data["groups"] = groups
+
+	created, err := h.BaseHandler.Create(ctx, data)
+	if err != nil {
+		return nil, err
 	}
 
-	return h.BaseHandler.Create(ctx, data)
+	if len(groups) > 0 {
+		email, err := h.emailFor(ctx, created)
+		if err != nil {
+			return created, fmt.Errorf("service user created but not added to groups: %w", err)
+		}
+		if err := NewUserHandler(h.Client).AddToGroups(ctx, email, groups); err != nil {
+			return created, fmt.Errorf("service user created but not added to groups: %w", err)
+		}
+		created["groups"] = groups
+	}
+
+	return created, nil
 }
 
-// Update updates a service user.
+// Update updates a service user's name and description, and replaces its
+// group memberships when groups is non-nil.
+//
+// PUT /service-users/{uid} requires name and accepts only name and
+// description, so an unchanged field is filled from the current record.
 func (h *ServiceUserHandler) Update(ctx context.Context, userID string, name, description *string, groups []string) (map[string]any, error) {
-	data := make(map[string]any)
+	current, err := h.Get(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
 
+	data := map[string]any{
+		"name":        current["name"],
+		"description": current["description"],
+	}
 	if name != nil {
 		data["name"] = *name
 	}
 	if description != nil {
 		data["description"] = *description
 	}
-	if groups != nil {
-		data["groups"] = groups
-	}
 
-	return h.BaseHandler.Update(ctx, userID, data)
-}
-
-// GetGroups gets the groups a service user belongs to.
-func (h *ServiceUserHandler) GetGroups(ctx context.Context, userID string) ([]map[string]any, error) {
-	user, err := h.Get(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	groups, ok := user["groups"].([]any)
-	if !ok {
-		return []map[string]any{}, nil
-	}
-
-	result := make([]map[string]any, 0, len(groups))
-	for _, g := range groups {
-		switch v := g.(type) {
-		case string:
-			// Group is a UUID, create minimal object
-			result = append(result, map[string]any{"uuid": v})
-		case map[string]any:
-			result = append(result, v)
+	updated := current
+	if name != nil || description != nil {
+		updated, err = h.BaseHandler.Update(ctx, userID, data)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return result, nil
+	if groups != nil {
+		email, err := h.emailFor(ctx, current)
+		if err != nil {
+			return nil, err
+		}
+		if err := NewUserHandler(h.Client).ReplaceGroups(ctx, email, groups); err != nil {
+			return nil, err
+		}
+		updated["groups"] = groups
+	}
+
+	return updated, nil
+}
+
+// GetGroups gets the groups a service user belongs to. GET /service-users/{uid}
+// does not include them; GET /users/{email} does, for service users as well.
+func (h *ServiceUserHandler) GetGroups(ctx context.Context, userID string) ([]map[string]any, error) {
+	email, err := h.emailForID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return NewUserHandler(h.Client).GetGroups(ctx, email)
 }
 
 // GetExpanded gets a service user with expanded group information.
@@ -122,63 +150,50 @@ func (h *ServiceUserHandler) GetExpanded(ctx context.Context, userID string) (ma
 	return user, nil
 }
 
-// AddToGroup adds a service user to a group.
+// AddToGroup adds a service user to a group, leaving other memberships alone.
 func (h *ServiceUserHandler) AddToGroup(ctx context.Context, userID, groupUUID string) error {
-	user, err := h.Get(ctx, userID)
+	email, err := h.emailForID(ctx, userID)
 	if err != nil {
 		return err
 	}
-
-	// Get current groups
-	var currentGroups []string
-	if groups, ok := user["groups"].([]any); ok {
-		for _, g := range groups {
-			switch v := g.(type) {
-			case string:
-				currentGroups = append(currentGroups, v)
-			case map[string]any:
-				if uuid, ok := v["uuid"].(string); ok {
-					currentGroups = append(currentGroups, uuid)
-				}
-			}
-		}
-	}
-
-	// Add new group
-	currentGroups = append(currentGroups, groupUUID)
-
-	// Update
-	_, err = h.Update(ctx, userID, nil, nil, currentGroups)
-	return err
+	return NewUserHandler(h.Client).AddToGroups(ctx, email, []string{groupUUID})
 }
 
-// RemoveFromGroup removes a service user from a group.
+// RemoveFromGroup removes a service user from one group.
 func (h *ServiceUserHandler) RemoveFromGroup(ctx context.Context, userID, groupUUID string) error {
-	user, err := h.Get(ctx, userID)
+	email, err := h.emailForID(ctx, userID)
 	if err != nil {
 		return err
 	}
+	return NewUserHandler(h.Client).RemoveFromGroups(ctx, email, []string{groupUUID})
+}
 
-	// Get current groups and filter out the one to remove
-	var newGroups []string
-	if groups, ok := user["groups"].([]any); ok {
-		for _, g := range groups {
-			var uuid string
-			switch v := g.(type) {
-			case string:
-				uuid = v
-			case map[string]any:
-				if u, ok := v["uuid"].(string); ok {
-					uuid = u
-				}
-			}
-			if uuid != "" && uuid != groupUUID {
-				newGroups = append(newGroups, uuid)
-			}
-		}
+// emailForID returns the email of the service user with the given UID.
+func (h *ServiceUserHandler) emailForID(ctx context.Context, userID string) (string, error) {
+	user, err := h.Get(ctx, userID)
+	if err != nil {
+		return "", err
 	}
+	return h.emailFor(ctx, user)
+}
 
-	// Update
-	_, err = h.Update(ctx, userID, nil, nil, newGroups)
-	return err
+// emailFor returns a service user's email, the identifier the user endpoints
+// require. Service user emails have the form {uid}@service.sso.dynatrace.com.
+func (h *ServiceUserHandler) emailFor(ctx context.Context, user map[string]any) (string, error) {
+	if email, _ := user["email"].(string); email != "" {
+		return email, nil
+	}
+	uid, _ := user["uid"].(string)
+	if uid == "" {
+		return "", fmt.Errorf("service user has neither email nor uid")
+	}
+	// A create response may carry only the uid; fetch the full record.
+	full, err := h.Get(ctx, uid)
+	if err != nil {
+		return "", err
+	}
+	if email, _ := full["email"].(string); email != "" {
+		return email, nil
+	}
+	return "", fmt.Errorf("service user %s has no email", uid)
 }

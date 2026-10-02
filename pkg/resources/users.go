@@ -2,8 +2,8 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/jtimothystewart/dtiam/pkg/client"
@@ -60,6 +60,40 @@ func (h *UserHandler) GetByEmail(ctx context.Context, email string) (map[string]
 	return nil, nil
 }
 
+// Get gets a user by email or UID.
+//
+// The API addresses users by email only: GET /users/{email} returns the user
+// with its group memberships, and GET /users/{uid} is rejected with 400. A UID
+// is therefore resolved to an email from the user list first.
+func (h *UserHandler) Get(ctx context.Context, user string) (map[string]any, error) {
+	email, err := h.resolveEmail(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return h.BaseHandler.Get(ctx, email)
+}
+
+// resolveEmail returns the email for a user given by email or UID.
+func (h *UserHandler) resolveEmail(ctx context.Context, user string) (string, error) {
+	if strings.Contains(user, "@") {
+		return user, nil
+	}
+	// Include service users: they are group members too, and the plain user
+	// list leaves them out.
+	items, err := h.ListWithServiceUsers(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	for _, item := range items {
+		if uid, _ := item["uid"].(string); strings.EqualFold(uid, user) {
+			if email, _ := item["email"].(string); email != "" {
+				return email, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("user not found")
+}
+
 // GetByName gets a user by email (alias for GetByEmail).
 func (h *UserHandler) GetByName(ctx context.Context, name string) (map[string]any, error) {
 	return h.GetByEmail(ctx, name)
@@ -84,44 +118,48 @@ func (h *UserHandler) Create(ctx context.Context, email string, firstName, lastN
 	return h.BaseHandler.Create(ctx, data)
 }
 
-// Delete deletes a user.
-func (h *UserHandler) Delete(ctx context.Context, userID string) error {
-	return h.BaseHandler.Delete(ctx, userID)
+// Delete removes a user from the account. The user may be given by email or
+// UID; DELETE /users/{email} is the only form the API accepts.
+func (h *UserHandler) Delete(ctx context.Context, user string) error {
+	email, err := h.resolveEmail(ctx, user)
+	if err != nil {
+		return err
+	}
+	return h.BaseHandler.Delete(ctx, email)
 }
 
-// GetGroups gets the groups a user belongs to.
-func (h *UserHandler) GetGroups(ctx context.Context, userID string) ([]map[string]any, error) {
-	path := fmt.Sprintf("/users/%s/groups", userID)
-	body, err := h.Client.Get(ctx, path, nil)
+// GetGroups gets the groups a user belongs to. They are part of the
+// GET /users/{email} response; there is no /users/{id}/groups GET.
+func (h *UserHandler) GetGroups(ctx context.Context, user string) ([]map[string]any, error) {
+	record, err := h.Get(ctx, user)
 	if err != nil {
-		// Fall back to getting groups from user object
-		user, err := h.Get(ctx, userID)
-		if err != nil {
-			return nil, h.handleError("get groups", err)
-		}
-		if groups, ok := user["groups"].([]any); ok {
-			return toMapSlice(groups)
-		}
+		return nil, h.handleError("get groups", err)
+	}
+	groups, ok := record["groups"].([]any)
+	if !ok {
 		return []map[string]any{}, nil
 	}
-
-	return h.extractList(body)
+	return toMapSlice(groups)
 }
 
-// GetExpanded gets a user with expanded group information.
-func (h *UserHandler) GetExpanded(ctx context.Context, userID string) (map[string]any, error) {
-	user, err := h.Get(ctx, userID)
+// GetExpanded gets a user with a group count added. The groups themselves are
+// already part of the GET /users/{email} response.
+func (h *UserHandler) GetExpanded(ctx context.Context, user string) (map[string]any, error) {
+	record, err := h.Get(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	groups, err := h.GetGroups(ctx, userID)
-	if err == nil {
-		user["groups"] = groups
-		user["group_count"] = len(groups)
+	groups := []map[string]any{}
+	if raw, ok := record["groups"].([]any); ok {
+		if converted, err := toMapSlice(raw); err == nil {
+			groups = converted
+		}
 	}
+	record["groups"] = groups
+	record["group_count"] = len(groups)
 
-	return user, nil
+	return record, nil
 }
 
 // ReplaceGroups replaces all group memberships for a user.
@@ -134,10 +172,15 @@ func (h *UserHandler) ReplaceGroups(ctx context.Context, email string, groupUUID
 	return nil
 }
 
-// RemoveFromGroups removes a user from specified groups.
+// RemoveFromGroups removes a user from specified groups. The API takes the
+// groups as repeated group-uuid query parameters, not as a request body.
 func (h *UserHandler) RemoveFromGroups(ctx context.Context, email string, groupUUIDs []string) error {
 	path := fmt.Sprintf("/users/%s/groups", email)
-	_, err := h.Client.DeleteWithBody(ctx, path, groupUUIDs)
+	query := url.Values{}
+	for _, g := range groupUUIDs {
+		query.Add("group-uuid", g)
+	}
+	_, err := h.Client.DeleteWithQuery(ctx, path, query)
 	if err != nil {
 		return h.handleError("remove from groups", err)
 	}
@@ -152,25 +195,4 @@ func (h *UserHandler) AddToGroups(ctx context.Context, email string, groupUUIDs 
 		return h.handleError("add to groups", err)
 	}
 	return nil
-}
-
-// extractList overrides the base to handle user-specific response formats.
-func (h *UserHandler) extractList(body []byte) ([]map[string]any, error) {
-	var response map[string]any
-	if err := json.Unmarshal(body, &response); err != nil {
-		var items []map[string]any
-		if err := json.Unmarshal(body, &items); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		return items, nil
-	}
-
-	// Try common list keys
-	for _, key := range []string{"items", "users", "groups"} {
-		if items, ok := response[key]; ok {
-			return toMapSlice(items)
-		}
-	}
-
-	return []map[string]any{}, nil
 }

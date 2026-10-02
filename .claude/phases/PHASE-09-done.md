@@ -1,6 +1,6 @@
 # PHASE 09 — API Revalidation & dtctl Format Alignment
 
-**Status:** active
+**Status:** done
 **Started:** 2026-10-01
 
 ## Goal
@@ -121,7 +121,7 @@ not reliable for response shapes.** Six commands were silently returning empty.
 - [x] `--watch` / `-w` on get groups/users/policies/bindings
 - [x] Agent auto-detection implying `--plain`, with opt-out and `-v` explanation
 - [x] `cli.ErrSilentExit` for a non-zero exit that is a result, not a failure
-- [x] `internal/diff` and `internal/watch` as standalone, testable packages
+- [x] `pkg/diff` and `pkg/watch` (originally `internal/`) as standalone, testable packages
 - [x] Live-verified: diff detects field drift and creates; watch renders once and
       does not re-render on unchanged polls; clean SIGINT shutdown
 

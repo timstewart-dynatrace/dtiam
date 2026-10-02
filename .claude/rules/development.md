@@ -62,8 +62,8 @@ dtiam supports two authentication methods:
 | `DTIAM_OUTPUT` | Output format (table, json, yaml, csv) |
 | `DTIAM_VERBOSE` | Enable verbose output |
 | `DTIAM_ENVIRONMENT_URL` | Environment URL for apps/schemas |
-| `DTIAM_ENVIRONMENT_TOKEN` | Separate environment API token |
-| `DTIAM_API_URL` | Custom IAM API base URL |
+| `DTIAM_ENVIRONMENT_TOKEN` | Separate environment API token (used by apps/schemas/env-users/env-groups) |
+| `DTIAM_API_URL` | Alternative host for all Account Management APIs (replaces `https://api.dynatrace.com`) |
 | `DTIAM_SCOPES` | Custom OAuth scopes (comma-separated) |
 
 ## 6. Configuration

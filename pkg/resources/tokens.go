@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jtimothystewart/dtiam/pkg/client"
 )
@@ -29,6 +28,8 @@ func NewTokenHandler(c *client.Client) *TokenHandler {
 			// The platform token API paginates and returns
 			// {pageSize, pageNumber, total, results}.
 			Pagination: client.PlatformTokenPagination(),
+			// Tokens have only DELETE on /platform-tokens/{id}, no GET.
+			NoSingleGet: true,
 		},
 	}
 }
@@ -48,29 +49,4 @@ func (h *TokenHandler) Create(ctx context.Context, name string, scopes []string,
 	}
 
 	return h.BaseHandler.Create(ctx, data)
-}
-
-// Get gets a platform token by ID.
-// Falls back to searching the list if the direct endpoint returns 404.
-func (h *TokenHandler) Get(ctx context.Context, tokenID string) (map[string]any, error) {
-	result, err := h.BaseHandler.Get(ctx, tokenID)
-	if err == nil {
-		return result, nil
-	}
-
-	// Fall back to searching the list
-	if apiErr, ok := err.(*client.APIError); ok && apiErr.IsNotFound() {
-		tokens, listErr := h.List(ctx, nil)
-		if listErr != nil {
-			return nil, listErr
-		}
-		for _, token := range tokens {
-			if id, ok := token["id"].(string); ok && id == tokenID {
-				return token, nil
-			}
-		}
-		return nil, fmt.Errorf("platform-token not found: %s", tokenID)
-	}
-
-	return nil, err
 }

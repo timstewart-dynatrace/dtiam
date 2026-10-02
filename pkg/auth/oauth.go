@@ -46,6 +46,24 @@ var DefaultScopeList = []string{
 	"iam:effective-permissions:read",
 }
 
+// Environment-served APIs need scopes the account APIs do not. They are kept
+// out of DefaultScopeList on purpose: a token request naming a scope the OAuth
+// client was not granted fails outright (HTTP 400), so adding them there would
+// break every command for clients without them. Instead, each environment
+// command requests just the scopes it needs, and only that command fails when
+// they are missing.
+var (
+	// EnvironmentIAMScopes covers the environment-level Platform IAM API
+	// (get env-users, get env-groups).
+	EnvironmentIAMScopes = []string{"iam:users:read", "iam:groups:read"}
+	// AppEngineScopes covers the App Engine registry (get apps, app boundary
+	// validation).
+	AppEngineScopes = []string{"app-engine:apps:run"}
+	// SettingsSchemaScopes covers Settings 2.0 schemas (get schemas, schema
+	// boundary validation).
+	SettingsSchemaScopes = []string{"settings:schemas:read"}
+)
+
 // defaultScopes is the space-separated scope string sent to the token endpoint.
 var defaultScopes = strings.Join(DefaultScopeList, " ")
 

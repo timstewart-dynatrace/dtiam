@@ -10,6 +10,7 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
+	"github.com/jtimothystewart/dtiam/pkg/auth"
 	"github.com/jtimothystewart/dtiam/pkg/resources"
 )
 
@@ -78,7 +79,14 @@ validated against the App Engine Registry before creating the boundary.`,
 
 		// Validate app IDs if environment is provided
 		if environment != "" && !skipValidation {
-			appHandler := resources.NewAppHandler(c, environment)
+			// Validation calls an environment-served API, which needs its own
+			// scopes or an environment token; the boundary itself is account-level.
+			envClient, err := common.CreateEnvironmentClient(auth.AppEngineScopes)
+			if err != nil {
+				return err
+			}
+			defer envClient.Close()
+			appHandler := resources.NewAppHandler(envClient, environment)
 			ctx := context.Background()
 			for _, appID := range appIDs {
 				_, err := appHandler.Get(ctx, appID)
@@ -179,7 +187,14 @@ validated against the Settings API before creating the boundary.`,
 
 		// Validate schema IDs if environment is provided
 		if environment != "" && !skipValidation {
-			schemaHandler := resources.NewSchemaHandler(c, environment)
+			// Validation calls an environment-served API, which needs its own
+			// scopes or an environment token; the boundary itself is account-level.
+			envClient, err := common.CreateEnvironmentClient(auth.SettingsSchemaScopes)
+			if err != nil {
+				return err
+			}
+			defer envClient.Close()
+			schemaHandler := resources.NewSchemaHandler(envClient, environment)
 			ctx := context.Background()
 			for _, schemaID := range schemaIDs {
 				_, err := schemaHandler.Get(ctx, schemaID)

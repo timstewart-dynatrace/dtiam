@@ -9,6 +9,7 @@ import (
 
 	"github.com/jtimothystewart/dtiam/internal/cli"
 	"github.com/jtimothystewart/dtiam/internal/commands/common"
+	"github.com/jtimothystewart/dtiam/pkg/auth"
 	"github.com/jtimothystewart/dtiam/pkg/output"
 	"github.com/jtimothystewart/dtiam/pkg/resources"
 )
@@ -105,8 +106,8 @@ an environment, served from the environment itself
 api.dynatrace.com.
 
 The API requires a search term or a user UUID -- it will not enumerate every
-user. Requires the iam:users:read scope, which is granted on the environment
-rather than on the account, so the account OAuth client may not carry it.`,
+user. Requires the iam:users:read scope, which dtiam requests for this command
+only, or an environment token (DTIAM_ENVIRONMENT_TOKEN).`,
 	Example: `  # Find users matching a partial email
   dtiam get env-users --environment abc12345 --search alice
 
@@ -122,7 +123,7 @@ rather than on the account, so the account OAuth client may not carry it.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		envURL := resolveEnvironmentURL(envUsersEnvironmentFlag)
 
-		c, err := common.CreateClient()
+		c, err := common.CreateEnvironmentClient(auth.EnvironmentIAMScopes)
 		if err != nil {
 			return err
 		}
@@ -154,11 +155,10 @@ var envGroupsCmd = &cobra.Command{
 
 Like "get env-users", this is served from the environment rather than from the
 account API, and reports which groups are visible at that organizational level.
-Requires the iam:users:read scope.`,
-	Example: `  # List groups visible in an environment
-  dtiam get env-groups --environment abc12345
-
-  # Filter by partial name
+The API requires a search term of at least 3 characters (--search). Requires the
+iam:groups:read scope, which dtiam requests for this command only, or an
+environment token (DTIAM_ENVIRONMENT_TOKEN).`,
+	Example: `  # Find groups visible in an environment by partial name
   dtiam get env-groups --environment abc12345 --search admin
 
   # Machine-friendly output
@@ -167,7 +167,7 @@ Requires the iam:users:read scope.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		envURL := resolveEnvironmentURL(envGroupsEnvironmentFlag)
 
-		c, err := common.CreateClient()
+		c, err := common.CreateEnvironmentClient(auth.EnvironmentIAMScopes)
 		if err != nil {
 			return err
 		}

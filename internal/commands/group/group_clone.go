@@ -95,6 +95,7 @@ to copy all group members and --include-policies to copy all policy bindings
 			if err != nil {
 				return fmt.Errorf("failed to get source members: %w", err)
 			}
+			copied := 0
 			for _, member := range members {
 				email, _ := member["email"].(string)
 				if email == "" {
@@ -104,11 +105,12 @@ to copy all group members and --include-policies to copy all policy bindings
 					fmt.Fprintf(os.Stderr, "  Warning: failed to add member %s: %v\n", email, err)
 					continue
 				}
+				copied++
 				if cli.GlobalState.IsVerbose() {
 					fmt.Fprintf(os.Stderr, "  Added member: %s\n", email)
 				}
 			}
-			printer.PrintSuccess("  Copied %d member(s)", len(members))
+			printer.PrintSuccess("  Copied %d of %d member(s)", copied, len(members))
 		}
 
 		// Copy policy bindings
@@ -118,6 +120,7 @@ to copy all group members and --include-policies to copy all policy bindings
 			if err != nil {
 				return fmt.Errorf("failed to get source bindings: %w", err)
 			}
+			copied := 0
 			for _, binding := range bindings {
 				policyUUID := utils.StringFrom(binding, "policyUuid")
 				var boundaries []string
@@ -128,11 +131,12 @@ to copy all group members and --include-policies to copy all policy bindings
 					fmt.Fprintf(os.Stderr, "  Warning: failed to copy binding for policy %s: %v\n", policyUUID, err)
 					continue
 				}
+				copied++
 				if cli.GlobalState.IsVerbose() {
 					fmt.Fprintf(os.Stderr, "  Copied binding: policy %s\n", policyUUID)
 				}
 			}
-			printer.PrintSuccess("  Copied %d binding(s)", len(bindings))
+			printer.PrintSuccess("  Copied %d of %d binding(s)", copied, len(bindings))
 		}
 
 		return nil

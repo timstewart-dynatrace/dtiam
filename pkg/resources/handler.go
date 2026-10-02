@@ -4,7 +4,9 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/jtimothystewart/dtiam/pkg/client"
@@ -84,6 +86,12 @@ type BaseHandler struct {
 	// endpoint returns its whole collection in a single response, which is true
 	// for most Account Management endpoints.
 	Pagination *client.PaginationConfig
+
+	// NoSingleGet marks a collection that has no GET-by-ID endpoint, so Get
+	// resolves the item from List instead. Groups, environments (v2) and
+	// platform tokens are like this: the API answers {path}/{id} with 404 even
+	// for an ID that exists, which made every by-ID lookup report "not found".
+	NoSingleGet bool
 }
 
 // ResourceName returns the resource name.
@@ -155,6 +163,10 @@ func (h *BaseHandler) List(ctx context.Context, params map[string]string) ([]map
 
 // Get gets a single resource by ID.
 func (h *BaseHandler) Get(ctx context.Context, id string) (map[string]any, error) {
+	if h.NoSingleGet {
+		return h.getFromList(ctx, id)
+	}
+
 	path := fmt.Sprintf("%s/%s", h.Path, id)
 	body, err := h.Client.Get(ctx, path, nil)
 	if err != nil {
@@ -167,6 +179,22 @@ func (h *BaseHandler) Get(ctx context.Context, id string) (map[string]any, error
 	}
 
 	return result, nil
+}
+
+// getFromList finds a resource by its ID field in the full collection. The
+// "not found" error matches handleError's wording, which GetOrResolve relies on
+// to fall back to a name search.
+func (h *BaseHandler) getFromList(ctx context.Context, id string) (map[string]any, error) {
+	items, err := h.List(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range items {
+		if itemID, ok := item[h.IDField].(string); ok && strings.EqualFold(itemID, id) {
+			return item, nil
+		}
+	}
+	return nil, fmt.Errorf("%s not found", h.Name)
 }
 
 // GetByName gets a resource by name (client-side search).
@@ -395,21 +423,45 @@ func toMapSlice(v any) ([]map[string]any, error) {
 	}
 }
 
+// apiError is a user-facing error that keeps the underlying *client.APIError
+// reachable through errors.As, so callers can still branch on the status code.
+type apiError struct {
+	msg string
+	err *client.APIError
+}
+
+func (e *apiError) Error() string { return e.msg }
+func (e *apiError) Unwrap() error { return e.err }
+
 // handleError maps API errors to user-friendly errors.
 func (h *BaseHandler) handleError(operation string, err error) error {
 	if apiErr, ok := err.(*client.APIError); ok {
+		var msg string
 		switch {
 		case apiErr.IsNotFound():
-			return fmt.Errorf("%s not found", h.Name)
+			msg = fmt.Sprintf("%s not found", h.Name)
 		case apiErr.IsPermissionDenied():
-			return fmt.Errorf("permission denied: %s", apiErr.Message)
+			msg = fmt.Sprintf("permission denied: %s", apiErr.Message)
 		case apiErr.IsConflict():
-			return fmt.Errorf("conflict: %s", apiErr.Message)
+			msg = fmt.Sprintf("conflict: %s", apiErr.Message)
 		default:
-			return fmt.Errorf("failed to %s %s: %s", operation, h.Name, apiErr.Message)
+			msg = fmt.Sprintf("failed to %s %s: %s", operation, h.Name, apiErr.Message)
 		}
+		return &apiError{msg: msg, err: apiErr}
 	}
 	return fmt.Errorf("failed to %s %s: %w", operation, h.Name, err)
+}
+
+// isNotAnID reports whether a failed GET-by-ID means "no resource with that
+// ID" rather than a real failure: 404, or 400 for an identifier that is not
+// even shaped like an ID (the policy and boundary endpoints answer a name with
+// "Validation failed (uuid is expected)").
+func isNotAnID(err error) bool {
+	var apiErr *client.APIError
+	if errors.As(err, &apiErr) {
+		return apiErr.IsNotFound() || apiErr.StatusCode == http.StatusBadRequest
+	}
+	return strings.Contains(err.Error(), "not found")
 }
 
 // GetOrResolve gets a resource by ID or name.
@@ -425,16 +477,9 @@ func GetOrResolve(ctx context.Context, h interface {
 		return result, nil
 	}
 
-	// If not found (or other error), search the list
-	// Some APIs don't support direct GET by ID but do return the ID in list
-	isNotFound := false
-	if apiErr, ok := err.(*client.APIError); ok && apiErr.IsNotFound() {
-		isNotFound = true
-	} else if strings.Contains(err.Error(), "not found") {
-		isNotFound = true
-	}
-
-	if isNotFound {
+	// If the identifier is not a known ID, search the list: it may be a name,
+	// or the API may not support direct GET by ID at all.
+	if isNotAnID(err) {
 		// Search the list for the resource
 		items, listErr := h.List(ctx, nil)
 		if listErr != nil {

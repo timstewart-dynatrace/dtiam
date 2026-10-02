@@ -404,3 +404,24 @@ func TestCredentialNewFields_YAML(t *testing.T) {
 		t.Errorf("EnvironmentToken = %q", cred.EnvironmentToken)
 	}
 }
+
+func TestGetEffectiveEnvironmentToken(t *testing.T) {
+	tests := []struct {
+		name string
+		env  string
+		cred *Credential
+		want string
+	}{
+		{name: "should return empty when nothing is configured", want: ""},
+		{name: "should read the credential's environment-token", cred: &Credential{EnvironmentToken: "dt0c01.cred"}, want: "dt0c01.cred"},
+		{name: "should prefer DTIAM_ENVIRONMENT_TOKEN over the credential", env: "dt0c01.env", cred: &Credential{EnvironmentToken: "dt0c01.cred"}, want: "dt0c01.env"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(EnvEnvironmentTkn, tt.env)
+			if got := GetEffectiveEnvironmentToken(tt.cred); got != tt.want {
+				t.Errorf("GetEffectiveEnvironmentToken() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

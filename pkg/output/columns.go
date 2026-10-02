@@ -260,9 +260,10 @@ func OrgLevelUserColumns() []Column {
 func OrgLevelGroupColumns() []Column {
 	return []Column{
 		{Key: "uuid", Header: "UUID"},
-		{Key: "name", Header: "NAME"},
-		{Key: "description", Header: "DESCRIPTION", WideOnly: true},
-		{Key: "owner", Header: "OWNER", WideOnly: true},
+		// The environment-level API returns groupName and type, not the
+		// name/owner of the account API. Verified against a live account.
+		{Key: "groupName", Header: "NAME"},
+		{Key: "type", Header: "TYPE"},
 	}
 }
 

@@ -425,8 +425,10 @@ Search users through the environment-level Platform IAM API.
 This is a **different API** from `get users`. That command lists the account's
 user records; this one reports which users are actually visible and assigned at
 an environment, served from `https://{env}.apps.dynatrace.com/platform/iam/v1`
-rather than from `api.dynatrace.com`. Requires the `iam:users:read` scope, which
-is granted on the environment rather than on the account.
+rather than from `api.dynatrace.com`. Requires the `iam:users:read` scope. dtiam
+requests it for this command only, so an OAuth client without it fails here and
+nowhere else; an environment token (`DTIAM_ENVIRONMENT_TOKEN` or the credential's
+`environment-token`) is used instead when configured.
 
 The API will not enumerate all users — a search term or UUID is required.
 
@@ -436,7 +438,7 @@ dtiam get env-users [OPTIONS]
 
 | Argument/Option | Short | Description                                             |
 | --------------- | ----- | ------------------------------------------------------- |
-| `--environment` |       | Environment ID or URL (defaults to `DTIAM_ENVIRONMENT_URL`) |
+| `--environment` |       | Environment ID or URL (defaults to `DTIAM_ENVIRONMENT_URL`, then the credential's `environment-url`) |
 | `--search`      |       | Partial email or name to search for                     |
 | `--uuid`        |       | User UUID to look up                                    |
 | `--level`       |       | Organizational level: `account` or `environment`        |
@@ -444,8 +446,10 @@ dtiam get env-users [OPTIONS]
 
 ### get env-groups
 
-List groups through the environment-level Platform IAM API. Same API and scope
-as `get env-users`.
+List groups through the environment-level Platform IAM API. Same API as
+`get env-users`. The API will not enumerate every group: `--search` is required
+and must be at least 3 characters. dtiam requests the `iam:groups:read` scope for
+this command only, or uses an environment token when one is configured.
 
 ```bash
 dtiam get env-groups [OPTIONS]
@@ -453,8 +457,8 @@ dtiam get env-groups [OPTIONS]
 
 | Argument/Option | Short | Description                                             |
 | --------------- | ----- | ------------------------------------------------------- |
-| `--environment` |       | Environment ID or URL (defaults to `DTIAM_ENVIRONMENT_URL`) |
-| `--search`      |       | Partial group name to search for                        |
+| `--environment` |       | Environment ID or URL (defaults to `DTIAM_ENVIRONMENT_URL`, then the credential's `environment-url`) |
+| `--search`      |       | Partial group name, at least 3 characters (required)    |
 | `--level`       |       | Organizational level: `account` or `environment`        |
 | `--output`      | `-o`  | Output format                                           |
 
@@ -965,7 +969,7 @@ dtiam group remove-member IDENTIFIER [OPTIONS]
 | Argument/Option | Short | Description                  |
 | --------------- | ----- | ---------------------------- |
 | `IDENTIFIER`    |       | Group UUID or name           |
-| `--user`        | `-u`  | User UID to remove (required) |
+| `--user`        | `-u`  | User email or UID to remove (required) |
 
 ### group bindings
 
@@ -1760,7 +1764,7 @@ dtiam template path
 
 ## apply
 
-Create resources declaratively from YAML/JSON files.
+Create or update resources declaratively from YAML/JSON files.
 
 ```bash
 dtiam apply -f FILE [--set key=value] [--dry-run]
@@ -1772,6 +1776,8 @@ dtiam apply -f FILE [--set key=value] [--dry-run]
 | `--set`  |       | Template variable as key=value (repeatable)|
 
 Supports `kind: Group|Policy|Boundary|Binding` with a `spec` section. Multiple documents supported via YAML `---` separators.
+
+Resources are matched by `name` (bindings by `group` and `policy`). A missing resource is created; an existing one is updated to match the spec; one that already matches is reported as `unchanged`, so re-applying the same file is safe. Fields a spec omits keep their current values. Run `dtiam diff -f FILE` first to see which of the three each document will be.
 
 **Examples:**
 
