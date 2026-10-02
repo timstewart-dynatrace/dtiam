@@ -6,9 +6,11 @@ import (
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/account"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/analyze"
 	applycmd "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/apply"
+	authcmd "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/auth"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/boundary"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/bulk"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/cache"
+	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/catalog"
 	configcmd "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/config"
 	"github.com/timstewart-dynatrace/dtiam/v3/internal/commands/create"
 	deletecmd "github.com/timstewart-dynatrace/dtiam/v3/internal/commands/delete"
@@ -25,7 +27,13 @@ import (
 )
 
 func main() {
-	// Register commands
+	registerCommands()
+	cli.Execute()
+}
+
+// registerCommands builds the command tree. It is separate from main so tests
+// can inspect the complete tree.
+func registerCommands() {
 	cli.AddCommand(configcmd.Cmd)
 	cli.AddCommand(get.Cmd)
 	cli.AddCommand(describe.Cmd)
@@ -45,7 +53,9 @@ func main() {
 	cli.AddCommand(applycmd.Cmd)
 	cli.AddCommand(doctor.Cmd)
 	cli.AddCommand(diffcmd.Cmd)
+	cli.AddCommand(authcmd.Cmd)
+	cli.AddCommand(catalog.Cmd)
 
-	// Execute
-	cli.Execute()
+	annotateOperations(cli.RootCmd)
+	cli.RejectUnknownSubcommands(cli.RootCmd)
 }

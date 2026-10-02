@@ -154,6 +154,23 @@ func (c *Client) AccountUUID() string {
 	return c.accountUUID
 }
 
+// AccessToken returns the bearer token the client currently authenticates
+// with, obtaining or refreshing it as needed.
+func (c *Client) AccessToken() (string, error) {
+	if c.tokenProvider == nil {
+		return "", fmt.Errorf("no token provider configured")
+	}
+	headers, err := c.tokenProvider.GetHeaders()
+	if err != nil {
+		return "", err
+	}
+	token := strings.TrimPrefix(headers.Get("Authorization"), "Bearer ")
+	if token == "" {
+		return "", fmt.Errorf("the token provider returned no bearer token")
+	}
+	return token, nil
+}
+
 // BaseURL returns the base URL for the API.
 func (c *Client) BaseURL() string {
 	return c.baseURL

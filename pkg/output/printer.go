@@ -16,6 +16,17 @@ type Printer struct {
 	format Format
 	plain  bool
 	writer io.Writer
+
+	// agent, when set, collects output for the agent envelope instead of
+	// writing it. See NewAgentPrinter.
+	agent *AgentSession
+}
+
+// NewAgentPrinter creates a printer that records results, messages and
+// warnings in session instead of writing them, so the CLI can emit them as
+// one agent envelope.
+func NewAgentPrinter(session *AgentSession) *Printer {
+	return &Printer{format: FormatJSON, plain: true, writer: os.Stdout, agent: session}
 }
 
 // NewPrinter creates a new printer with the specified format.
@@ -34,6 +45,10 @@ func (p *Printer) SetWriter(w io.Writer) {
 
 // Print prints data using the configured format.
 func (p *Printer) Print(data any, columns []Column) error {
+	if p.agent != nil {
+		p.agent.addResult(data)
+		return nil
+	}
 	switch p.format {
 	case FormatJSON, FormatPlain:
 		return p.printJSON(data)
@@ -50,6 +65,10 @@ func (p *Printer) Print(data any, columns []Column) error {
 
 // PrintSingle prints a single resource.
 func (p *Printer) PrintSingle(data map[string]any, columns []Column) error {
+	if p.agent != nil {
+		p.agent.addResult(data)
+		return nil
+	}
 	switch p.format {
 	case FormatJSON, FormatPlain:
 		return p.printJSON(data)
@@ -153,17 +172,29 @@ func toSliceOfMaps(data any) ([]map[string]any, error) {
 
 // PrintMessage prints a message to the writer.
 func (p *Printer) PrintMessage(format string, args ...any) {
+	if p.agent != nil {
+		p.agent.AddMessage(fmt.Sprintf(format, args...))
+		return
+	}
 	fmt.Fprintf(p.writer, format+"\n", args...)
 }
 
 // PrintError prints an error message to stderr.
 func (p *Printer) PrintError(format string, args ...any) {
+	if p.agent != nil {
+		p.agent.addWarning("error: " + fmt.Sprintf(format, args...))
+		return
+	}
 	fmt.Fprintf(os.Stderr, "Error: "+format+"\n", args...)
 }
 
 // PrintSuccess prints a success message.
 func (p *Printer) PrintSuccess(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
+	if p.agent != nil {
+		p.agent.AddMessage(msg)
+		return
+	}
 	if p.plain {
 		fmt.Fprintln(p.writer, msg)
 	} else {
@@ -174,6 +205,10 @@ func (p *Printer) PrintSuccess(format string, args ...any) {
 // PrintWarning prints a warning message.
 func (p *Printer) PrintWarning(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
+	if p.agent != nil {
+		p.agent.addWarning(msg)
+		return
+	}
 	if p.plain {
 		fmt.Fprintln(p.writer, "Warning: "+msg)
 	} else {
@@ -183,11 +218,19 @@ func (p *Printer) PrintWarning(format string, args ...any) {
 
 // PrintKeyValue prints a key-value pair.
 func (p *Printer) PrintKeyValue(key, value string) {
+	if p.agent != nil {
+		p.agent.AddMessage(key + ": " + value)
+		return
+	}
 	fmt.Fprintf(p.writer, "%s: %s\n", key, value)
 }
 
 // PrintList prints a list of items.
 func (p *Printer) PrintList(items []string) {
+	if p.agent != nil {
+		p.agent.addResult(items)
+		return
+	}
 	for _, item := range items {
 		fmt.Fprintf(p.writer, "  - %s\n", item)
 	}
@@ -195,6 +238,10 @@ func (p *Printer) PrintList(items []string) {
 
 // PrintDetail prints detailed information about a resource.
 func (p *Printer) PrintDetail(data map[string]any) error {
+	if p.agent != nil {
+		p.agent.addResult(data)
+		return nil
+	}
 	// Priority keys to show first
 	priorityKeys := []string{"uuid", "uid", "id", "name", "email", "description"}
 
@@ -245,6 +292,10 @@ func (p *Printer) PrintDetail(data map[string]any) error {
 
 // PrintAny prints any data structure as JSON or YAML based on format.
 func (p *Printer) PrintAny(data any) error {
+	if p.agent != nil {
+		p.agent.addResult(data)
+		return nil
+	}
 	switch p.format {
 	case FormatJSON, FormatPlain, FormatTable, FormatWide, FormatCSV:
 		return p.printJSON(data)

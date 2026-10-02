@@ -108,6 +108,14 @@ func createClient(envScopes []string) (*client.Client, error) {
 			// Honor a DTIAM_SCOPES or per-credential scope override. Without
 			// this the configured value is parsed and then silently ignored.
 			scopes = config.GetEffectiveScopes(cred)
+			// A readonly context asks only for read scopes, so the token
+			// cannot write even if a command slipped past the safety check.
+			// An explicit override still wins: it is a deliberate choice.
+			if scopes == "" {
+				if ctx := cfg.GetCurrentContext(); ctx != nil && ctx.EffectiveSafetyLevel() == config.SafetyReadOnly {
+					scopes = strings.Join(auth.ReadOnlyScopeList, " ")
+				}
+			}
 		}
 		tokenProvider = NewOAuthProviderWithScopes(clientID, clientSecret, accountUUID, scopes)
 	case bearerToken != "":

@@ -41,6 +41,7 @@ The current context is marked with an asterisk (*).`,
 				"name":            ctx.Name,
 				"account_uuid":    ctx.Context.AccountUUID,
 				"credentials_ref": ctx.Context.CredentialsRef,
+				"safety_level":    ctx.Context.EffectiveSafetyLevel(),
 				"current":         current,
 			}
 		}
@@ -111,18 +112,35 @@ var setContextCmd = &cobra.Command{
 
 A context links an account UUID to a named credential set. Both --account-uuid
 and --credentials-ref are optional when updating an existing context; only the
-provided fields will be changed.`,
+provided fields will be changed.
+
+--safety-level limits what commands may do in the context:
+  readonly    blocks every change and requests only read OAuth scopes
+  no-delete   allows create and update, blocks deletes and anything that
+              removes access (members, bindings, boundaries, permissions)
+  readwrite   allows everything (the default)
+
+Dry runs are allowed at every level.`,
 	Example: `  # Create a new context
   dtiam config set-context prod --account-uuid abc-123 --credentials-ref prod-creds
 
   # Update only the account UUID of an existing context
-  dtiam config set-context prod --account-uuid new-uuid-456`,
+  dtiam config set-context prod --account-uuid new-uuid-456
+
+  # Make a context read-only
+  dtiam config set-context prod --safety-level readonly`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
 		accountUUID, _ := cmd.Flags().GetString("account-uuid")
 		credentialsRef, _ := cmd.Flags().GetString("credentials-ref")
+		safetyLevel, _ := cmd.Flags().GetString("safety-level")
+		if cmd.Flags().Changed("safety-level") {
+			if _, err := config.ParseSafetyLevel(safetyLevel); err != nil {
+				return err
+			}
+		}
 
 		cfg, err := config.Load()
 		if err != nil {
@@ -140,6 +158,11 @@ provided fields will be changed.`,
 		if err := cfg.SetContext(name, accountPtr, credPtr); err != nil {
 			return err
 		}
+		if cmd.Flags().Changed("safety-level") {
+			if err := cfg.SetContextSafetyLevel(name, safetyLevel); err != nil {
+				return err
+			}
+		}
 
 		if err := config.Save(cfg); err != nil {
 			return fmt.Errorf("failed to save config: %w", err)
@@ -153,6 +176,7 @@ provided fields will be changed.`,
 func init() {
 	setContextCmd.Flags().String("account-uuid", "", "Account UUID")
 	setContextCmd.Flags().String("credentials-ref", "", "Credentials reference name")
+	setContextCmd.Flags().String("safety-level", "", "readonly, no-delete or readwrite")
 }
 
 var deleteContextCmd = &cobra.Command{

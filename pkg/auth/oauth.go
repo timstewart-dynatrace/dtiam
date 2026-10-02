@@ -46,6 +46,26 @@ var DefaultScopeList = []string{
 	"iam:effective-permissions:read",
 }
 
+// ReadOnlyScopeList is requested for contexts at the readonly safety level, so
+// the token itself cannot change users, groups, service users or tokens.
+//
+// iam-policies-management is included because policy, binding and boundary
+// reads were denied without it on a live account even with the granular
+// iam:policies:read and iam:bindings:read scopes. It also permits policy
+// writes, so for those resources the guarantee is dtiam's own safety check,
+// not the token. platform-token:tokens:manage is left out -- it can mint
+// tokens -- so "get tokens" is unavailable in readonly contexts.
+var ReadOnlyScopeList = []string{
+	"account-idm-read",
+	"account-env-read",
+	"account-uac-read",
+	"account-audit-logs-read",
+	"iam-policies-management",
+	"iam:policies:read",
+	"iam:bindings:read",
+	"iam:effective-permissions:read",
+}
+
 // Environment-served APIs need scopes the account APIs do not. They are kept
 // out of DefaultScopeList on purpose: a token request naming a scope the OAuth
 // client was not granted fails outright (HTTP 400), so adding them there would

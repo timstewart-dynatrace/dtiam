@@ -276,3 +276,30 @@
 **Why:** The verified account holds ten subscriptions (expired, active, pending terms), so "only subscription" never applied and the commands always demanded a UUID. Exactly one is ACTIVE in the normal case, and it is the one anyone asking "what is my usage" means. Aggregating across terms would mix billing periods.
 **Trade-offs:** An account with overlapping ACTIVE subscriptions still has to name one.
 **Revisit if:** Users need historical usage by default.
+
+---
+
+## 2026-10-02 — Safety Is Declared Centrally and Enforced Before RunE
+**Chosen:** One operations table (`cmd/dtiam/operations.go`), keyed by command path with inheritance from the verb, written onto cobra annotations; `PersistentPreRunE` checks the active context's level before the command runs. Levels: readonly, no-delete, readwrite (default).
+**Alternatives:** dtctl's per-command `SetupWithSafety(op)` call; dtctl's four levels including readwrite-mine.
+**Why:** With 40+ mutating commands, a per-command call is one forgotten line away from a hole, and a missing call fails open. A central table fails closed twice over: a test rejects any command without a declaration, and an undeclared command is checked as Delete. "Mine" depends on knowing who owns a resource, which IAM objects do not record. no-delete classifies by effect, not by HTTP verb: detaching a boundary or replacing a group set removes access, so it is Delete.
+**Trade-offs:** The classification lives apart from the command code; a reviewer adding a command must touch two places (the test enforces it). readonly's scope restriction is partial: policy, binding and boundary reads need iam-policies-management, which can also write, so for those the guarantee is the check, not the token.
+**Revisit if:** Dynatrace makes granular iam:*:read scopes sufficient for reads -- then readonly can drop iam-policies-management.
+
+---
+
+## 2026-10-02 — Agent Envelope Is Opt-In and Captures Stray Stdout
+**Chosen:** `-A` / `DTIAM_AGENT` wraps output in `{ok, result, error, context}`; auto-detection keeps implying only `--plain`. In agent mode os.Stdout is redirected and anything written outside the printer becomes `context.messages`.
+**Alternatives:** Auto-enable the envelope for detected agents (dtctl's choice); fix every direct `fmt.Print` first.
+**Why:** Auto-enabling would change the output shape for every existing agent integration that parses today's `--plain` JSON. 151 direct stdout writes across 21 files bypass the printer; until they are fixed, capturing them is the only way to guarantee one parseable document. The capture makes the guarantee unconditional rather than dependent on every command being clean.
+**Trade-offs:** Captured text arrives as unstructured lines. The underlying cleanup (route those writes through the printer) is still owed.
+**Revisit if:** The direct writes are removed -- then the capture becomes a safety net only.
+
+---
+
+## 2026-10-02 — can-i Answers Yes, No, or Conditional
+**Chosen:** Unconditional DENY wins; unconditional ALLOW is yes; ALLOW only under conditions is "conditional" (exit 0, conditions listed, `--strict` makes it 1); otherwise no. Inputs that are not service:resource:action are rejected.
+**Alternatives:** Binary yes/no; treat conditional as no by default.
+**Why:** Conditional grants are common in practice (5 of 207 for one live user: bindings readable only for specific groups). Collapsing them to yes overstates access; to no understates it. Reporting the conditions lets the caller decide. Account Management access (account-idm-write and friends) is granted through group permissions, which the effective-permissions API does not cover, so accepting those names would always answer a misleading "no".
+**Trade-offs:** `can-i` cannot answer "can I create a group" -- that needs group-permission resolution.
+**Revisit if:** can-i should also evaluate account permissions via `group permissions`.

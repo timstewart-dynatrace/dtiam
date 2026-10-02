@@ -23,6 +23,12 @@ type State struct {
 	// none was. Set during PersistentPreRunE; used for the User-Agent header and
 	// to explain why --plain was enabled without being asked for.
 	AgentName string
+
+	// Agent enables the agent envelope (--agent / -A / DTIAM_AGENT): stdout
+	// carries exactly one JSON document, {ok, result, error, context}.
+	Agent bool
+	// AgentSession collects output for the envelope while a command runs.
+	AgentSession *output.AgentSession
 }
 
 // GlobalState is the global CLI state instance.
@@ -79,6 +85,9 @@ func (s *State) EnvironmentURL() string {
 // When --plain is set, table and wide formats are automatically converted
 // to JSON for machine/AI consumption.
 func (s *State) NewPrinter() *output.Printer {
+	if s.Agent && s.AgentSession != nil {
+		return output.NewAgentPrinter(s.AgentSession)
+	}
 	format := s.Output
 	if s.Plain && (format == output.FormatTable || format == output.FormatWide) {
 		format = output.FormatJSON
